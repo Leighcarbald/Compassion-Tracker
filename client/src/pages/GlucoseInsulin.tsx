@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Glucose, Insulin } from "@shared/schema";
+import PageHeader from "@/components/PageHeader";
 
 interface GlucoseInsulinPageProps {
   activeTab: TabType;
@@ -291,8 +292,9 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
 
   return (
     <div className="p-4 md:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Glucose & Insulin Tracker</h1>
+      <PageHeader title="Glucose & Insulin Tracker" icon={<Droplets className="h-6 w-6" />} />
+      
+      <div className="flex justify-end mb-6">
         <Button onClick={() => setShowAddForm(!showAddForm)}>
           {showAddForm ? "Cancel" : "Add Record"}
           {!showAddForm && <PlusCircle className="ml-2 h-4 w-4" />}

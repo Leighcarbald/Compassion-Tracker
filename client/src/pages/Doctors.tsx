@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TabType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Plus, User } from "lucide-react";
+import { Phone, Plus, User, Stethoscope } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import CareRecipientTabs from "@/components/CareRecipientTabs";
+import PageHeader from "@/components/PageHeader";
 import type { Doctor } from "@shared/schema";
 
 interface DoctorsProps {
@@ -102,7 +103,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
   
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Doctors</h1>
+      <PageHeader title="Doctors" icon={<Stethoscope className="h-6 w-6" />} />
       
       {/* Care Recipient Tabs */}
       <CareRecipientTabs
