@@ -259,10 +259,12 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const setPinMutation = useMutation({
     mutationFn: async (newPin: string) => {
       if (!emergencyInfo?.id) return null;
+      console.log("Setting PIN for emergency info ID:", emergencyInfo.id);
       const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/set-pin`, { pin: newPin });
       return response.json();
     },
     onSuccess: (data: { message: string; success: boolean; id?: number } | null) => {
+      console.log("PIN set mutation response:", data);
       if (data?.success) {
         toast({
           title: "PIN Created",
@@ -270,12 +272,13 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           variant: "default",
         });
         
+        // Clear PIN input fields and reset UI
         setShowSetPinDialog(false);
         setPin("");
         setConfirmPin("");
         setConfirmPinError("");
         
-        // Unlock immediately
+        // Unlock immediately for better UX
         setIsLocked(false);
         
         // Store that we've successfully set a PIN and are authenticated
@@ -286,15 +289,21 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         
         // Refresh emergency info data to get updated pinHash status
         queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to set PIN: " + (data?.message || "Unknown error"),
+          variant: "destructive",
+        });
       }
     },
     onError: (error) => {
+      console.error("PIN update error:", error);
       toast({
         title: "Error",
-        description: "Failed to set PIN",
+        description: "Failed to set PIN. Please try again.",
         variant: "destructive",
       });
-      console.error("PIN update error:", error);
     }
   });
   
@@ -806,6 +815,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 
                 // PINs match, proceed with setting the PIN
                 setPinMutation.mutate(pin);
+                
+                // Close dialog, unlock immediately for better UX
+                setShowSetPinDialog(false);
+                setIsLocked(false);
+                
+                // Store that we've successfully set a PIN and are authenticated
+                if (emergencyInfo?.id) {
+                  unlockPin(emergencyInfo.id);
+                }
               }} 
               disabled={confirmPin.length !== 6 || setPinMutation.isPending}
             >
