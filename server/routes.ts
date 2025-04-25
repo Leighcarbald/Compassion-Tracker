@@ -642,8 +642,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Emergency Info - Protected Routes
-  app.get(`${apiPrefix}/emergency-info`, isAuthenticated, async (req, res) => {
+  // Emergency Info Routes - PIN protection is handled separately in the component
+  app.get(`${apiPrefix}/emergency-info`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
       

@@ -672,6 +672,11 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     setPinMutation.mutate(pin);
                     setShowPinDialog(false);
                     setIsLocked(false);
+                    
+                    // Set the authenticated state immediately
+                    if (emergencyInfo?.id) {
+                      localStorage.setItem(`emergency_info_authenticated_${emergencyInfo.id}`, 'true');
+                    }
                   }
                 }} 
                 disabled={pin.length !== 4 || setPinMutation.isPending}
