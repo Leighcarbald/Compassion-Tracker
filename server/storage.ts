@@ -446,6 +446,24 @@ export const storage = {
     return newRelation;
   },
 
+  // PIN management helpers
+  async hashPin(pin: string) {
+    const scryptAsync = promisify(scrypt);
+    const salt = randomBytes(16).toString('hex');
+    const buf = (await scryptAsync(pin, salt, 64)) as Buffer;
+    return `${buf.toString('hex')}.${salt}`;
+  },
+
+  async comparePin(suppliedPin: string, storedPinHash: string) {
+    if (!storedPinHash) return false;
+    
+    const scryptAsync = promisify(scrypt);
+    const [hashedPin, salt] = storedPinHash.split('.');
+    const hashedPinBuf = Buffer.from(hashedPin, 'hex');
+    const suppliedPinBuf = (await scryptAsync(suppliedPin, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedPinBuf, suppliedPinBuf);
+  },
+
   // Emergency Info
   async getEmergencyInfo(careRecipientId: number) {
     return db.query.emergencyInfo.findFirst({
@@ -461,6 +479,14 @@ export const storage = {
 
   async createEmergencyInfo(emergencyInfoData: any) {
     const validatedData = insertEmergencyInfoSchema.parse(emergencyInfoData);
+    
+    // If pin is provided, hash it before saving
+    if (validatedData.pin) {
+      validatedData.pinHash = await this.hashPin(validatedData.pin);
+      // Remove the plain text pin from data going to database
+      delete validatedData.pin;
+    }
+    
     const [newEmergencyInfo] = await db.insert(emergencyInfo).values(validatedData).returning();
     return newEmergencyInfo;
   },
@@ -473,12 +499,36 @@ export const storage = {
     // Remove id and careRecipientId from the update data if present
     const { id: _, careRecipientId: __, ...updateData } = emergencyInfoData;
     
+    // If pin is provided, hash it before saving
+    if (updateData.pin) {
+      updateData.pinHash = await this.hashPin(updateData.pin);
+      // Remove the plain text pin from data going to database
+      delete updateData.pin;
+    }
+    
     // Update the record
     await db.update(emergencyInfo)
       .set(updateData)
       .where(eq(emergencyInfo.id, id));
     
     // Return the updated record
+    return this.getEmergencyInfoById(id);
+  },
+  
+  async verifyEmergencyInfoPin(id: number, pin: string) {
+    const info = await this.getEmergencyInfoById(id);
+    if (!info || !info.pinHash) return false;
+    
+    return this.comparePin(pin, info.pinHash);
+  },
+  
+  async setEmergencyInfoPin(id: number, pin: string) {
+    const pinHash = await this.hashPin(pin);
+    
+    await db.update(emergencyInfo)
+      .set({ pinHash })
+      .where(eq(emergencyInfo.id, id));
+    
     return this.getEmergencyInfoById(id);
   }
 };

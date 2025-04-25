@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Save, Plus, Trash2, Edit, Lock, Unlock } from "lucide-react";
+import { ShieldAlert, Save, Plus, Trash2, Edit, Lock, Unlock, Key } from "lucide-react";
 import AddCareEventModal from "@/components/AddCareEventModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -168,17 +168,59 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     }
   };
   
-  const handlePinSubmit = () => {
-    // For this demo, we're using a hardcoded PIN "1234"
-    // In a real app, this would be stored securely and validated against a hashed version
-    if (pin === "1234") {
-      setIsLocked(false);
-      setShowPinDialog(false);
-      setPin("");
-      setPinError("");
-    } else {
-      setPinError("Incorrect PIN. Please try again.");
+  // Verify PIN mutation
+  const verifyPinMutation = useMutation({
+    mutationFn: async () => {
+      if (!emergencyInfo?.id || !pin) return null;
+      const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/verify-pin`, { pin });
+      return response.json();
+    },
+    onSuccess: (data: { message: string; verified: boolean } | null) => {
+      if (data?.verified) {
+        setIsLocked(false);
+        setShowPinDialog(false);
+        setPin("");
+        setPinError("");
+      } else {
+        setPinError("Incorrect PIN. Please try again.");
+      }
+    },
+    onError: (error) => {
+      setPinError("Failed to verify PIN. Please try again.");
+      console.error("PIN verification error:", error);
     }
+  });
+  
+  // Set PIN mutation
+  const setPinMutation = useMutation({
+    mutationFn: async (newPin: string) => {
+      if (!emergencyInfo?.id) return null;
+      const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/set-pin`, { pin: newPin });
+      return response.json();
+    },
+    onSuccess: (data: { message: string; success: boolean } | null) => {
+      if (data?.success) {
+        toast({
+          title: "PIN Updated",
+          description: "Emergency information PIN has been updated successfully",
+          variant: "default",
+        });
+        // Refresh emergency info data to get updated pinHash status
+        queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update PIN",
+        variant: "destructive",
+      });
+      console.error("PIN update error:", error);
+    }
+  });
+  
+  const handlePinSubmit = () => {
+    verifyPinMutation.mutate();
   };
 
   return (
@@ -575,17 +617,103 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 }}
               />
               {pinError && <p className="text-sm text-red-500">{pinError}</p>}
-              <p className="text-xs text-gray-500 mt-2">
-                For demo purposes, use PIN: 1234
-              </p>
+              {!emergencyInfo?.pinHash && (
+                <p className="text-xs text-gray-500 mt-2">
+                  No PIN set yet. Please create a new 4-digit PIN to secure this information.
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowPinDialog(false)}>
               Cancel
             </Button>
-            <Button type="button" onClick={handlePinSubmit} disabled={pin.length !== 4}>
-              Unlock
+            {emergencyInfo?.pinHash ? (
+              // If PIN already exists, show unlock button
+              <Button 
+                type="button" 
+                onClick={handlePinSubmit} 
+                disabled={pin.length !== 4 || verifyPinMutation.isPending}
+              >
+                {verifyPinMutation.isPending ? 'Verifying...' : 'Unlock'}
+              </Button>
+            ) : (
+              // If no PIN exists yet, show set PIN button
+              <Button 
+                type="button" 
+                onClick={() => {
+                  // Set new PIN
+                  if (pin.length === 4) {
+                    setPinMutation.mutate(pin);
+                    setShowPinDialog(false);
+                    setIsLocked(false);
+                  }
+                }} 
+                disabled={pin.length !== 4 || setPinMutation.isPending}
+              >
+                {setPinMutation.isPending ? 'Creating...' : 'Create PIN'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Set/Change PIN dialog */}
+      <Dialog>
+        <DialogTrigger asChild>
+          {!isLocked && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-2"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <Key className="h-4 w-4 mr-1" />
+              Change PIN
+            </Button>
+          )}
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set New Security PIN</DialogTitle>
+            <DialogDescription>
+              Create a new 4-digit PIN to protect sensitive emergency information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="newPin">New PIN Code</Label>
+              <Input
+                id="newPin"
+                type="password"
+                placeholder="Enter 4-digit PIN"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => {
+                  // Only allow numeric input
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setPin(value);
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setPin("")}>
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={() => {
+                if (pin.length === 4) {
+                  setPinMutation.mutate(pin);
+                  setPin("");
+                }
+              }} 
+              disabled={pin.length !== 4 || setPinMutation.isPending}
+            >
+              {setPinMutation.isPending ? 'Saving...' : 'Save PIN'}
             </Button>
           </DialogFooter>
         </DialogContent>
