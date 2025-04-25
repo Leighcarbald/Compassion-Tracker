@@ -41,7 +41,7 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
   };
 
   // Check if the active tab is in the "more" section
-  const isMoreActive = activeTab === "doctors" || activeTab === "pharmacies" || activeTab === "notes" || activeTab === "emergency" || activeTab === "blood-pressure" || activeTab === "glucose-insulin" || activeTab === "bowel-movements";
+  const isMoreActive = activeTab === "doctors" || activeTab === "pharmacies" || activeTab === "notes" || activeTab === "emergency" || activeTab === "blood-pressure" || activeTab === "glucose-insulin";
 
   return (
     <nav className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-10">
@@ -117,10 +117,6 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
           <DropdownMenuItem onClick={() => handleTabChange("glucose-insulin", "/glucose-insulin")} className="cursor-pointer">
             <Droplets className="h-4 w-4 mr-2 text-blue-500" />
             <span>Glucose & Insulin</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleTabChange("bowel-movements", "/bowel-movements")} className="cursor-pointer">
-            <Toilet className="h-4 w-4 mr-2 text-green-500" />
-            <span>Bowel Movements</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleTabChange("emergency", "/emergency")} className="cursor-pointer">
             <ShieldAlert className="h-4 w-4 mr-2 text-red-500" />
