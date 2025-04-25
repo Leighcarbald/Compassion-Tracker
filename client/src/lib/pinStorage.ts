@@ -1,12 +1,28 @@
 /**
  * Simple PIN storage utility for emergency info authentication
  * Uses localStorage directly with proper error handling
+ * Includes security features for PIN expiration
  */
 
-// Storage key for authorized emergency info IDs - this is the ONLY correct key
+// Storage key for authorized emergency info IDs
 const STORAGE_KEY = 'emergency_pins_unlocked';
+// Storage key for timestamp to track when PINs were authorized
+const TIMESTAMP_KEY = 'emergency_pins_timestamp';
 
-// Check for data in the old storage key and migrate it if found
+// PINs expire after 15 minutes for security
+const PIN_EXPIRATION_TIME = 15 * 60 * 1000;
+
+// Clear all stored PINs on module load for security reasons
+// This ensures no unauthorized access persists between sessions
+try {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(TIMESTAMP_KEY);
+  console.log('Cleared all stored PINs on application startup for security');
+} catch (error) {
+  console.error('Error clearing stored PINs:', error);
+}
+
+// This migration code is kept for backward compatibility
 try {
   const oldStoredData = localStorage.getItem('emergency_unlocked_pins');
   if (oldStoredData && !localStorage.getItem(STORAGE_KEY)) {
@@ -22,6 +38,7 @@ try {
 
 /**
  * Save an array of authorized emergency info IDs to localStorage
+ * with timestamp for security expiration
  */
 export function saveUnlockedPins(ids: number[]): void {
   try {
@@ -32,8 +49,12 @@ export function saveUnlockedPins(ids: number[]): void {
       ? ids.filter(id => typeof id === 'number') 
       : [];
     
-    // Save directly without any additional processing
+    // Save the PIN IDs array
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanIds));
+    
+    // Save the current timestamp for expiration checking
+    localStorage.setItem(TIMESTAMP_KEY, Date.now().toString());
+    console.log(`PIN authentication timestamp set: ${new Date().toISOString()}`);
     
     // Double check it was saved
     const savedValue = localStorage.getItem(STORAGE_KEY);
@@ -48,10 +69,61 @@ export function saveUnlockedPins(ids: number[]): void {
 }
 
 /**
+ * Check if stored PIN data is still valid based on timestamp
+ * Returns false if PINs have expired, which will force re-authentication
+ */
+function isPinDataValid(): boolean {
+  try {
+    const timestampStr = localStorage.getItem(TIMESTAMP_KEY);
+    if (!timestampStr) {
+      console.log('No PIN timestamp found, treating as expired');
+      return false;
+    }
+    
+    const timestamp = parseInt(timestampStr, 10);
+    if (isNaN(timestamp)) {
+      console.error('Invalid PIN timestamp stored');
+      return false;
+    }
+    
+    const now = Date.now();
+    const elapsedTime = now - timestamp;
+    
+    // Check if the timestamp is in the future (clock manipulation)
+    if (timestamp > now) {
+      console.error('PIN timestamp is in the future, possible clock manipulation');
+      return false;
+    }
+    
+    // Check if the timestamp is too old (expired)
+    if (elapsedTime > PIN_EXPIRATION_TIME) {
+      console.log(`PIN auth expired after ${Math.round(elapsedTime/1000/60)} minutes`);
+      // Clear expired data for security
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TIMESTAMP_KEY);
+      return false;
+    }
+    
+    console.log(`PIN auth valid, expires in ${Math.round((PIN_EXPIRATION_TIME - elapsedTime)/1000/60)} minutes`);
+    return true;
+  } catch (error) {
+    console.error('Error checking PIN timestamp validity:', error);
+    return false;
+  }
+}
+
+/**
  * Get all authorized emergency info IDs from localStorage
+ * with expiration check for better security
  */
 export function getUnlockedPins(): number[] {
   try {
+    // First check if PINs have expired
+    if (!isPinDataValid()) {
+      console.log('PIN data expired or invalid, forcing re-authentication');
+      return [];
+    }
+    
     const stored = localStorage.getItem(STORAGE_KEY);
     console.log('RAW PIN STORAGE VALUE:', stored);
     

@@ -112,23 +112,43 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         additionalInfo: emergencyInfo.additionalInfo || ""
       });
       
-      // Check with the server if this emergency info is already verified in the current session
-      fetch(`/api/emergency-info/${emergencyInfo.id}/check-verified`)
-        .then(response => response.json())
-        .then(data => {
-          console.log(`Server verification check for PIN ${emergencyInfo.id}:`, data);
-          if (data.verified) {
-            console.log('Emergency info is verified in current session, unlocking...');
-            setIsLocked(false);
-            // Also update local state to reflect this
-            unlockPin(emergencyInfo.id);
-          } else {
-            console.log('Emergency info not verified in current session, staying locked');
-          }
-        })
-        .catch(error => {
-          console.error('Error checking PIN verification status:', error);
-        });
+      // First check local PIN storage - this is using our enhanced security
+      // with automatic expiration after 15 minutes
+      const pinUnlockedLocally = emergencyInfo.id ? isUnlocked(emergencyInfo.id) : false;
+      console.log(`PIN ${emergencyInfo.id} IS UNLOCKED: ${pinUnlockedLocally}`);
+      
+      if (pinUnlockedLocally) {
+        console.log(`PIN ${emergencyInfo.id} is verified in local storage with security expiration, unlocking...`);
+        setIsLocked(false);
+        console.log(`VERIFICATION: PIN ${emergencyInfo.id} is now unlocked: ${!isLocked}`);
+      } else {
+        // Double-check with server if this emergency info is verified there
+        // This is useful during development and as a fallback
+        console.log(`PIN ${emergencyInfo.id} not found in local secure storage, checking with server...`);
+        fetch(`/api/emergency-info/${emergencyInfo.id}/check-verified`)
+          .then(response => response.json())
+          .then(data => {
+            console.log(`Server verification check for PIN ${emergencyInfo.id}:`, data);
+            if (data.verified) {
+              console.log('Emergency info is verified in server session, unlocking...');
+              setIsLocked(false);
+              // Also update local state to reflect this
+              unlockPin(emergencyInfo.id);
+            } else {
+              console.log('Emergency info not verified in current session, staying locked');
+              // Ensure it's locked locally too for consistency
+              setIsLocked(true);
+              if (emergencyInfo.id) {
+                lockPin(emergencyInfo.id);
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error checking PIN verification status:', error);
+            // Keep locked on error for security
+            setIsLocked(true);
+          });
+      }
     }
   }, [emergencyInfo, isUnlocked]);
 
