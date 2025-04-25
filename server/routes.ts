@@ -276,6 +276,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating bowel movement' });
     }
   });
+  
+  app.delete(`${apiPrefix}/bowel-movements/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      await storage.deleteBowelMovement(id);
+      res.status(200).json({ message: 'Bowel movement deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting bowel movement:', error);
+      res.status(500).json({ message: 'Error deleting bowel movement' });
+    }
+  });
 
   // Supplies
   app.get(`${apiPrefix}/supplies`, async (req, res) => {

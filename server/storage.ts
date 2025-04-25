@@ -473,6 +473,10 @@ export const storage = {
     const [newMovement] = await db.insert(bowelMovements).values(validatedData).returning();
     return newMovement;
   },
+  
+  async deleteBowelMovement(id: number) {
+    return db.delete(bowelMovements).where(eq(bowelMovements.id, id));
+  },
 
   // Supplies
   async getSupplies(careRecipientId: number) {

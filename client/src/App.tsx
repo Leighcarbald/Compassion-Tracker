@@ -12,6 +12,7 @@ import Pharmacies from "@/pages/Pharmacies";
 import EmergencyInfo from "@/pages/EmergencyInfo";
 import BloodPressure from "@/pages/BloodPressure";
 import GlucoseInsulin from "@/pages/GlucoseInsulin";
+import BowelMovements from "@/pages/BowelMovements";
 import { useState } from "react";
 import { TabType } from "./lib/types";
 

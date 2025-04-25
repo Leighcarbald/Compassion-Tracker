@@ -104,8 +104,12 @@ export default function AddCareEventModal({
 
   const addEvent = useMutation({
     mutationFn: async (data: z.infer<typeof eventSchema>) => {
+      if (!data.careRecipientId) {
+        throw new Error("Care recipient ID is required");
+      }
+      
       let endpoint = "";
-      let postData = { ...data };
+      let postData: any = { ...data };
       
       // Create a datetime from the date and time fields
       const dateTimeStr = `${data.date}T${data.time}:00`;
@@ -113,6 +117,10 @@ export default function AddCareEventModal({
       
       switch (data.type) {
         case "medication":
+          if (!data.medicationId) {
+            throw new Error("Medication selection is required");
+          }
+          
           endpoint = "/api/medication-logs";
           postData = {
             medicationId: data.medicationId,
@@ -123,6 +131,10 @@ export default function AddCareEventModal({
           };
           break;
         case "meal":
+          if (!data.mealType) {
+            throw new Error("Meal type is required");
+          }
+          
           endpoint = "/api/meals";
           postData = {
             type: data.mealType,
@@ -135,7 +147,7 @@ export default function AddCareEventModal({
         case "bowel":
           endpoint = "/api/bowel-movements";
           postData = {
-            type: data.name,
+            type: data.name || "Regular",
             notes: data.notes || "",
             occuredAt: dateTime.toISOString(),
             careRecipientId: data.careRecipientId
@@ -155,8 +167,15 @@ export default function AddCareEventModal({
           break;
       }
       
-      const response = await apiRequest("POST", endpoint, postData);
-      return response.json();
+      try {
+        const response = await apiRequest("POST", endpoint, postData);
+        const result = await response.json();
+        console.log(`${data.type} created:`, result);
+        return result;
+      } catch (error) {
+        console.error(`Error creating ${data.type}:`, error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/events/upcoming', careRecipientId] });
