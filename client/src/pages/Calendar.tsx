@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import AddCareEventModal from "@/components/AddCareEventModal";
@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { CareRecipient, Appointment } from "@shared/schema";
 import { TabType } from "@/lib/types";
 import { formatTime } from "@/lib/utils";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -46,9 +46,16 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
   });
   
   // Fetch all appointments for the current month for highlighting calendar
+  const currentYearMonth = selectedDate ? format(selectedDate, 'yyyy-MM') : format(new Date(), 'yyyy-MM');
   const { data: allMonthAppointments } = useQuery<Appointment[]>({
-    queryKey: ['/api/appointments/month', activeCareRecipient, 
-      selectedDate ? format(selectedDate, 'yyyy-MM') : format(new Date(), 'yyyy-MM')],
+    queryKey: ['/api/appointments/month', activeCareRecipient, currentYearMonth],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/appointments/month?careRecipientId=${activeCareRecipient}&yearMonth=${currentYearMonth}`
+      );
+      if (!res.ok) throw new Error('Failed to fetch month appointments');
+      return res.json();
+    },
     enabled: !!activeCareRecipient,
   });
   
@@ -69,6 +76,19 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
   const handleAddEvent = () => {
     setIsModalOpen(true);
   };
+  
+  // When the selected date changes, we may need to fetch appointments for a new month
+  useEffect(() => {
+    if (selectedDate) {
+      const newYearMonth = format(selectedDate, 'yyyy-MM');
+      if (newYearMonth !== currentYearMonth) {
+        // Refresh the data for the new month
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/appointments/month', activeCareRecipient]
+        });
+      }
+    }
+  }, [selectedDate, currentYearMonth, activeCareRecipient]);
 
   // Handle recipient change
   const handleChangeRecipient = (id: string) => {
@@ -115,8 +135,9 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
                   hasEvent: {
                     backgroundColor: 'rgba(var(--primary), 0.1)',
                     fontWeight: 'bold',
-                    borderRadius: '0',
-                    position: 'relative'
+                    borderRadius: '100%',
+                    position: 'relative',
+                    color: 'rgb(var(--primary))'
                   }
                 }}
                 modifiers={{
@@ -204,7 +225,14 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
 
       <AddCareEventModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => {
+          setIsModalOpen(false);
+          // After adding a new appointment, refresh both appointment lists
+          refetchAppointments();
+          queryClient.invalidateQueries({ 
+            queryKey: ['/api/appointments/month', activeCareRecipient]
+          });
+        }} 
         careRecipientId={activeCareRecipient}
         defaultEventType="appointment"
         selectedDate={selectedDate}
