@@ -148,6 +148,12 @@ export default function AddCareEventModal({
   const onSubmit = (data: z.infer<typeof eventSchema>) => {
     if (!careRecipientId) return;
     
+    console.log("Submitting form with data:", {
+      ...data,
+      type: eventType,
+      careRecipientId: parseInt(careRecipientId)
+    });
+    
     addEvent.mutate({
       ...data,
       type: eventType,
