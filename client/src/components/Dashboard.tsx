@@ -130,14 +130,6 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
                       {event.details && `- ${event.details}`}
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="ml-2 rounded-full h-8 w-8 p-0 flex items-center justify-center border border-gray-200 text-gray-400 hover:text-gray-600"
-                  >
-                    <span className="sr-only">Mark as complete</span>
-                    <span className="text-lg">✓</span>
-                  </Button>
                 </div>
               ))
             )}

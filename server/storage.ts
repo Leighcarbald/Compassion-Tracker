@@ -223,14 +223,8 @@ export const storage = {
         title: appointment.title,
         time: appointment.time,
         details: appointment.location
-      })),
-      ...sleepEvents.map(sleepRecord => ({
-        id: `sleep_${sleepRecord.id}`,
-        type: 'sleep',
-        title: sleepRecord.endTime ? 'Sleep Complete' : 'Sleep In Progress',
-        time: format(new Date(sleepRecord.startTime), 'HH:mm'),
-        details: `Quality: ${sleepRecord.quality || 'Not rated'}`
       }))
+      // Sleep events removed from "Next Up" section as requested
     ];
     
     // Sort by time
