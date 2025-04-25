@@ -452,6 +452,22 @@ export const storage = {
     await db.delete(appointments).where(eq(appointments.id, id));
     return { success: true };
   },
+  
+  async getMonthAppointments(careRecipientId: number, yearMonth: string) {
+    try {
+      // yearMonth should be in format 'YYYY-MM'
+      return db.query.appointments.findMany({
+        where: and(
+          eq(appointments.careRecipientId, careRecipientId),
+          sql`${appointments.date} LIKE ${yearMonth + '-%'}`
+        ),
+        orderBy: [appointments.date, appointments.time]
+      });
+    } catch (error) {
+      console.error('Error fetching month appointments:', error);
+      return [];
+    }
+  },
 
   // Meals
   async getMeals(careRecipientId: number) {

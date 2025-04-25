@@ -39,10 +39,17 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
     setActiveCareRecipient(String(careRecipients[0].id));
   }
 
-  // Fetch appointments
+  // Fetch appointments for the selected date
   const { data: appointments, isLoading: isLoadingAppointments, refetch: refetchAppointments } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments', activeCareRecipient, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
     enabled: !!activeCareRecipient && !!selectedDate,
+  });
+  
+  // Fetch all appointments for the current month for highlighting calendar
+  const { data: allMonthAppointments } = useQuery<Appointment[]>({
+    queryKey: ['/api/appointments/month', activeCareRecipient, 
+      selectedDate ? format(selectedDate, 'yyyy-MM') : format(new Date(), 'yyyy-MM')],
+    enabled: !!activeCareRecipient,
   });
   
   // Delete appointment mutation
@@ -66,6 +73,16 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
   // Handle recipient change
   const handleChangeRecipient = (id: string) => {
     setActiveCareRecipient(id);
+  };
+  
+  // Function to check if a date has appointments
+  const hasAppointmentOnDate = (date: Date): boolean => {
+    if (!allMonthAppointments) return false;
+    
+    const dateString = format(date, 'yyyy-MM-dd');
+    return allMonthAppointments.some(appointment => 
+      appointment.date === dateString
+    );
   };
 
   return (
@@ -94,7 +111,17 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 className="rounded-md border"
-                // We'll implement date highlights differently in a future update
+                modifiersStyles={{
+                  hasEvent: {
+                    backgroundColor: 'rgba(var(--primary), 0.1)',
+                    fontWeight: 'bold',
+                    borderRadius: '0',
+                    position: 'relative'
+                  }
+                }}
+                modifiers={{
+                  hasEvent: (date) => hasAppointmentOnDate(date)
+                }}
               />
             </CardContent>
           </Card>
