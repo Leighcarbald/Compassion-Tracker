@@ -15,16 +15,21 @@ export async function apiRequest(
   console.log(`API Request: ${method} ${url}`, data);
   
   try {
+    // Make sure data is an object if provided
+    const bodyData = data ? JSON.stringify(data) : undefined;
+    console.log(`Request body:`, bodyData);
+    
     const res = await fetch(url, {
       method,
       headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
+      body: bodyData,
       credentials: "include",
     });
 
     console.log(`API Response: ${res.status} ${res.statusText}`);
     
-    await throwIfResNotOk(res);
+    // Don't throw on non-2xx responses, let the caller handle them
+    // This way we can still access the response body for error details
     return res;
   } catch (error) {
     console.error(`API Error for ${method} ${url}:`, error);

@@ -260,8 +260,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     mutationFn: async (newPin: string) => {
       if (!emergencyInfo?.id) return null;
       console.log("Setting PIN for emergency info ID:", emergencyInfo.id);
-      const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/set-pin`, { pin: newPin });
-      return response.json();
+      try {
+        const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/set-pin`, { pin: newPin });
+        const data = await response.json();
+        console.log("Set PIN API response:", data);
+        return data;
+      } catch (error) {
+        console.error("Error setting PIN:", error);
+        throw error;
+      }
     },
     onSuccess: (data: { message: string; success: boolean; id?: number } | null) => {
       console.log("PIN set mutation response:", data);
