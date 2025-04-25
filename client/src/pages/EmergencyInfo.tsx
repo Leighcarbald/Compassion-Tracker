@@ -204,10 +204,23 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
 
   const toggleLock = () => {
     if (isLocked) {
-      // Show PIN dialog to unlock
+      // Need to verify PIN before unlocking
+      if (!emergencyInfo?.id) {
+        toast({
+          title: "Error",
+          description: "Emergency information not found. Please refresh the page.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+      
+      // Show PIN verification dialog
       setShowPinDialog(true);
+      setPin("");
+      setPinError("");
     } else {
-      // Lock the information
+      // Lock the information (this is immediate)
       setIsLocked(true);
       setPin("");
       setPinError("");
@@ -215,6 +228,13 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       // Clear the authenticated state when locking
       if (emergencyInfo?.id) {
         lockPin(emergencyInfo.id);
+        console.log(`Locked PIN access for emergency info #${emergencyInfo.id}`);
+        
+        toast({
+          title: "Information Locked",
+          description: "Emergency information is now secured with PIN protection",
+          duration: 3000,
+        });
       }
     }
   };
@@ -223,11 +243,25 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const verifyPinMutation = useMutation({
     mutationFn: async (pinToVerify: string) => {
       if (!emergencyInfo?.id || !pinToVerify) return null;
-      const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/verify-pin`, { pin: pinToVerify });
-      return response.json();
+      try {
+        console.log(`Verifying PIN for emergency info ID ${emergencyInfo.id}`);
+        const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/verify-pin`, { pin: pinToVerify });
+        const data = await response.json();
+        console.log("PIN verification response:", data);
+        return data;
+      } catch (error) {
+        console.error("Error during PIN verification:", error);
+        throw error;
+      }
     },
     onSuccess: (data: { message: string; verified: boolean } | null) => {
+      console.log("PIN verification success response:", data);
       if (data?.verified) {
+        toast({
+          title: "Success",
+          description: "PIN verified successfully",
+          duration: 3000,
+        });
         setIsLocked(false);
         setShowPinDialog(false);
         setPin("");
@@ -250,6 +284,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     onError: (error) => {
       setPinError("Failed to verify PIN. Please try again.");
       console.error("PIN verification error:", error);
+      
+      // Show a toast with the error for better visibility
+      toast({
+        title: "Verification Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+        duration: 5000, // Show for 5 seconds
+      });
     }
   });
   
@@ -307,9 +349,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     onError: (error) => {
       console.error("PIN update error:", error);
       toast({
-        title: "Error",
-        description: "Failed to set PIN. Please try again.",
+        title: "Error Setting PIN",
+        description: error instanceof Error ? error.message : "Failed to set PIN. Please try again.",
         variant: "destructive",
+        duration: 5000, // Show for 5 seconds so user can read it
       });
     }
   });
