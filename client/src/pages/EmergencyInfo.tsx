@@ -109,7 +109,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
 
   // Handle select changes
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [value]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   // Save emergency info mutation

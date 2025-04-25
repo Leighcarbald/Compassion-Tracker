@@ -257,6 +257,130 @@ async function seed() {
         console.log(`Using existing inspiration message with ID: ${existingMessage.id}`);
       }
     }
+
+    // Create doctors
+    console.log("Creating doctors...");
+    const doctorsData = [
+      {
+        name: "Dr. Sarah Johnson",
+        specialty: "Primary Care",
+        phoneNumber: "(555) 123-4567",
+        address: "123 Medical Plaza, Suite 101",
+        email: "dr.johnson@healthcare.example",
+        notes: "Primary physician for regular checkups",
+        careRecipientId: careRecipientIds[0]
+      },
+      {
+        name: "Dr. Robert Chen",
+        specialty: "Cardiology",
+        phoneNumber: "(555) 234-5678",
+        address: "456 Heart Center Drive",
+        email: "dr.chen@cardio.example",
+        notes: "Heart specialist for quarterly checkups",
+        careRecipientId: careRecipientIds[0]
+      },
+      {
+        name: "Dr. Emily Williams",
+        specialty: "Neurology",
+        phoneNumber: "(555) 345-6789",
+        address: "789 Brain Health Center",
+        email: "dr.williams@neuro.example",
+        notes: "For memory and cognitive assessments",
+        careRecipientId: careRecipientIds[0]
+      }
+    ];
+    
+    let doctorIds = [];
+    for (const data of doctorsData) {
+      const existingDoctor = await db.query.doctors.findFirst({
+        where: { 
+          name: data.name,
+          careRecipientId: data.careRecipientId
+        }
+      });
+      
+      if (!existingDoctor) {
+        const [doctor] = await db.insert(schema.doctors).values(data).returning();
+        console.log(`Created doctor: ${doctor.name} with ID: ${doctor.id}`);
+        doctorIds.push(doctor.id);
+      } else {
+        console.log(`Using existing doctor: ${existingDoctor.name} with ID: ${existingDoctor.id}`);
+        doctorIds.push(existingDoctor.id);
+      }
+    }
+
+    // Create pharmacies
+    console.log("Creating pharmacies...");
+    const pharmaciesData = [
+      {
+        name: "MediCare Pharmacy",
+        address: "100 Health Street",
+        phoneNumber: "(555) 987-6543",
+        notes: "Preferred pharmacy with delivery service",
+        careRecipientId: careRecipientIds[0]
+      },
+      {
+        name: "Community Drug Store",
+        address: "200 Main Street",
+        phoneNumber: "(555) 876-5432",
+        notes: "Backup pharmacy with 24-hour service",
+        careRecipientId: careRecipientIds[0]
+      }
+    ];
+    
+    let pharmacyIds = [];
+    for (const data of pharmaciesData) {
+      const existingPharmacy = await db.query.pharmacies.findFirst({
+        where: { 
+          name: data.name,
+          careRecipientId: data.careRecipientId
+        }
+      });
+      
+      if (!existingPharmacy) {
+        const [pharmacy] = await db.insert(schema.pharmacies).values(data).returning();
+        console.log(`Created pharmacy: ${pharmacy.name} with ID: ${pharmacy.id}`);
+        pharmacyIds.push(pharmacy.id);
+      } else {
+        console.log(`Using existing pharmacy: ${existingPharmacy.name} with ID: ${existingPharmacy.id}`);
+        pharmacyIds.push(existingPharmacy.id);
+      }
+    }
+
+    // Create emergency info
+    console.log("Creating emergency info...");
+    const emergencyInfoData = {
+      careRecipientId: careRecipientIds[0],
+      dateOfBirth: "1952-06-15",
+      socialSecurityNumber: "XXX-XX-1234",
+      insuranceProvider: "Medicare Advantage",
+      insurancePolicyNumber: "MA12345678",
+      insuranceGroupNumber: "GRP987654",
+      insurancePhone: "(800) 555-1234",
+      emergencyContact1Name: "Jane Smith",
+      emergencyContact1Phone: "(555) 765-4321",
+      emergencyContact1Relation: "Daughter",
+      emergencyContact2Name: "Michael Smith",
+      emergencyContact2Phone: "(555) 654-3210",
+      emergencyContact2Relation: "Son",
+      allergies: "Penicillin, Shellfish, Latex",
+      medicationAllergies: "Sulfa drugs, Codeine",
+      bloodType: "O+",
+      advanceDirectives: true,
+      dnrOrder: false,
+      additionalInfo: "Prefers to be addressed as Mom. Needs glasses for reading. Hearing aid in right ear."
+    };
+    
+    const existingEmergencyInfo = await db.query.emergencyInfo.findFirst({
+      where: { careRecipientId: emergencyInfoData.careRecipientId }
+    });
+    
+    if (!existingEmergencyInfo) {
+      const [info] = await db.insert(schema.emergencyInfo).values(emergencyInfoData).returning();
+      console.log(`Created emergency info with ID: ${info.id} for care recipient ID: ${info.careRecipientId}`);
+    } else {
+      console.log(`Using existing emergency info with ID: ${existingEmergencyInfo.id}`);
+    }
     
     console.log("Seed completed successfully!");
   } catch (error) {
