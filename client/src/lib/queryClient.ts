@@ -62,6 +62,7 @@ export const getQueryFn: <T>(options: {
                   baseUrl.includes('notes') ||
                   baseUrl.includes('doctors') ||
                   baseUrl.includes('pharmacies') ||
+                  baseUrl.includes('emergency-info') ||
                   baseUrl.includes('appointments')) {
           params.append('careRecipientId', queryKey[1]);
         }

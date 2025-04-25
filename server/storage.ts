@@ -889,13 +889,21 @@ export const storage = {
   },
   
   async setEmergencyInfoPin(id: number, pin: string) {
-    const pinHash = await this.hashPin(pin);
+    console.log(`Storage: Setting PIN for emergency info #${id}, pin value type: ${typeof pin}, pin: ${pin}`);
+    const pinHash = await this.hashPin(pin.toString());
     
-    await db.update(emergencyInfo)
-      .set({ pinHash })
-      .where(eq(emergencyInfo.id, id));
-    
-    return this.getEmergencyInfoById(id);
+    console.log(`PIN hashed successfully, updating emergency info #${id}`);
+    try {
+      await db.update(emergencyInfo)
+        .set({ pinHash })
+        .where(eq(emergencyInfo.id, id));
+      
+      console.log(`Emergency info #${id} updated with new PIN hash`);
+      return this.getEmergencyInfoById(id);
+    } catch (error) {
+      console.error(`Error updating emergency info PIN:`, error);
+      throw error;
+    }
   },
 
   // Blood Pressure Tracking
