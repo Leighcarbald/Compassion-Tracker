@@ -232,8 +232,7 @@ export const storage = {
     return db.query.medications.findMany({
       where: eq(medications.careRecipientId, careRecipientId),
       with: {
-        schedules: true,
-        prescribingDoctor: true
+        schedules: true
       }
     });
   },
@@ -544,10 +543,7 @@ export const storage = {
   async getDoctors(careRecipientId: number) {
     return db.query.doctors.findMany({
       where: eq(doctors.careRecipientId, careRecipientId),
-      orderBy: doctors.name,
-      with: {
-        prescriptions: true
-      }
+      orderBy: doctors.name
     });
   },
 
@@ -561,14 +557,7 @@ export const storage = {
   async getPharmacies(careRecipientId: number) {
     return db.query.pharmacies.findMany({
       where: eq(pharmacies.careRecipientId, careRecipientId),
-      orderBy: pharmacies.name,
-      with: {
-        medicationRelations: {
-          with: {
-            medication: true
-          }
-        }
-      }
+      orderBy: pharmacies.name
     });
   },
 
