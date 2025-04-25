@@ -393,6 +393,10 @@ export const insertEmergencyInfoSchema = createInsertSchema(emergencyInfo, {
   pin: z.string().optional()
 });
 
+export const insertBloodPressureSchema = createInsertSchema(bloodPressure);
+export const insertGlucoseSchema = createInsertSchema(glucose);
+export const insertInsulinSchema = createInsertSchema(insulin);
+
 // Define types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -444,3 +448,12 @@ export type InsertPharmacy = z.infer<typeof insertPharmacySchema>;
 
 export type MedicationPharmacy = typeof medicationPharmacies.$inferSelect;
 export type InsertMedicationPharmacy = z.infer<typeof insertMedicationPharmacySchema>;
+
+export type BloodPressure = typeof bloodPressure.$inferSelect;
+export type InsertBloodPressure = z.infer<typeof insertBloodPressureSchema>;
+
+export type Glucose = typeof glucose.$inferSelect;
+export type InsertGlucose = z.infer<typeof insertGlucoseSchema>;
+
+export type Insulin = typeof insulin.$inferSelect;
+export type InsertInsulin = z.infer<typeof insertInsulinSchema>;
