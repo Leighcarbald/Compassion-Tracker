@@ -26,10 +26,22 @@ try {
 export function saveUnlockedPins(ids: number[]): void {
   try {
     console.log('SAVING PINS TO STORAGE:', ids);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+    
+    // Ensure we have a clean array of numbers
+    const cleanIds = Array.isArray(ids) 
+      ? ids.filter(id => typeof id === 'number') 
+      : [];
+    
+    // Save directly without any additional processing
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanIds));
+    
     // Double check it was saved
     const savedValue = localStorage.getItem(STORAGE_KEY);
     console.log('CONFIRMED SAVED VALUE:', savedValue);
+    
+    // Verify the item can be correctly retrieved
+    const test = getUnlockedPins();
+    console.log('TEST RETRIEVAL RESULT:', test);
   } catch (error) {
     console.error('Error saving emergency PIN IDs to localStorage:', error);
   }

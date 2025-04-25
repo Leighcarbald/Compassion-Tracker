@@ -47,21 +47,57 @@ export function PinAuthProvider({ children }: { children: ReactNode }) {
 
   // Check if a PIN is unlocked
   const isUnlocked = useCallback((id: number): boolean => {
-    return isPinUnlocked(id);
-  }, []);
+    try {
+      // First check in memory state
+      if (unlockedPins.includes(id)) {
+        return true;
+      }
+      
+      // Then check in localStorage
+      return isPinUnlocked(id);
+    } catch (error) {
+      console.error("Error checking if PIN is unlocked:", error);
+      return false;
+    }
+  }, [unlockedPins]);
 
   // Unlock a PIN
   const unlockPin = useCallback((id: number): void => {
     console.log(`Unlocking PIN ${id}`);
-    unlockPinStorage(id);
-    setUnlockedPins(prev => [...prev, id]);
+    try {
+      // Update state
+      setUnlockedPins(prev => {
+        const newPins = [...prev];
+        if (!newPins.includes(id)) {
+          newPins.push(id);
+        }
+        return newPins;
+      });
+      
+      // Update storage
+      unlockPinStorage(id);
+      
+      // Double check it worked
+      window.setTimeout(() => {
+        console.log(`VERIFICATION: PIN ${id} is now unlocked: ${isPinUnlocked(id)}`);
+      }, 100);
+    } catch (error) {
+      console.error("Error unlocking PIN:", error);
+    }
   }, []);
 
   // Lock a PIN
   const lockPin = useCallback((id: number): void => {
     console.log(`Locking PIN ${id}`);
-    lockPinStorage(id);
-    setUnlockedPins(prev => prev.filter(pinId => pinId !== id));
+    try {
+      // Update state
+      setUnlockedPins(prev => prev.filter(pinId => pinId !== id));
+      
+      // Update storage
+      lockPinStorage(id);
+    } catch (error) {
+      console.error("Error locking PIN:", error);
+    }
   }, []);
 
   return (
