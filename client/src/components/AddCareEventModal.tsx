@@ -273,12 +273,25 @@ export default function AddCareEventModal({
     }
     
     try {
-      // Force proper formatting for the meal type submission
-      const submissionData = {
+      // Create the date-time string for the event
+      const dateTimeStr = `${data.date}T${data.time}:00`;
+      console.log("Creating datetime from:", dateTimeStr);
+      
+      // Create submission data with appropriate fields for the event type
+      let submissionData = {
         ...data,
         type: eventType,
         careRecipientId: parseInt(careRecipientId)
       };
+      
+      // Add event-specific fields
+      if (eventType === "bowel") {
+        // Ensure occuredAt is properly formatted
+        submissionData = {
+          ...submissionData,
+          occuredAt: dateTimeStr
+        };
+      }
       
       console.log("Final submission data:", submissionData);
       
@@ -290,7 +303,16 @@ export default function AddCareEventModal({
 
   const handleTypeChange = (type: EventType) => {
     setEventType(type);
+    
+    // Reset form values when changing types to prevent 
+    // data from one event type carrying over to another
     form.setValue("type", type);
+    form.setValue("name", "");  // Clear the name/type/food field
+    
+    // Reset specific fields based on the new type
+    if (type === "meal") {
+      form.setValue("mealType", "breakfast");
+    }
   };
 
   return (

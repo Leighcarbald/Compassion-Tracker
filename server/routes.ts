@@ -291,11 +291,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Received bowel movement creation request with body:', req.body);
       
-      // Ensure careRecipientId is a number
-      const movementData = { 
-        ...req.body,
-        careRecipientId: parseInt(req.body.careRecipientId.toString())
+      // Transform the data received from the form 
+      let movementData: any = {
+        careRecipientId: parseInt(req.body.careRecipientId.toString()),
+        notes: req.body.notes || '',
+        type: req.body.name || 'Regular' // The type is in the name field from the form
       };
+      
+      // Handle date and time fields for occuredAt
+      if (req.body.occuredAt) {
+        // If occuredAt is directly provided, use it
+        movementData.occuredAt = new Date(req.body.occuredAt);
+      } else if (req.body.date && req.body.time) {
+        // Otherwise construct from date and time fields
+        const dateTimeStr = `${req.body.date}T${req.body.time}:00`;
+        movementData.occuredAt = new Date(dateTimeStr);
+        console.log('Created occuredAt from date/time:', dateTimeStr, movementData.occuredAt);
+      } else {
+        // Default to current time if no time provided
+        movementData.occuredAt = new Date();
+      }
       
       console.log('Processed bowel movement data:', movementData);
       
