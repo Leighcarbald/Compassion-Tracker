@@ -33,6 +33,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [activeFilter, setActiveFilter] = useState<'today' | 'week' | 'all'>('today');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [takenMedicationIds, setTakenMedicationIds] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   // Fetch care recipients
@@ -100,9 +101,10 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         title: "Medication Taken",
         description: "Successfully logged the medication as taken"
       });
-      // Refresh logs and medication data
+      // Refresh logs, medication data, and care stats
       queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
     },
     onError: (error) => {
       toast({
