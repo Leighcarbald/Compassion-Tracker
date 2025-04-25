@@ -185,6 +185,7 @@ export const emergencyInfo = pgTable("emergency_info", {
   bloodType: text("blood_type"),
   advanceDirectives: boolean("advance_directives").default(false),
   dnrOrder: boolean("dnr_order").default(false),
+  pinHash: text("pin_hash"), // Securely stored PIN hash
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });

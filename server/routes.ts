@@ -468,6 +468,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error updating emergency info' });
     }
   });
+  
+  // PIN Verification for Emergency Info
+  app.post(`${apiPrefix}/emergency-info/:id/verify-pin`, isAuthenticated, async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { pin } = req.body;
+      
+      if (!pin) {
+        return res.status(400).json({ message: 'PIN is required' });
+      }
+      
+      const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
+      
+      if (!emergencyInfo) {
+        return res.status(404).json({ message: 'Emergency info not found' });
+      }
+      
+      const isPinValid = await storage.verifyEmergencyInfoPin(parseInt(id), pin);
+      
+      if (!isPinValid) {
+        return res.status(401).json({ message: 'Invalid PIN' });
+      }
+      
+      res.status(200).json({ message: 'PIN verified successfully', verified: true });
+    } catch (error) {
+      console.error('Error verifying PIN:', error);
+      res.status(500).json({ message: 'Error verifying PIN' });
+    }
+  });
+  
+  // Set PIN for Emergency Info
+  app.post(`${apiPrefix}/emergency-info/:id/set-pin`, isAuthenticated, async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { pin } = req.body;
+      
+      if (!pin) {
+        return res.status(400).json({ message: 'PIN is required' });
+      }
+      
+      // Validate PIN format (4 digits)
+      if (!/^\d{4}$/.test(pin)) {
+        return res.status(400).json({ message: 'PIN must be a 4-digit number' });
+      }
+      
+      const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
+      
+      if (!emergencyInfo) {
+        return res.status(404).json({ message: 'Emergency info not found' });
+      }
+      
+      await storage.setEmergencyInfoPin(parseInt(id), pin);
+      
+      res.status(200).json({ message: 'PIN set successfully' });
+    } catch (error) {
+      console.error('Error setting PIN:', error);
+      res.status(500).json({ message: 'Error setting PIN' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
