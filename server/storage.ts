@@ -239,14 +239,68 @@ export const storage = {
   },
   
   async getMedicationsNeedingReorder(careRecipientId: number) {
-    return db.query.medications.findMany({
-      where: and(
-        eq(medications.careRecipientId, careRecipientId),
-        lte(medications.currentQuantity, medications.reorderThreshold)
-      ),
+    const today = new Date();
+    // Calculate date thresholds for each medication based on their daysToReorder
+    
+    // Get all medications for this care recipient
+    const allMeds = await db.query.medications.findMany({
+      where: eq(medications.careRecipientId, careRecipientId),
       with: {
-        prescribingDoctor: true
+        schedules: true
       }
+    });
+    
+    // Filter medications that need reordering based on:
+    // 1. Quantity is at or below threshold
+    // 2. Scheduled to be taken within daysToReorder days
+    return allMeds.filter(med => {
+      // Check if quantity is at or below threshold
+      const quantityLow = (med.currentQuantity !== null && 
+                            med.currentQuantity <= (med.reorderThreshold || 5));
+      
+      // If we have a low quantity, this medication needs reordering
+      if (quantityLow) {
+        return true;
+      }
+      
+      // Otherwise, use the daysToReorder setting
+      // Check if we would go below threshold within daysToReorder days
+      const daysToReorder = med.daysToReorder || 7; // Default to 7 days if not set
+      const schedules = med.schedules || [];
+      
+      // Skip medications with no schedules
+      if (schedules.length === 0) {
+        return false;
+      }
+      
+      // Calculate daily usage based on schedules
+      let estimatedDailyUsage = 0;
+      
+      schedules.forEach(schedule => {
+        // Extract quantity number from string (e.g., "2 tablets" -> 2)
+        const quantityMatch = (schedule.quantity || "1").match(/^(\d+)/);
+        const qty = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+        
+        // Count active days in the week
+        const daysOfWeek = schedule.daysOfWeek as number[];
+        const activeDays = Array.isArray(daysOfWeek) ? daysOfWeek.length : 7;
+        
+        // Calculate average daily usage from this schedule
+        estimatedDailyUsage += (qty * activeDays) / 7;
+      });
+      
+      // If we have no usage, this medication doesn't need reordering yet
+      if (estimatedDailyUsage === 0) {
+        return false;
+      }
+      
+      // Calculate how many days until we hit the threshold
+      const currentQuantity = med.currentQuantity || 0;
+      const reorderThreshold = med.reorderThreshold || 5;
+      const daysUntilThreshold = Math.floor((currentQuantity - reorderThreshold) / estimatedDailyUsage);
+      
+      // If we'll hit threshold within daysToReorder, we need to reorder
+      return daysUntilThreshold <= daysToReorder;
     });
   },
   
