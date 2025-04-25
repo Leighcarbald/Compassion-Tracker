@@ -5,11 +5,12 @@ import AddCareEventModal from "@/components/AddCareEventModal";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { CareRecipient, Appointment } from "@shared/schema";
 import { TabType } from "@/lib/types";
 import { formatTime } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -39,9 +40,22 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
   }
 
   // Fetch appointments
-  const { data: appointments, isLoading: isLoadingAppointments } = useQuery<Appointment[]>({
+  const { data: appointments, isLoading: isLoadingAppointments, refetch: refetchAppointments } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments', activeCareRecipient, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null],
     enabled: !!activeCareRecipient && !!selectedDate,
+  });
+  
+  // Delete appointment mutation
+  const { mutate: deleteAppointment } = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/appointments/${id}`);
+    },
+    onSuccess: () => {
+      refetchAppointments();
+    },
+    onError: (error: Error) => {
+      console.error('Error deleting appointment:', error);
+    }
   });
 
   // Handle modal open/close
@@ -130,7 +144,12 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
                               </div>
                             )}
                           </div>
-                          <Button size="sm" variant="ghost" className="text-gray-400 h-8 w-8 p-0">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-gray-400 h-8 w-8 p-0"
+                            onClick={() => deleteAppointment(appointment.id)}
+                          >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>

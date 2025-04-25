@@ -447,6 +447,11 @@ export const storage = {
     const [newAppointment] = await db.insert(appointments).values(validatedData).returning();
     return newAppointment;
   },
+  
+  async deleteAppointment(id: number) {
+    await db.delete(appointments).where(eq(appointments.id, id));
+    return { success: true };
+  },
 
   // Meals
   async getMeals(careRecipientId: number) {

@@ -222,6 +222,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating appointment' });
     }
   });
+  
+  app.delete(`${apiPrefix}/appointments/:id`, async (req, res) => {
+    try {
+      const appointmentId = parseInt(req.params.id);
+      await storage.deleteAppointment(appointmentId);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      res.status(500).json({ message: 'Error deleting appointment' });
+    }
+  });
 
   // Meals
   app.get(`${apiPrefix}/meals`, async (req, res) => {
