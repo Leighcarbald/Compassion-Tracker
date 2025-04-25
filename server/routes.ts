@@ -95,11 +95,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(`${apiPrefix}/medications/:id/inventory`, async (req, res) => {
     try {
       const medicationId = parseInt(req.params.id);
-      const { currentQuantity, reorderThreshold, originalQuantity, refillsRemaining, lastRefillDate } = req.body;
+      const { currentQuantity, reorderThreshold, daysToReorder, originalQuantity, refillsRemaining, lastRefillDate } = req.body;
       
       const updatedMedication = await storage.updateMedicationInventory(
         medicationId, 
-        { currentQuantity, reorderThreshold, originalQuantity, refillsRemaining, lastRefillDate }
+        { currentQuantity, reorderThreshold, daysToReorder, originalQuantity, refillsRemaining, lastRefillDate }
       );
       
       res.json(updatedMedication);

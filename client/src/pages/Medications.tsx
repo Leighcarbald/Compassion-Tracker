@@ -2,18 +2,22 @@ import { useState } from "react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import AddCareEventModal from "@/components/AddCareEventModal";
+import MedicationInventoryModal from "@/components/MedicationInventoryModal";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { MedicationLog, CareRecipient, Medication } from "@shared/schema";
 import { TabType } from "@/lib/types";
 import { formatTime, getTimeAgo } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Pill, 
   Check, 
   PillBottle, 
   Tablets, 
   Package2,
-  Plus 
+  Plus,
+  AlertTriangle
 } from "lucide-react";
 
 interface MedicationsProps {
@@ -25,6 +29,9 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'today' | 'week' | 'all'>('today');
+  const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const { toast } = useToast();
 
   // Fetch care recipients
   const { data: careRecipients, isLoading: isLoadingRecipients } = useQuery<CareRecipient[]>({
@@ -56,6 +63,56 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   // Handle recipient change
   const handleChangeRecipient = (id: string) => {
     setActiveCareRecipient(id);
+  };
+
+  // Handle updating inventory
+  const handleInventoryUpdate = (medicationId: number) => {
+    const medication = medications?.find(med => med.id === medicationId) || null;
+    if (medication) {
+      setSelectedMedication(medication);
+      setIsInventoryModalOpen(true);
+    }
+  };
+
+  // Handle marking a medication as taken
+  const markAsTakenMutation = useMutation({
+    mutationFn: async (medicationId: number) => {
+      if (!activeCareRecipient) return null;
+      
+      const response = await apiRequest(
+        "POST", 
+        `/api/medication-logs`,
+        {
+          medicationId,
+          careRecipientId: parseInt(activeCareRecipient),
+          taken: true,
+          takenAt: new Date(),
+          notes: "Taken manually"
+        }
+      );
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Medication Taken",
+        description: "Successfully logged the medication as taken"
+      });
+      // Refresh logs and medication data
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to log medication: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleMarkAsTaken = (medicationId: number) => {
+    markAsTakenMutation.mutate(medicationId);
   };
 
   // Render medication icon based on the type
@@ -225,6 +282,13 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         onClose={() => setIsModalOpen(false)} 
         careRecipientId={activeCareRecipient}
         defaultEventType="medication"
+      />
+      
+      {/* Inventory Management Modal */}
+      <MedicationInventoryModal
+        isOpen={isInventoryModalOpen}
+        onClose={() => setIsInventoryModalOpen(false)}
+        medication={selectedMedication}
       />
     </>
   );
