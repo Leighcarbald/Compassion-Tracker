@@ -127,7 +127,7 @@ export default function AddCareEventModal({
             scheduleId: null, // Manual entry doesn't have a schedule
             takenAt: dateTime.toISOString(),
             notes: data.notes || "",
-            careRecipientId: data.careRecipientId
+            careRecipientId: parseInt(data.careRecipientId.toString())
           };
           console.log("Submitting medication data:", postData);
           break;
@@ -152,7 +152,7 @@ export default function AddCareEventModal({
             food: data.name,
             notes: data.notes || "",
             consumedAt: dateTime.toISOString(),
-            careRecipientId: data.careRecipientId
+            careRecipientId: parseInt(data.careRecipientId.toString())
           };
           console.log("Submitting meal data:", postData);
           break;
@@ -162,7 +162,7 @@ export default function AddCareEventModal({
             type: data.name || "Regular",
             notes: data.notes || "",
             occuredAt: dateTime.toISOString(),
-            careRecipientId: data.careRecipientId
+            careRecipientId: parseInt(data.careRecipientId.toString())
           };
           console.log("Submitting bowel movement data:", postData);
           break;
@@ -174,7 +174,7 @@ export default function AddCareEventModal({
             time: data.time,
             notes: data.notes || "",
             reminderEnabled: data.reminder,
-            careRecipientId: data.careRecipientId
+            careRecipientId: parseInt(data.careRecipientId.toString())
           };
           console.log("Submitting appointment data:", postData);
           break;
@@ -220,7 +220,10 @@ export default function AddCareEventModal({
   });
 
   const onSubmit = (data: z.infer<typeof eventSchema>) => {
-    if (!careRecipientId) return;
+    if (!careRecipientId) {
+      console.error("Missing careRecipientId");
+      return;
+    }
     
     console.log("Submitting form with data:", {
       ...data,
@@ -235,12 +238,42 @@ export default function AddCareEventModal({
       return;
     }
     
+    // Ensure all required fields are present for the specific event type
+    if (eventType === "meal" && !data.mealType) {
+      console.error("Meal type is required");
+      form.setError("mealType", { message: "Please select a meal type" });
+      return;
+    }
+    
+    if (!data.name || data.name.trim() === "") {
+      console.error("Name/food is required");
+      form.setError("name", { message: "This field is required" });
+      return;
+    }
+    
+    if (!data.date) {
+      console.error("Date is required");
+      form.setError("date", { message: "Please select a date" });
+      return;
+    }
+    
+    if (!data.time) {
+      console.error("Time is required");
+      form.setError("time", { message: "Please enter a time" });
+      return;
+    }
+    
     try {
-      addEvent.mutate({
+      // Force proper formatting for the meal type submission
+      const submissionData = {
         ...data,
         type: eventType,
         careRecipientId: parseInt(careRecipientId)
-      });
+      };
+      
+      console.log("Final submission data:", submissionData);
+      
+      addEvent.mutate(submissionData);
     } catch (error) {
       console.error("Error submitting form:", error);
     }
