@@ -58,14 +58,16 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Fetch care recipients
   const { data: careRecipients = [] } = useQuery<CareRecipient[]>({
     queryKey: ["/api/care-recipients"],
-    onSuccess: (data: CareRecipient[]) => {
-      // Auto-select first care recipient if none is selected
-      if (!selectedCareRecipient && data.length > 0) {
-        console.log('Auto-selecting first care recipient:', data[0].id);
-        setSelectedCareRecipient(data[0].id.toString());
-      }
-    }
+    // Handle the success separately in useEffect to fix TypeScript error
   });
+  
+  // Handle auto-selection after data is fetched
+  useEffect(() => {
+    if (careRecipients.length > 0 && !selectedCareRecipient) {
+      console.log('Auto-selecting first care recipient:', careRecipients[0].id);
+      setSelectedCareRecipient(careRecipients[0].id.toString());
+    }
+  }, [careRecipients, selectedCareRecipient]);
 
   // Fetch emergency info for selected care recipient
   const { data: emergencyInfo, isLoading, error: emergencyInfoError } = useQuery<EmergencyInfoType>({
@@ -303,10 +305,31 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       setPin("");
       setPinError("");
       
-      // Clear the authenticated state when locking
+      // Clear the authenticated state on both client and server
       if (emergencyInfo?.id) {
+        // Clear client-side PIN
         lockPin(emergencyInfo.id);
-        console.log(`Locked PIN access for emergency info #${emergencyInfo.id}`);
+        console.log(`Locked PIN access for emergency info #${emergencyInfo.id} (client-side)`);
+        
+        // Clear server-side cookie by calling the lock endpoint
+        fetch(`/api/emergency-info/${emergencyInfo.id}/lock`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Server-side lock response:', data);
+          if (data.success) {
+            console.log(`Successfully cleared server-side PIN verification cookie for ID ${emergencyInfo.id}`);
+          } else {
+            console.error(`Failed to clear server PIN verification: ${data.message}`);
+          }
+        })
+        .catch(error => {
+          console.error('Error clearing server PIN verification:', error);
+        });
         
         toast({
           title: "Information Locked",

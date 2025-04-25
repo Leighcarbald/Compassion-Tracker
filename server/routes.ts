@@ -809,6 +809,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Clear PIN verification (lock emergency info)
+  app.post(`${apiPrefix}/emergency-info/:id/lock`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        console.log(`Lock failed: Invalid ID ${req.params.id}`);
+        return res.status(400).json({ message: 'Invalid emergency info ID', success: false });
+      }
+      
+      // Clear the cookie that indicates PIN verification by setting it to expired
+      const cookieName = `emergency_info_verified_${id}`;
+      res.clearCookie(cookieName);
+      
+      console.log(`PIN verification cookie cleared for emergency info #${id}`);
+      return res.status(200).json({ 
+        message: 'Emergency info locked successfully',
+        success: true,
+        id
+      });
+    } catch (error) {
+      console.error('Error locking emergency info:', error);
+      res.status(500).json({ message: 'Server error', success: false });
+    }
+  });
+  
   // Set PIN for Emergency Info
   app.post(`${apiPrefix}/emergency-info/:id/set-pin`, async (req, res) => {
     try {
