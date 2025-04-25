@@ -289,11 +289,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/bowel-movements`, async (req, res) => {
     try {
-      const newMovement = await storage.createBowelMovement(req.body);
+      console.log('Received bowel movement creation request with body:', req.body);
+      
+      // Ensure careRecipientId is a number
+      const movementData = { 
+        ...req.body,
+        careRecipientId: parseInt(req.body.careRecipientId.toString())
+      };
+      
+      console.log('Processed bowel movement data:', movementData);
+      
+      const newMovement = await storage.createBowelMovement(movementData);
+      console.log('Bowel movement created successfully:', newMovement);
+      
       res.status(201).json(newMovement);
     } catch (error) {
       console.error('Error creating bowel movement:', error);
-      res.status(500).json({ message: 'Error creating bowel movement' });
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: 'Error creating bowel movement', 
+          error: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      } else {
+        res.status(500).json({ message: 'Unknown error creating bowel movement' });
+      }
     }
   });
   

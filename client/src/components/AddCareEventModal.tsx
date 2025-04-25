@@ -157,6 +157,15 @@ export default function AddCareEventModal({
           console.log("Submitting meal data:", postData);
           break;
         case "bowel":
+          // More detailed logging for bowel movement creation
+          console.log("Creating bowel movement with data:", {
+            type: data.name,
+            date: data.date,
+            time: data.time,
+            dateTimeStr,
+            dateTimeObj: dateTime
+          });
+          
           endpoint = "/api/bowel-movements";
           postData = {
             type: data.name || "Regular",
