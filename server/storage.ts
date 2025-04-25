@@ -50,6 +50,10 @@ import { format, startOfDay, endOfDay, addHours, formatDistance, isToday } from 
 let lastResetDate = new Date();
 let midnightResetInitialized = false;
 
+// For daily inspiration
+let todaysInspiration: { message: string; author: string } | null = null;
+let lastInspirationDate = new Date();
+
 // Helper function to check if a date is from today
 const isDateFromToday = (date: Date): boolean => {
   return isToday(new Date(date));
@@ -105,6 +109,11 @@ export const scheduleMidnightReset = () => {
       console.log('Executing midnight reset for daily stats');
       // Reset the date so the next getTodayDateRange call will trigger a reset
       lastResetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // Also reset the daily inspiration
+      todaysInspiration = null;
+      lastInspirationDate = new Date();
+      console.log('Daily inspiration reset for a new day');
       
       // Schedule next day's reset
       setTimeout(runMidnightReset, 1000);
