@@ -16,65 +16,81 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
-// Using sessionStorage for persistence during browser session
-// Will be lost when tab is closed, but persists during navigation
 
-// Storage key for authorized emergency info IDs
-const SESSION_STORAGE_KEY = 'unlocked_emergency_pins';
+// Extend the Window interface for TypeScript
+declare global {
+  interface Window {
+    emergencyUnlockedPins: Set<number>;
+  }
+}
 
-// Get all unlocked PINs
-function getUnlockedPins(): number[] {
-  try {
-    const data = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    console.log('Session storage data:', data);
-    if (!data) return [];
+// Super simple approach using window object as a temporary store
+// This will ensure PIN persistence during navigation
+
+// Init function to ensure the store exists
+function initPinStorage() {
+  if (!window.emergencyUnlockedPins) {
+    console.log('Initializing emergencyUnlockedPins storage');
+    window.emergencyUnlockedPins = new Set();
     
-    const ids = JSON.parse(data);
-    console.log('Parsed PIN IDs:', ids);
-    return Array.isArray(ids) ? ids : [];
-  } catch (error) {
-    console.error('Error reading from sessionStorage:', error);
-    return [];
+    // Try to load any previously stored pins from sessionStorage
+    try {
+      const storedPins = sessionStorage.getItem('emergency_pins');
+      if (storedPins) {
+        const pins = JSON.parse(storedPins);
+        if (Array.isArray(pins)) {
+          pins.forEach(id => window.emergencyUnlockedPins.add(Number(id)));
+        }
+        console.log('Loaded pins from sessionStorage:', pins);
+      }
+    } catch (e) {
+      console.error('Failed to load pins from sessionStorage:', e);
+    }
   }
 }
 
-// Save unlocked PINs
-function saveUnlockedPins(ids: number[]): void {
-  try {
-    console.log('Saving unlocked PINs to sessionStorage:', ids);
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(ids));
-  } catch (error) {
-    console.error('Error saving to sessionStorage:', error);
-  }
-}
+// Initialize the storage
+initPinStorage();
 
 // Check if PIN is unlocked
 function isPinUnlocked(id: number): boolean {
-  console.log(`Checking if emergency info ID ${id} is unlocked`);
-  const ids = getUnlockedPins();
-  const isUnlocked = ids.includes(id);
-  console.log(`Emergency info ID ${id} is unlocked:`, isUnlocked);
+  console.log(`CHECKING PIN UNLOCK STATUS FOR ID ${id}`);
+  const isUnlocked = window.emergencyUnlockedPins.has(id);
+  console.log(`IS PIN ${id} UNLOCKED? ${isUnlocked}`);
+  
+  // Extra debugging
+  console.log(`All unlocked PINs:`, Array.from(window.emergencyUnlockedPins));
+  
   return isUnlocked;
 }
 
 // Unlock PIN
 function unlockPin(id: number): void {
-  console.log(`Unlocking emergency info ID ${id}`);
-  const ids = getUnlockedPins();
-  if (!ids.includes(id)) {
-    ids.push(id);
-    saveUnlockedPins(ids);
+  console.log(`UNLOCKING EMERGENCY INFO ID ${id}`);
+  window.emergencyUnlockedPins.add(id);
+  console.log(`UPDATED UNLOCKED PINS:`, Array.from(window.emergencyUnlockedPins));
+  
+  // Also save to sessionStorage as a fallback
+  try {
+    sessionStorage.setItem('emergency_pins', JSON.stringify(Array.from(window.emergencyUnlockedPins)));
+    console.log('Backup saved to sessionStorage');
+  } catch (e) {
+    console.error('Failed to backup to sessionStorage:', e);
   }
 }
 
 // Lock PIN
 function lockPin(id: number): void {
-  console.log(`Locking emergency info ID ${id}`);
-  const ids = getUnlockedPins();
-  const index = ids.indexOf(id);
-  if (index !== -1) {
-    ids.splice(index, 1);
-    saveUnlockedPins(ids);
+  console.log(`LOCKING EMERGENCY INFO ID ${id}`);
+  window.emergencyUnlockedPins.delete(id);
+  console.log(`UPDATED UNLOCKED PINS:`, Array.from(window.emergencyUnlockedPins));
+  
+  // Also update sessionStorage
+  try {
+    sessionStorage.setItem('emergency_pins', JSON.stringify(Array.from(window.emergencyUnlockedPins)));
+    console.log('Backup saved to sessionStorage');
+  } catch (e) {
+    console.error('Failed to backup to sessionStorage:', e);
   }
 }
 
@@ -315,8 +331,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   });
   
   const handlePinSubmit = () => {
-    if (pin.length !== 4) {
-      setPinError('PIN must be 4 digits');
+    if (pin.length !== 6) {
+      setPinError('PIN must be 6 digits');
       return;
     }
     
@@ -757,7 +773,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     }
                   }
                 }} 
-                disabled={pin.length !== 4 || setPinMutation.isPending}
+                disabled={pin.length !== 6 || setPinMutation.isPending}
               >
                 {setPinMutation.isPending ? 'Creating...' : 'Create PIN'}
               </Button>
@@ -787,7 +803,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           <DialogHeader>
             <DialogTitle>Set New Security PIN</DialogTitle>
             <DialogDescription>
-              Create a new 4-digit PIN to protect sensitive emergency information.
+              Create a new 6-digit PIN to protect sensitive emergency information.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -796,8 +812,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               <Input
                 id="newPin"
                 type="password"
-                placeholder="Enter 4-digit PIN"
-                maxLength={4}
+                placeholder="Enter 6-digit PIN"
+                maxLength={6}
                 value={pin}
                 onChange={(e) => {
                   // Only allow numeric input
@@ -814,12 +830,12 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
             <Button 
               type="button" 
               onClick={() => {
-                if (pin.length === 4) {
+                if (pin.length === 6) {
                   setPinMutation.mutate(pin);
                   setPin("");
                 }
               }} 
-              disabled={pin.length !== 4 || setPinMutation.isPending}
+              disabled={pin.length !== 6 || setPinMutation.isPending}
             >
               {setPinMutation.isPending ? 'Saving...' : 'Save PIN'}
             </Button>
