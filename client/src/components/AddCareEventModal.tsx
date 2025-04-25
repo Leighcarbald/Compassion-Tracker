@@ -397,7 +397,7 @@ export default function AddCareEventModal({
                   type="button"
                   className={`p-2 ${
                     eventType === "meal"
-                      ? "bg-primary bg-opacity-10 text-primary"
+                      ? "bg-gray-200 text-gray-900 font-medium"
                       : "bg-gray-100 text-gray-700"
                   } rounded-md flex flex-col items-center`}
                   onClick={() => handleTypeChange("meal")}
@@ -409,7 +409,7 @@ export default function AddCareEventModal({
                   type="button"
                   className={`p-2 ${
                     eventType === "bowel"
-                      ? "bg-primary bg-opacity-10 text-primary"
+                      ? "bg-gray-200 text-gray-900 font-medium"
                       : "bg-gray-100 text-gray-700"
                   } rounded-md flex flex-col items-center`}
                   onClick={() => handleTypeChange("bowel")}
@@ -421,7 +421,7 @@ export default function AddCareEventModal({
                   type="button"
                   className={`p-2 ${
                     eventType === "sleep"
-                      ? "bg-primary bg-opacity-10 text-primary"
+                      ? "bg-gray-200 text-gray-900 font-medium"
                       : "bg-gray-100 text-gray-700"
                   } rounded-md flex flex-col items-center`}
                   onClick={() => handleTypeChange("sleep")}
