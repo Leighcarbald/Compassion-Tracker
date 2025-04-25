@@ -129,6 +129,7 @@ export default function AddCareEventModal({
             notes: data.notes || "",
             careRecipientId: data.careRecipientId
           };
+          console.log("Submitting medication data:", postData);
           break;
         case "meal":
           if (!data.mealType) {
@@ -143,6 +144,7 @@ export default function AddCareEventModal({
             consumedAt: dateTime.toISOString(),
             careRecipientId: data.careRecipientId
           };
+          console.log("Submitting meal data:", postData);
           break;
         case "bowel":
           endpoint = "/api/bowel-movements";
@@ -164,8 +166,11 @@ export default function AddCareEventModal({
             reminderEnabled: data.reminder,
             careRecipientId: data.careRecipientId
           };
+          console.log("Submitting appointment data:", postData);
           break;
       }
+      
+      console.log(`Sending request to ${endpoint} with data:`, postData);
       
       try {
         const response = await apiRequest("POST", endpoint, postData);
@@ -213,11 +218,22 @@ export default function AddCareEventModal({
       careRecipientId: parseInt(careRecipientId)
     });
     
-    addEvent.mutate({
-      ...data,
-      type: eventType,
-      careRecipientId: parseInt(careRecipientId)
-    });
+    // Add form validation errors check
+    const formErrors = form.formState.errors;
+    if (Object.keys(formErrors).length > 0) {
+      console.error("Form has validation errors:", formErrors);
+      return;
+    }
+    
+    try {
+      addEvent.mutate({
+        ...data,
+        type: eventType,
+        careRecipientId: parseInt(careRecipientId)
+      });
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    }
   };
 
   const handleTypeChange = (type: EventType) => {
