@@ -9,6 +9,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -48,6 +49,7 @@ const eventSchema = z.object({
   name: z.string().min(1, "Event name is required"),
   date: z.string().min(1, "Date is required"),
   time: z.string().min(1, "Time is required"),
+  wakeUpTime: z.string().optional(),
   notes: z.string().optional(),
   reminder: z.boolean().default(false),
   careRecipientId: z.number().positive(),
@@ -83,6 +85,7 @@ export default function AddCareEventModal({
       name: "",
       date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
       time: format(new Date(), "HH:mm"),
+      wakeUpTime: "",
       notes: "",
       reminder: true,
       careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
@@ -100,6 +103,7 @@ export default function AddCareEventModal({
         name: "",
         date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
         time: format(new Date(), "HH:mm"),
+        wakeUpTime: "",
         notes: "",
         reminder: false,
         careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
@@ -203,19 +207,26 @@ export default function AddCareEventModal({
           console.log("Creating sleep record with data:", {
             quality: data.name,
             date: data.date,
-            time: data.time,
+            bedTime: data.time,
+            wakeUpTime: data.wakeUpTime,
             dateTimeStr,
             dateTimeObj: dateTime
           });
+          
+          // Create wake up datetime if provided
+          let wakeUpDateTime = null;
+          if (data.wakeUpTime && data.wakeUpTime.trim() !== '') {
+            const wakeUpDateTimeStr = `${data.date}T${data.wakeUpTime}:00`;
+            wakeUpDateTime = new Date(wakeUpDateTimeStr);
+            console.log("Created wake up datetime from:", wakeUpDateTimeStr, wakeUpDateTime);
+          }
           
           endpoint = "/api/sleep";
           postData = {
             quality: data.name || "Normal",
             notes: data.notes || "",
             startTime: dateTime.toISOString(),
-            // For now, we'll set endTime to null, since this is typically when sleep starts
-            // The end time would be recorded separately when the person wakes up
-            endTime: null,
+            endTime: wakeUpDateTime ? wakeUpDateTime.toISOString() : null,
             careRecipientId: parseInt(data.careRecipientId.toString())
           };
           console.log("Submitting sleep data:", postData);
@@ -358,6 +369,7 @@ export default function AddCareEventModal({
       name: "", // Clear the name/type/food field
       date: form.getValues("date"),  // Preserve the date
       time: form.getValues("time"),  // Preserve the time
+      wakeUpTime: "", // Reset wake up time
       notes: "", // Reset notes
       reminder: false,
       careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
