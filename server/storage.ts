@@ -870,10 +870,22 @@ export const storage = {
   },
   
   async verifyEmergencyInfoPin(id: number, pin: string) {
+    console.log(`Verifying PIN for emergency info #${id}`);
     const info = await this.getEmergencyInfoById(id);
-    if (!info || !info.pinHash) return false;
     
-    return this.comparePin(pin, info.pinHash);
+    if (!info) {
+      console.log(`Emergency info #${id} not found`);
+      return false;
+    }
+    
+    if (!info.pinHash) {
+      console.log(`Emergency info #${id} does not have a PIN set`);
+      return false;
+    }
+    
+    const isValid = await this.comparePin(pin, info.pinHash);
+    console.log(`PIN verification result for emergency info #${id}: ${isValid ? 'VALID' : 'INVALID'}`);
+    return isValid;
   },
   
   async setEmergencyInfoPin(id: number, pin: string) {

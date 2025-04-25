@@ -6,6 +6,20 @@
 // Storage key for authorized emergency info IDs - this is the ONLY correct key
 const STORAGE_KEY = 'emergency_pins_unlocked';
 
+// Check for data in the old storage key and migrate it if found
+try {
+  const oldStoredData = localStorage.getItem('emergency_unlocked_pins');
+  if (oldStoredData && !localStorage.getItem(STORAGE_KEY)) {
+    console.log('Found data in old storage key, migrating to new key');
+    localStorage.setItem(STORAGE_KEY, oldStoredData);
+    console.log('Data migrated successfully');
+    // Clear old storage to avoid confusion
+    localStorage.removeItem('emergency_unlocked_pins');
+  }
+} catch (error) {
+  console.error('Error migrating PIN data:', error);
+}
+
 /**
  * Save an array of authorized emergency info IDs to localStorage
  */
