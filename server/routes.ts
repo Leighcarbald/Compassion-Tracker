@@ -409,25 +409,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let sleepData: any = {
         careRecipientId: parseInt(req.body.careRecipientId.toString()),
         notes: req.body.notes || '',
-        quality: req.body.name || 'Normal' // The quality is in the name field from the form
+        quality: req.body.quality || 'Normal' // Use the quality field directly
       };
       
-      // Handle date and time fields for startTime
+      // Handle bedTime (startTime)
       if (req.body.startTime) {
-        // If startTime is directly provided, use it
         sleepData.startTime = new Date(req.body.startTime);
-      } else if (req.body.date && req.body.time) {
-        // Otherwise construct from date and time fields
-        const dateTimeStr = `${req.body.date}T${req.body.time}:00`;
-        sleepData.startTime = new Date(dateTimeStr);
-        console.log('Created startTime from date/time:', dateTimeStr, sleepData.startTime);
       } else {
         // Default to current time if no time provided
         sleepData.startTime = new Date();
       }
       
-      // Set endTime to null for now since we're just tracking when someone goes to sleep
-      sleepData.endTime = null;
+      // Handle wakeTime (endTime) if provided
+      if (req.body.endTime) {
+        sleepData.endTime = new Date(req.body.endTime);
+      } else {
+        sleepData.endTime = null;
+      }
       
       console.log('Processed sleep record data:', sleepData);
       

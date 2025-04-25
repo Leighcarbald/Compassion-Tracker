@@ -201,6 +201,13 @@ export const storage = {
       limit: 3
     });
     
+    // Get recent sleep records
+    const sleepEvents = await db.query.sleep.findMany({
+      where: eq(sleep.careRecipientId, careRecipientId),
+      orderBy: desc(sleep.startTime),
+      limit: 1
+    });
+    
     // Combine and format events
     const events = [
       ...medicationEvents.map(schedule => ({
@@ -216,6 +223,13 @@ export const storage = {
         title: appointment.title,
         time: appointment.time,
         details: appointment.location
+      })),
+      ...sleepEvents.map(sleepRecord => ({
+        id: `sleep_${sleepRecord.id}`,
+        type: 'sleep',
+        title: sleepRecord.endTime ? 'Sleep Complete' : 'Sleep In Progress',
+        time: format(new Date(sleepRecord.startTime), 'HH:mm'),
+        details: `Quality: ${sleepRecord.quality || 'Not rated'}`
       }))
     ];
     

@@ -27,7 +27,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
   // Fetch upcoming events
   const { data: upcomingEvents, isLoading: isLoadingEvents } = useQuery<Array<{
     id: string;
-    type: 'medication' | 'appointment' | 'meal';
+    type: 'medication' | 'appointment' | 'meal' | 'sleep';
     title: string;
     time: string;
     details?: string;
@@ -107,12 +107,14 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
               upcomingEvents.map((event) => (
                 <div key={event.id} className="p-3 border-b border-gray-100 flex items-center">
                   <div 
-                    className={`w-10 h-10 rounded-full bg-${event.type === 'medication' ? 'primary' : event.type === 'meal' ? 'secondary' : 'blue-400'} bg-opacity-10 flex items-center justify-center mr-3 text-${event.type === 'medication' ? 'primary' : event.type === 'meal' ? 'secondary' : 'blue-400'}`}
+                    className={`w-10 h-10 rounded-full bg-${event.type === 'medication' ? 'primary' : event.type === 'meal' ? 'secondary' : event.type === 'sleep' ? 'blue-400' : 'accent'} bg-opacity-10 flex items-center justify-center mr-3 text-${event.type === 'medication' ? 'primary' : event.type === 'meal' ? 'secondary' : event.type === 'sleep' ? 'blue-400' : 'accent'}`}
                   >
                     {event.type === 'medication' ? (
                       <Pill className="h-5 w-5" />
                     ) : event.type === 'meal' ? (
                       <Utensils className="h-5 w-5" />
+                    ) : event.type === 'sleep' ? (
+                      <Moon className="h-5 w-5" />
                     ) : (
                       <span className="text-lg">👩‍⚕️</span>
                     )}
