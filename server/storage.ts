@@ -20,6 +20,9 @@ import {
   pharmacies,
   medicationPharmacies,
   emergencyInfo,
+  bloodPressure,
+  glucose,
+  insulin,
   insertUserSchema,
   insertCareRecipientSchema,
   insertMedicationSchema,
@@ -36,7 +39,10 @@ import {
   insertDoctorSchema,
   insertPharmacySchema,
   insertMedicationPharmacySchema,
-  insertEmergencyInfoSchema
+  insertEmergencyInfoSchema,
+  insertBloodPressureSchema,
+  insertGlucoseSchema,
+  insertInsulinSchema
 } from "@shared/schema";
 import { format, startOfDay, endOfDay, addHours, formatDistance } from "date-fns";
 
@@ -530,5 +536,47 @@ export const storage = {
       .where(eq(emergencyInfo.id, id));
     
     return this.getEmergencyInfoById(id);
+  },
+
+  // Blood Pressure Tracking
+  async getBloodPressureReadings(careRecipientId: number) {
+    return db.query.bloodPressure.findMany({
+      where: eq(bloodPressure.careRecipientId, careRecipientId),
+      orderBy: desc(bloodPressure.timeOfReading)
+    });
+  },
+
+  async createBloodPressureReading(readingData: any) {
+    const validatedData = insertBloodPressureSchema.parse(readingData);
+    const [newReading] = await db.insert(bloodPressure).values(validatedData).returning();
+    return newReading;
+  },
+
+  // Glucose Tracking
+  async getGlucoseReadings(careRecipientId: number) {
+    return db.query.glucose.findMany({
+      where: eq(glucose.careRecipientId, careRecipientId),
+      orderBy: desc(glucose.timeOfReading)
+    });
+  },
+
+  async createGlucoseReading(readingData: any) {
+    const validatedData = insertGlucoseSchema.parse(readingData);
+    const [newReading] = await db.insert(glucose).values(validatedData).returning();
+    return newReading;
+  },
+
+  // Insulin Tracking
+  async getInsulinRecords(careRecipientId: number) {
+    return db.query.insulin.findMany({
+      where: eq(insulin.careRecipientId, careRecipientId),
+      orderBy: desc(insulin.timeAdministered)
+    });
+  },
+
+  async createInsulinRecord(recordData: any) {
+    const validatedData = insertInsulinSchema.parse(recordData);
+    const [newRecord] = await db.insert(insulin).values(validatedData).returning();
+    return newRecord;
   }
 };

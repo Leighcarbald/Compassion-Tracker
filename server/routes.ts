@@ -528,6 +528,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Blood Pressure Tracking
+  app.get(`${apiPrefix}/blood-pressure`, isAuthenticated, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const readings = await storage.getBloodPressureReadings(parseInt(careRecipientId));
+      res.json(readings);
+    } catch (error) {
+      console.error('Error fetching blood pressure readings:', error);
+      res.status(500).json({ message: 'Error fetching blood pressure readings' });
+    }
+  });
+
+  app.post(`${apiPrefix}/blood-pressure`, isAuthenticated, async (req, res) => {
+    try {
+      const newReading = await storage.createBloodPressureReading(req.body);
+      res.status(201).json(newReading);
+    } catch (error) {
+      console.error('Error creating blood pressure reading:', error);
+      res.status(500).json({ message: 'Error creating blood pressure reading' });
+    }
+  });
+
+  // Glucose Tracking
+  app.get(`${apiPrefix}/glucose`, isAuthenticated, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const readings = await storage.getGlucoseReadings(parseInt(careRecipientId));
+      res.json(readings);
+    } catch (error) {
+      console.error('Error fetching glucose readings:', error);
+      res.status(500).json({ message: 'Error fetching glucose readings' });
+    }
+  });
+
+  app.post(`${apiPrefix}/glucose`, isAuthenticated, async (req, res) => {
+    try {
+      const newReading = await storage.createGlucoseReading(req.body);
+      res.status(201).json(newReading);
+    } catch (error) {
+      console.error('Error creating glucose reading:', error);
+      res.status(500).json({ message: 'Error creating glucose reading' });
+    }
+  });
+
+  // Insulin Tracking
+  app.get(`${apiPrefix}/insulin`, isAuthenticated, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const records = await storage.getInsulinRecords(parseInt(careRecipientId));
+      res.json(records);
+    } catch (error) {
+      console.error('Error fetching insulin records:', error);
+      res.status(500).json({ message: 'Error fetching insulin records' });
+    }
+  });
+
+  app.post(`${apiPrefix}/insulin`, isAuthenticated, async (req, res) => {
+    try {
+      const newRecord = await storage.createInsulinRecord(req.body);
+      res.status(201).json(newRecord);
+    } catch (error) {
+      console.error('Error creating insulin record:', error);
+      res.status(500).json({ message: 'Error creating insulin record' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
