@@ -10,6 +10,8 @@ import Notes from "@/pages/Notes";
 import Doctors from "@/pages/Doctors";
 import Pharmacies from "@/pages/Pharmacies";
 import EmergencyInfo from "@/pages/EmergencyInfo";
+import BloodPressure from "@/pages/BloodPressure";
+import GlucoseInsulin from "@/pages/GlucoseInsulin";
 import { useState } from "react";
 import { TabType } from "./lib/types";
 
@@ -39,6 +41,12 @@ function Router() {
         </Route>
         <Route path="/emergency">
           <EmergencyInfo activeTab={activeTab} setActiveTab={setActiveTab} />
+        </Route>
+        <Route path="/blood-pressure">
+          <BloodPressure activeTab={activeTab} setActiveTab={setActiveTab} />
+        </Route>
+        <Route path="/glucose-insulin">
+          <GlucoseInsulin activeTab={activeTab} setActiveTab={setActiveTab} />
         </Route>
         <Route component={NotFound} />
       </Switch>
