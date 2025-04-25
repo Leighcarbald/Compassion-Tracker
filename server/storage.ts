@@ -85,13 +85,8 @@ export const storage = {
       where: eq(medications.careRecipientId, careRecipientId)
     });
     
-    // Get medication stats using the medication IDs
-    const medicationCount = await db.query.medicationSchedules.findMany({
-      where: meds.length > 0 ? inArray(medicationSchedules.medicationId, meds.map(med => med.id)) : undefined,
-      with: {
-        medication: true
-      }
-    });
+    // Change from counting medication schedules to counting medications directly
+    // This will show medications even if they don't have schedules
     
     const takenMedications = await db.query.medicationLogs.findMany({
       where: and(
@@ -134,9 +129,9 @@ export const storage = {
     return {
       medications: {
         completed: takenMedications.length,
-        total: medicationCount.length,
-        progress: medicationCount.length > 0 
-          ? Math.round((takenMedications.length / medicationCount.length) * 100) 
+        total: meds.length,
+        progress: meds.length > 0 
+          ? Math.round((takenMedications.length / meds.length) * 100) 
           : 0
       },
       meals: {
