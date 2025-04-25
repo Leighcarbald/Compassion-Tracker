@@ -14,6 +14,7 @@ import BloodPressure from "@/pages/BloodPressure";
 import GlucoseInsulin from "@/pages/GlucoseInsulin";
 import { useState } from "react";
 import { TabType } from "./lib/types";
+import { PinAuthProvider } from "@/hooks/use-pin-auth";
 
 function Router() {
   const [activeTab, setActiveTab] = useState<TabType>("home");
@@ -58,7 +59,9 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      <PinAuthProvider>
+        <Router />
+      </PinAuthProvider>
     </QueryClientProvider>
   );
 }

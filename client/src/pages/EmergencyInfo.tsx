@@ -17,109 +17,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
 
-// Extend the Window interface for TypeScript
-declare global {
-  interface Window {
-    emergencyUnlockedPins: Set<number>;
-  }
-}
-
-// Super simple approach using window object as a temporary store
-// This will ensure PIN persistence during navigation
-
-// Init function to ensure the store exists
-function initPinStorage() {
-  if (!window.emergencyUnlockedPins) {
-    console.log('Initializing emergencyUnlockedPins storage');
-    window.emergencyUnlockedPins = new Set();
-    
-    // Try to load any previously stored pins from sessionStorage
-    try {
-      const storedPins = sessionStorage.getItem('emergency_pins');
-      if (storedPins) {
-        const pins = JSON.parse(storedPins);
-        if (Array.isArray(pins)) {
-          pins.forEach(id => window.emergencyUnlockedPins.add(Number(id)));
-        }
-        console.log('Loaded pins from sessionStorage:', pins);
-      }
-    } catch (e) {
-      console.error('Failed to load pins from sessionStorage:', e);
-    }
-  }
-}
-
-// Initialize the storage
-initPinStorage();
-
-// Check if PIN is unlocked
-function isPinUnlocked(id: number): boolean {
-  console.log(`CHECKING PIN UNLOCK STATUS FOR ID ${id}`);
-  
-  // Make absolutely sure our storage is initialized
-  initPinStorage();
-  
-  // First check the window object
-  const isUnlockedInWindow = window.emergencyUnlockedPins.has(id);
-  console.log(`Is PIN ${id} unlocked in window? ${isUnlockedInWindow}`);
-  
-  // Also double-check sessionStorage
-  let isUnlockedInSession = false;
-  try {
-    const storedPins = sessionStorage.getItem('emergency_pins');
-    if (storedPins) {
-      const pins = JSON.parse(storedPins);
-      isUnlockedInSession = Array.isArray(pins) && pins.includes(id);
-    }
-  } catch (e) {
-    console.error('Error reading from sessionStorage:', e);
-  }
-  console.log(`Is PIN ${id} unlocked in sessionStorage? ${isUnlockedInSession}`);
-  
-  // Use either source for the result (window object is primary)
-  const isUnlocked = isUnlockedInWindow || isUnlockedInSession;
-  
-  // If it's in session but not window, sync them
-  if (isUnlockedInSession && !isUnlockedInWindow) {
-    window.emergencyUnlockedPins.add(id);
-    console.log(`Synced PIN ${id} from sessionStorage to window`);
-  }
-  
-  console.log(`Final PIN ${id} unlocked status: ${isUnlocked}`);
-  console.log(`All unlocked PINs:`, Array.from(window.emergencyUnlockedPins));
-  
-  return isUnlocked;
-}
-
-// Unlock PIN
-function unlockPin(id: number): void {
-  console.log(`UNLOCKING EMERGENCY INFO ID ${id}`);
-  window.emergencyUnlockedPins.add(id);
-  console.log(`UPDATED UNLOCKED PINS:`, Array.from(window.emergencyUnlockedPins));
-  
-  // Also save to sessionStorage as a fallback
-  try {
-    sessionStorage.setItem('emergency_pins', JSON.stringify(Array.from(window.emergencyUnlockedPins)));
-    console.log('Backup saved to sessionStorage');
-  } catch (e) {
-    console.error('Failed to backup to sessionStorage:', e);
-  }
-}
-
-// Lock PIN
-function lockPin(id: number): void {
-  console.log(`LOCKING EMERGENCY INFO ID ${id}`);
-  window.emergencyUnlockedPins.delete(id);
-  console.log(`UPDATED UNLOCKED PINS:`, Array.from(window.emergencyUnlockedPins));
-  
-  // Also update sessionStorage
-  try {
-    sessionStorage.setItem('emergency_pins', JSON.stringify(Array.from(window.emergencyUnlockedPins)));
-    console.log('Backup saved to sessionStorage');
-  } catch (e) {
-    console.error('Failed to backup to sessionStorage:', e);
-  }
-}
+// Use our centralized PIN authentication hook for better state management
+import { usePinAuth } from "@/hooks/use-pin-auth";
 
 interface EmergencyInfoProps {
   activeTab: TabType;
@@ -140,13 +39,12 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Track initialization status
   const initialLoadRef = useRef(true);
 
+  // Use the PIN authentication context
+  const { isUnlocked, unlockPin, lockPin } = usePinAuth();
+  
   // Debug effect - run whenever the component mounts or re-renders
   useEffect(() => {
     console.log('🔍 EmergencyInfo component mounted/rendered');
-    console.log('🔑 Current unlocked PINs:', Array.from(window.emergencyUnlockedPins));
-    
-    // Re-init storage on component mount
-    initPinStorage();
     
     // Component cleanup
     return () => {
@@ -212,7 +110,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       });
       
       // Check if we have previously authenticated this emergency info
-      if (isPinUnlocked(emergencyInfo.id)) {
+      if (isUnlocked(emergencyInfo.id)) {
         console.log('Found record of PIN being unlocked, unlocking now');
         setIsLocked(false);
       } else {
