@@ -90,6 +90,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating medication' });
     }
   });
+  
+  // Update medication inventory
+  app.patch(`${apiPrefix}/medications/:id/inventory`, async (req, res) => {
+    try {
+      const medicationId = parseInt(req.params.id);
+      const { currentQuantity, reorderThreshold, originalQuantity, refillsRemaining, lastRefillDate } = req.body;
+      
+      const updatedMedication = await storage.updateMedicationInventory(
+        medicationId, 
+        { currentQuantity, reorderThreshold, originalQuantity, refillsRemaining, lastRefillDate }
+      );
+      
+      res.json(updatedMedication);
+    } catch (error) {
+      console.error('Error updating medication inventory:', error);
+      res.status(500).json({ message: 'Error updating medication inventory' });
+    }
+  });
+  
+  // Refill medication inventory
+  app.post(`${apiPrefix}/medications/:id/refill`, async (req, res) => {
+    try {
+      const medicationId = parseInt(req.params.id);
+      const { refillAmount, refillDate } = req.body;
+      
+      const updatedMedication = await storage.refillMedication(
+        medicationId, 
+        refillAmount, 
+        refillDate || new Date()
+      );
+      
+      res.json(updatedMedication);
+    } catch (error) {
+      console.error('Error refilling medication:', error);
+      res.status(500).json({ message: 'Error refilling medication' });
+    }
+  });
+  
+  // Get medications that need to be reordered
+  app.get(`${apiPrefix}/medications/reorder-alerts`, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const medications = await storage.getMedicationsNeedingReorder(parseInt(careRecipientId));
+      res.json(medications);
+    } catch (error) {
+      console.error('Error fetching medications needing reorder:', error);
+      res.status(500).json({ message: 'Error fetching medications needing reorder' });
+    }
+  });
 
   // Medication Logs
   app.get(`${apiPrefix}/medication-logs`, async (req, res) => {

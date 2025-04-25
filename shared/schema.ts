@@ -26,6 +26,12 @@ export const medications = pgTable("medications", {
   doctorId: integer("doctor_id").references(() => doctors.id),
   prescriptionNumber: text("prescription_number"),
   expirationDate: date("expiration_date"),
+  // Inventory tracking fields
+  currentQuantity: integer("current_quantity").default(0),
+  reorderThreshold: integer("reorder_threshold").default(5),
+  originalQuantity: integer("original_quantity").default(0), // Original prescription amount
+  refillsRemaining: integer("refills_remaining").default(0),
+  lastRefillDate: date("last_refill_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
