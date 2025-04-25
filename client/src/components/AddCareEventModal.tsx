@@ -31,9 +31,9 @@ import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format, parse } from "date-fns";
-import { Pill, Utensils, Toilet } from "lucide-react";
+import { Pill, Utensils, Toilet, Moon } from "lucide-react";
 
-type EventType = "medication" | "meal" | "bowel" | "appointment";
+type EventType = "medication" | "meal" | "bowel" | "appointment" | "sleep";
 
 interface AddCareEventModalProps {
   isOpen: boolean;
@@ -198,6 +198,28 @@ export default function AddCareEventModal({
           };
           console.log("Submitting bowel movement data:", postData);
           break;
+        case "sleep":
+          // Logging for sleep record creation
+          console.log("Creating sleep record with data:", {
+            quality: data.name,
+            date: data.date,
+            time: data.time,
+            dateTimeStr,
+            dateTimeObj: dateTime
+          });
+          
+          endpoint = "/api/sleep";
+          postData = {
+            quality: data.name || "Normal",
+            notes: data.notes || "",
+            startTime: dateTime.toISOString(),
+            // For now, we'll set endTime to null, since this is typically when sleep starts
+            // The end time would be recorded separately when the person wakes up
+            endTime: null,
+            careRecipientId: parseInt(data.careRecipientId.toString())
+          };
+          console.log("Submitting sleep data:", postData);
+          break;
         case "appointment":
           endpoint = "/api/appointments";
           postData = {
@@ -239,6 +261,9 @@ export default function AddCareEventModal({
           break;
         case "bowel":
           queryClient.invalidateQueries({ queryKey: ['/api/bowel-movements', careRecipientId] });
+          break;
+        case "sleep":
+          queryClient.invalidateQueries({ queryKey: ['/api/sleep', careRecipientId] });
           break;
         case "appointment":
           queryClient.invalidateQueries({ queryKey: ['/api/appointments', careRecipientId] });
@@ -354,7 +379,7 @@ export default function AddCareEventModal({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="mb-4">
               <FormLabel className="block text-sm font-medium text-gray-700 mb-1">Event Type</FormLabel>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
 
                 <Button
                   type="button"
@@ -379,6 +404,18 @@ export default function AddCareEventModal({
                 >
                   <Toilet className="h-5 w-5 mb-1" />
                   <span className="text-xs">Bowel</span>
+                </Button>
+                <Button
+                  type="button"
+                  className={`p-2 ${
+                    eventType === "sleep"
+                      ? "bg-primary bg-opacity-10 text-primary"
+                      : "bg-gray-100 text-gray-700"
+                  } rounded-md flex flex-col items-center`}
+                  onClick={() => handleTypeChange("sleep")}
+                >
+                  <Moon className="h-5 w-5 mb-1" />
+                  <span className="text-xs">Sleep</span>
                 </Button>
               </div>
             </div>
@@ -454,7 +491,9 @@ export default function AddCareEventModal({
                         ? "Food" 
                         : eventType === "bowel" 
                           ? "Type" 
-                          : "Name"}
+                          : eventType === "sleep"
+                            ? "Quality"
+                            : "Name"}
                   </FormLabel>
                   <FormControl>
                     <Input 
@@ -462,6 +501,7 @@ export default function AddCareEventModal({
                         eventType === "medication" ? "Morning dose" : 
                         eventType === "meal" ? "Oatmeal, toast, and orange juice" : 
                         eventType === "bowel" ? "Regular" :
+                        eventType === "sleep" ? "Good, Restless, etc." :
                         "Dr. Appointment"
                       } 
                       {...field} 
