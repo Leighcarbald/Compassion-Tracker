@@ -27,7 +27,6 @@ export default function StatusCard({
   };
   
   const iconColorClass = `text-${getColorClass(color)}`;
-  const bgColorClass = `bg-${getColorClass(color)} bg-opacity-10`;
   const progressColorClass = `bg-${getColorClass(color)}`;
   
   return (
@@ -40,7 +39,7 @@ export default function StatusCard({
               {total ? `${value}/${total}` : value}
             </div>
           </div>
-          <div className={`w-8 h-8 flex items-center justify-center rounded-full ${bgColorClass} ${iconColorClass}`}>
+          <div className={`w-8 h-8 flex items-center justify-center rounded-full ${iconColorClass}`}>
             {icon}
           </div>
         </div>
