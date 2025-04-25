@@ -51,9 +51,12 @@ const medicationSchema = z.object({
   daysToReorder: z.number().min(1, "Days to reorder must be at least 1").max(30, "Days to reorder must be at most 30"),
   originalQuantity: z.number().min(0, "Original quantity must be a positive number"),
   refillsRemaining: z.number().min(0, "Refills remaining must be a positive number"),
-  doctorId: z.number().optional(),
-  prescriptionNumber: z.string().optional(),
-  expirationDate: z.string().optional(),
+  doctorId: z.number().optional().nullable(),
+  prescriptionNumber: z.string().optional().nullable(),
+  expirationDate: z.string().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+  lastRefillDate: z.date().optional().nullable(),
 });
 
 const iconOptions = [
@@ -141,8 +144,23 @@ export default function AddMedicationModal({
   const onSubmit = (data: z.infer<typeof medicationSchema>) => {
     if (!careRecipientId) return;
     
-    console.log("Adding medication:", data);
-    createMedication.mutate(data);
+    // Make sure careRecipientId is a number
+    const formattedData = {
+      ...data,
+      careRecipientId: parseInt(careRecipientId),
+      // Set default null values for optional fields
+      doctorId: data.doctorId || null,
+      prescriptionNumber: data.prescriptionNumber || null,
+      expirationDate: data.expirationDate || null,
+      lastRefillDate: null,
+      // Handle date fields
+      createdAt: undefined,  // Let the server set these
+      updatedAt: undefined,
+      instructions: data.instructions || ""
+    };
+    
+    console.log("Adding medication:", formattedData);
+    createMedication.mutate(formattedData);
   };
 
   return (
