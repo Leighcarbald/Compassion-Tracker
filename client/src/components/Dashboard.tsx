@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Note } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { formatTime, getTimeAgo } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 import StatusCard from "./StatusCard";
 import { Pill, Utensils, Toilet, Moon, Heart } from "lucide-react";
 import { useLocation } from "wouter";
@@ -37,11 +35,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
     enabled: !!careRecipientId,
   });
 
-  // Fetch recent notes
-  const { data: recentNotes, isLoading: isLoadingNotes } = useQuery<Note[]>({
-    queryKey: ['/api/notes/recent', careRecipientId],
-    enabled: !!careRecipientId,
-  });
+  // No longer fetching recent notes for dashboard
 
   const [_, setLocation] = useLocation();
   
@@ -151,43 +145,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
         </p>
       </div>
 
-      {/* Recent Notes */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-md font-medium">Recent Notes</h3>
-          <Button 
-            variant="link" 
-            size="sm" 
-            className="text-primary"
-            onClick={() => setLocation('/notes')}
-          >
-            See All
-          </Button>
-        </div>
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            {isLoadingNotes ? (
-              <div className="p-4 text-center text-gray-500">Loading notes...</div>
-            ) : !recentNotes || recentNotes.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">No notes found</div>
-            ) : (
-              recentNotes.slice(0, 2).map((note, index) => (
-                <div key={note.id} className={`p-3 ${index < recentNotes.length - 1 ? 'border-b border-gray-100' : ''}`}>
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="text-sm font-medium">{note.title}</div>
-                    <div className="text-xs text-gray-500">{getTimeAgo(note.createdAt)}</div>
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    {note.content.length > 100 
-                      ? `${note.content.substring(0, 100)}...` 
-                      : note.content}
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {/* Notes section removed as requested */}
     </section>
   );
 }
