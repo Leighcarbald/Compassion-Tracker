@@ -103,10 +103,22 @@ export default function AddMedicationModal({
 
   const createMedication = useMutation({
     mutationFn: async (data: z.infer<typeof medicationSchema>) => {
-      const response = await apiRequest("POST", "/api/medications", data);
-      return response.json();
+      console.log("Submitting medication data:", data);
+      try {
+        const response = await apiRequest("POST", "/api/medications", data);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API error response:", errorText);
+          throw new Error(`API error: ${response.status} ${errorText}`);
+        }
+        return response.json();
+      } catch (err) {
+        console.error("Error in createMedication mutation:", err);
+        throw err;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Medication added successfully:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/medications', careRecipientId] });
       toast({
         title: "Success",
@@ -117,6 +129,7 @@ export default function AddMedicationModal({
       onClose();
     },
     onError: (error: Error) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to add medication",
