@@ -16,44 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
-
-// Helper functions for PIN authentication status
-function getAuthKey(emergencyInfoId: number) {
-  return `emergency_info_authenticated_${emergencyInfoId}`;
-}
-
-function setAuthenticated(emergencyInfoId: number, isAuthenticated: boolean) {
-  try {
-    const key = getAuthKey(emergencyInfoId);
-    if (isAuthenticated) {
-      localStorage.setItem(key, 'true');
-      console.log(`Authentication status set: ${key}=true`);
-      
-      // Verify it was set correctly
-      const stored = localStorage.getItem(key);
-      console.log(`Verification - stored value: ${stored}`);
-    } else {
-      localStorage.removeItem(key);
-      console.log(`Authentication status removed: ${key}`);
-    }
-    return true;
-  } catch (error) {
-    console.error('Error setting authentication status:', error);
-    return false;
-  }
-}
-
-function isAuthenticated(emergencyInfoId: number) {
-  try {
-    const key = getAuthKey(emergencyInfoId);
-    const value = localStorage.getItem(key);
-    console.log(`Checking authentication status: ${key}=${value}`);
-    return value === 'true';
-  } catch (error) {
-    console.error('Error checking authentication status:', error);
-    return false;
-  }
-}
+import { useEmergencyAuth } from "@/hooks/use-emergency-auth";
 
 interface EmergencyInfoProps {
   activeTab: TabType;
@@ -107,6 +70,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     additionalInfo: ""
   });
 
+  // Get authentication state from context
+  const { isAuthenticated, setAuthenticated } = useEmergencyAuth();
+
   // Update form when emergency info changes
   useEffect(() => {
     if (emergencyInfo) {
@@ -131,16 +97,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         additionalInfo: emergencyInfo.additionalInfo || ""
       });
       
-      // Check if we have previously authenticated this emergency info
-      // Use our helper function for better error handling and consistent logging
+      // Check if we have previously authenticated this emergency info using our context
       if (isAuthenticated(emergencyInfo.id)) {
-        console.log('Found previous authentication, unlocking');
+        console.log('Found previous authentication in context, unlocking');
         setIsLocked(false);
       } else {
-        console.log('No previous authentication found, staying locked');
+        console.log('No previous authentication found in context, staying locked');
       }
     }
-  }, [emergencyInfo]);
+  }, [emergencyInfo, isAuthenticated]);
 
   // Handle care recipient selection
   const handleCareRecipientChange = (id: string) => {
