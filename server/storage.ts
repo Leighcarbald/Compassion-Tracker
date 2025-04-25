@@ -455,11 +455,25 @@ export const storage = {
   
   async getMonthAppointments(careRecipientId: number, yearMonth: string) {
     try {
-      // yearMonth should be in format 'YYYY-MM'
+      if (!yearMonth.match(/^\d{4}-\d{2}$/)) {
+        throw new Error('Year-Month must be in YYYY-MM format');
+      }
+      
+      // Extract year and month
+      const [year, month] = yearMonth.split('-').map(Number);
+      
+      // Create start and end dates for the month
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);  // Last day of the specified month
+      
+      const startDateString = startDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const endDateString = endDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      
       return db.query.appointments.findMany({
         where: and(
           eq(appointments.careRecipientId, careRecipientId),
-          sql`${appointments.date} LIKE ${yearMonth + '-%'}`
+          gte(appointments.date, startDateString),
+          lte(appointments.date, endDateString)
         ),
         orderBy: [appointments.date, appointments.time]
       });
