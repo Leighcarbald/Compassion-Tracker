@@ -314,6 +314,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Doctors
+  app.get(`${apiPrefix}/doctors`, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const doctors = await storage.getDoctors(parseInt(careRecipientId));
+      res.json(doctors);
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+      res.status(500).json({ message: 'Error fetching doctors' });
+    }
+  });
+
+  app.post(`${apiPrefix}/doctors`, async (req, res) => {
+    try {
+      const newDoctor = await storage.createDoctor(req.body);
+      res.status(201).json(newDoctor);
+    } catch (error) {
+      console.error('Error creating doctor:', error);
+      res.status(500).json({ message: 'Error creating doctor' });
+    }
+  });
+
+  // Pharmacies
+  app.get(`${apiPrefix}/pharmacies`, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const pharmacies = await storage.getPharmacies(parseInt(careRecipientId));
+      res.json(pharmacies);
+    } catch (error) {
+      console.error('Error fetching pharmacies:', error);
+      res.status(500).json({ message: 'Error fetching pharmacies' });
+    }
+  });
+
+  app.post(`${apiPrefix}/pharmacies`, async (req, res) => {
+    try {
+      const newPharmacy = await storage.createPharmacy(req.body);
+      res.status(201).json(newPharmacy);
+    } catch (error) {
+      console.error('Error creating pharmacy:', error);
+      res.status(500).json({ message: 'Error creating pharmacy' });
+    }
+  });
+
+  // Medication Pharmacy Relations
+  app.get(`${apiPrefix}/medication-pharmacies`, async (req, res) => {
+    try {
+      const medicationId = req.query.medicationId as string;
+      
+      if (!medicationId) {
+        return res.status(400).json({ message: 'Medication ID is required' });
+      }
+      
+      const medicationPharmacies = await storage.getMedicationPharmacies(parseInt(medicationId));
+      res.json(medicationPharmacies);
+    } catch (error) {
+      console.error('Error fetching medication pharmacies:', error);
+      res.status(500).json({ message: 'Error fetching medication pharmacies' });
+    }
+  });
+
+  app.post(`${apiPrefix}/medication-pharmacies`, async (req, res) => {
+    try {
+      const newMedicationPharmacy = await storage.createMedicationPharmacy(req.body);
+      res.status(201).json(newMedicationPharmacy);
+    } catch (error) {
+      console.error('Error creating medication pharmacy relation:', error);
+      res.status(500).json({ message: 'Error creating medication pharmacy relation' });
+    }
+  });
+
   // Users
   app.post(`${apiPrefix}/users`, async (req, res) => {
     try {

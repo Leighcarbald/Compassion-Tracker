@@ -14,6 +14,9 @@ import {
   sleep,
   notes,
   inspirationMessages,
+  doctors,
+  pharmacies,
+  medicationPharmacies,
   insertUserSchema,
   insertCareRecipientSchema,
   insertMedicationSchema,
@@ -26,7 +29,10 @@ import {
   insertSupplyUsageSchema,
   insertSleepSchema,
   insertNoteSchema,
-  insertInspirationMessageSchema
+  insertInspirationMessageSchema,
+  insertDoctorSchema,
+  insertPharmacySchema,
+  insertMedicationPharmacySchema
 } from "@shared/schema";
 import { format, startOfDay, endOfDay, addHours, formatDistance } from "date-fns";
 
@@ -380,5 +386,59 @@ export const storage = {
     // Get a random message
     const randomIndex = Math.floor(Math.random() * allInspirationalMessages.length);
     return allInspirationalMessages[randomIndex];
+  },
+
+  // Doctors
+  async getDoctors(careRecipientId: number) {
+    return db.query.doctors.findMany({
+      where: eq(doctors.careRecipientId, careRecipientId),
+      orderBy: doctors.name,
+      with: {
+        prescriptions: true
+      }
+    });
+  },
+
+  async createDoctor(doctorData: any) {
+    const validatedData = insertDoctorSchema.parse(doctorData);
+    const [newDoctor] = await db.insert(doctors).values(validatedData).returning();
+    return newDoctor;
+  },
+
+  // Pharmacies
+  async getPharmacies(careRecipientId: number) {
+    return db.query.pharmacies.findMany({
+      where: eq(pharmacies.careRecipientId, careRecipientId),
+      orderBy: pharmacies.name,
+      with: {
+        medicationRelations: {
+          with: {
+            medication: true
+          }
+        }
+      }
+    });
+  },
+
+  async createPharmacy(pharmacyData: any) {
+    const validatedData = insertPharmacySchema.parse(pharmacyData);
+    const [newPharmacy] = await db.insert(pharmacies).values(validatedData).returning();
+    return newPharmacy;
+  },
+
+  // Medication-Pharmacy Relations
+  async getMedicationPharmacies(medicationId: number) {
+    return db.query.medicationPharmacies.findMany({
+      where: eq(medicationPharmacies.medicationId, medicationId),
+      with: {
+        pharmacy: true
+      }
+    });
+  },
+
+  async createMedicationPharmacy(relationData: any) {
+    const validatedData = insertMedicationPharmacySchema.parse(relationData);
+    const [newRelation] = await db.insert(medicationPharmacies).values(validatedData).returning();
+    return newRelation;
   }
 };
