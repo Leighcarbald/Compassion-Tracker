@@ -59,7 +59,7 @@ export default function AddCareEventModal({
   isOpen,
   onClose,
   careRecipientId,
-  defaultEventType = "medication",
+  defaultEventType = "meal",
   selectedDate
 }: AddCareEventModalProps) {
   const [eventType, setEventType] = useState<EventType>(defaultEventType);
@@ -295,19 +295,8 @@ export default function AddCareEventModal({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="mb-4">
               <FormLabel className="block text-sm font-medium text-gray-700 mb-1">Event Type</FormLabel>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  type="button"
-                  className={`p-2 ${
-                    eventType === "medication"
-                      ? "bg-primary bg-opacity-10 text-primary"
-                      : "bg-gray-100 text-gray-700"
-                  } rounded-md flex flex-col items-center`}
-                  onClick={() => handleTypeChange("medication")}
-                >
-                  <Pill className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Medication</span>
-                </Button>
+              <div className="grid grid-cols-2 gap-2">
+
                 <Button
                   type="button"
                   className={`p-2 ${
