@@ -56,13 +56,19 @@ export const getQueryFn: <T>(options: {
                   baseUrl.includes('events') || 
                   baseUrl.includes('notes') ||
                   baseUrl.includes('doctors') ||
-                  baseUrl.includes('pharmacies')) {
+                  baseUrl.includes('pharmacies') ||
+                  baseUrl.includes('appointments')) {
           params.append('careRecipientId', queryKey[1]);
         }
         
         // If there's a third parameter for medications and it's a filter
         if (baseUrl.includes('medications') && queryKey[2]) {
           params.append('filter', queryKey[2] as string);
+        }
+        
+        // If there's a third parameter for appointments and it's a date
+        if (baseUrl.includes('appointments') && queryKey[2]) {
+          params.append('date', queryKey[2] as string);
         }
       }
       
