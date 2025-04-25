@@ -104,9 +104,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     // Reset editing state when changing care recipient
     setIsEditing(false);
     
-    // We'll let the useEffect that checks localStorage determine
-    // if this emergency info should be locked or unlocked
-    // based on previous authentication
+    // Reset to locked state initially - the useEffect will check
+    // localStorage after emergencyInfo loads and unlock if previously authenticated
+    setIsLocked(true);
   };
 
   // Handle form field changes
@@ -187,9 +187,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   
   // Verify PIN mutation
   const verifyPinMutation = useMutation({
-    mutationFn: async () => {
-      if (!emergencyInfo?.id || !pin) return null;
-      const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/verify-pin`, { pin });
+    mutationFn: async (pinToVerify: string) => {
+      if (!emergencyInfo?.id || !pinToVerify) return null;
+      const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/verify-pin`, { pin: pinToVerify });
       return response.json();
     },
     onSuccess: (data: { message: string; verified: boolean } | null) => {
@@ -245,7 +245,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   });
   
   const handlePinSubmit = () => {
-    verifyPinMutation.mutate();
+    if (pin.length !== 4) {
+      setPinError('PIN must be 4 digits');
+      return;
+    }
+    
+    if (!emergencyInfo?.id) return;
+    
+    verifyPinMutation.mutate(pin);
   };
 
   return (
