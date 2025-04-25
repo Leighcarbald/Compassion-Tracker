@@ -62,13 +62,14 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
     if (!activeCareRecipient) return;
     
     try {
-      await apiRequest("/api/doctors", {
-        method: "POST",
-        data: {
+      await apiRequest(
+        "POST", 
+        "/api/doctors", 
+        {
           ...formData,
           careRecipientId: Number(activeCareRecipient)
         }
-      });
+      );
       
       // Reset form and close dialog
       setFormData({

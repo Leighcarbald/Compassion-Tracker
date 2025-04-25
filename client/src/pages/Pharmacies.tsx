@@ -61,13 +61,14 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
     if (!activeCareRecipient) return;
     
     try {
-      await apiRequest("/api/pharmacies", {
-        method: "POST",
-        data: {
+      await apiRequest(
+        "POST", 
+        "/api/pharmacies", 
+        {
           ...formData,
           careRecipientId: Number(activeCareRecipient)
         }
-      });
+      );
       
       // Reset form and close dialog
       setFormData({
