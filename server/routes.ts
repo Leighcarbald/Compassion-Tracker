@@ -920,7 +920,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/blood-pressure`, async (req, res) => {
     try {
-      const newReading = await storage.createBloodPressureReading(req.body);
+      // Handle date conversion for timeOfReading if it's provided as a string
+      const readingData = { 
+        ...req.body,
+        // Convert string date to actual Date object if it's a string
+        timeOfReading: req.body.timeOfReading ? new Date(req.body.timeOfReading) : new Date()
+      };
+      
+      const newReading = await storage.createBloodPressureReading(readingData);
       res.status(201).json(newReading);
     } catch (error) {
       console.error('Error creating blood pressure reading:', error);
@@ -947,7 +954,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/glucose`, async (req, res) => {
     try {
-      const newReading = await storage.createGlucoseReading(req.body);
+      // Handle date conversion for timeOfReading if it's provided as a string
+      const readingData = { 
+        ...req.body,
+        // Convert string date to actual Date object if it's a string
+        timeOfReading: req.body.timeOfReading ? new Date(req.body.timeOfReading) : new Date()
+      };
+      
+      const newReading = await storage.createGlucoseReading(readingData);
       res.status(201).json(newReading);
     } catch (error) {
       console.error('Error creating glucose reading:', error);
@@ -974,7 +988,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/insulin`, async (req, res) => {
     try {
-      const newRecord = await storage.createInsulinRecord(req.body);
+      // Handle date conversion for timeAdministered if it's provided as a string
+      const recordData = {
+        ...req.body,
+        // Convert string date to actual Date object if it's a string
+        timeAdministered: req.body.timeAdministered ? new Date(req.body.timeAdministered) : new Date()
+      };
+      
+      const newRecord = await storage.createInsulinRecord(recordData);
       res.status(201).json(newRecord);
     } catch (error) {
       console.error('Error creating insulin record:', error);
