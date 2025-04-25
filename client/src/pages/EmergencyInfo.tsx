@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -17,6 +17,44 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
 
+// Helper functions for PIN authentication status
+function getAuthKey(emergencyInfoId: number) {
+  return `emergency_info_authenticated_${emergencyInfoId}`;
+}
+
+function setAuthenticated(emergencyInfoId: number, isAuthenticated: boolean) {
+  try {
+    const key = getAuthKey(emergencyInfoId);
+    if (isAuthenticated) {
+      localStorage.setItem(key, 'true');
+      console.log(`Authentication status set: ${key}=true`);
+      
+      // Verify it was set correctly
+      const stored = localStorage.getItem(key);
+      console.log(`Verification - stored value: ${stored}`);
+    } else {
+      localStorage.removeItem(key);
+      console.log(`Authentication status removed: ${key}`);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error setting authentication status:', error);
+    return false;
+  }
+}
+
+function isAuthenticated(emergencyInfoId: number) {
+  try {
+    const key = getAuthKey(emergencyInfoId);
+    const value = localStorage.getItem(key);
+    console.log(`Checking authentication status: ${key}=${value}`);
+    return value === 'true';
+  } catch (error) {
+    console.error('Error checking authentication status:', error);
+    return false;
+  }
+}
+
 interface EmergencyInfoProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
@@ -32,6 +70,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const { toast } = useToast();
+  
+  // Track initialization status
+  const initialLoadRef = useRef(true);
 
   // Fetch care recipients
   const { data: careRecipients = [] } = useQuery<CareRecipient[]>({
@@ -91,11 +132,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       });
       
       // Check if we have previously authenticated this emergency info
-      const localStorageKey = `emergency_info_authenticated_${emergencyInfo.id}`;
-      const wasAuthenticated = localStorage.getItem(localStorageKey);
-      console.log('Checking localStorage:', localStorageKey, 'Value:', wasAuthenticated);
-      
-      if (wasAuthenticated === 'true') {
+      // Use our helper function for better error handling and consistent logging
+      if (isAuthenticated(emergencyInfo.id)) {
         console.log('Found previous authentication, unlocking');
         setIsLocked(false);
       } else {
@@ -186,7 +224,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       
       // Clear the authenticated state when locking
       if (emergencyInfo?.id) {
-        localStorage.removeItem(`emergency_info_authenticated_${emergencyInfo.id}`);
+        // Use our helper function for better error handling
+        setAuthenticated(emergencyInfo.id, false);
       }
     }
   };
@@ -207,13 +246,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         
         // Store that we've successfully authenticated with the PIN
         // This will help solve the issue where it keeps asking for a new PIN
-        const authKey = `emergency_info_authenticated_${emergencyInfo?.id}`;
-        localStorage.setItem(authKey, 'true');
-        console.log('Setting localStorage on successful verification:', authKey, '=', 'true');
-        
-        // Double-check that localStorage was set correctly
-        const storedValue = localStorage.getItem(authKey);
-        console.log('Verification - localStorage value after setting:', storedValue);
+        if (emergencyInfo?.id) {
+          setAuthenticated(emergencyInfo.id, true);
+        }
       } else {
         setPinError("Incorrect PIN. Please try again.");
       }
@@ -240,7 +275,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         });
         
         // Store that we've successfully set a PIN and are authenticated
-        localStorage.setItem(`emergency_info_authenticated_${emergencyInfo?.id}`, 'true');
+        if (emergencyInfo?.id) {
+          setAuthenticated(emergencyInfo.id, true);
+        }
         
         // Refresh emergency info data to get updated pinHash status
         queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
@@ -694,13 +731,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     
                     // Set the authenticated state immediately
                     if (emergencyInfo?.id) {
-                      const authKey = `emergency_info_authenticated_${emergencyInfo.id}`;
-                      localStorage.setItem(authKey, 'true');
-                      console.log('Setting localStorage on PIN creation dialog:', authKey, '=', 'true');
-                      
-                      // Double-check that localStorage was set correctly
-                      const storedValue = localStorage.getItem(authKey);
-                      console.log('PIN creation - localStorage value after setting:', storedValue);
+                      // Use our helper function for better error handling
+                      setAuthenticated(emergencyInfo.id, true);
                     }
                   }
                 }} 
