@@ -55,10 +55,37 @@ initPinStorage();
 // Check if PIN is unlocked
 function isPinUnlocked(id: number): boolean {
   console.log(`CHECKING PIN UNLOCK STATUS FOR ID ${id}`);
-  const isUnlocked = window.emergencyUnlockedPins.has(id);
-  console.log(`IS PIN ${id} UNLOCKED? ${isUnlocked}`);
   
-  // Extra debugging
+  // Make absolutely sure our storage is initialized
+  initPinStorage();
+  
+  // First check the window object
+  const isUnlockedInWindow = window.emergencyUnlockedPins.has(id);
+  console.log(`Is PIN ${id} unlocked in window? ${isUnlockedInWindow}`);
+  
+  // Also double-check sessionStorage
+  let isUnlockedInSession = false;
+  try {
+    const storedPins = sessionStorage.getItem('emergency_pins');
+    if (storedPins) {
+      const pins = JSON.parse(storedPins);
+      isUnlockedInSession = Array.isArray(pins) && pins.includes(id);
+    }
+  } catch (e) {
+    console.error('Error reading from sessionStorage:', e);
+  }
+  console.log(`Is PIN ${id} unlocked in sessionStorage? ${isUnlockedInSession}`);
+  
+  // Use either source for the result (window object is primary)
+  const isUnlocked = isUnlockedInWindow || isUnlockedInSession;
+  
+  // If it's in session but not window, sync them
+  if (isUnlockedInSession && !isUnlockedInWindow) {
+    window.emergencyUnlockedPins.add(id);
+    console.log(`Synced PIN ${id} from sessionStorage to window`);
+  }
+  
+  console.log(`Final PIN ${id} unlocked status: ${isUnlocked}`);
   console.log(`All unlocked PINs:`, Array.from(window.emergencyUnlockedPins));
   
   return isUnlocked;
@@ -112,6 +139,20 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   
   // Track initialization status
   const initialLoadRef = useRef(true);
+
+  // Debug effect - run whenever the component mounts or re-renders
+  useEffect(() => {
+    console.log('🔍 EmergencyInfo component mounted/rendered');
+    console.log('🔑 Current unlocked PINs:', Array.from(window.emergencyUnlockedPins));
+    
+    // Re-init storage on component mount
+    initPinStorage();
+    
+    // Component cleanup
+    return () => {
+      console.log('🔍 EmergencyInfo component unmounting');
+    };
+  }, []);
 
   // Fetch care recipients
   const { data: careRecipients = [] } = useQuery<CareRecipient[]>({
