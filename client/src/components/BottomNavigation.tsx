@@ -10,7 +10,9 @@ import {
   User, 
   Building2,
   AlertCircle,
-  ShieldAlert
+  ShieldAlert,
+  Activity,
+  Droplets
 } from "lucide-react";
 import { TabType } from "@/lib/types";
 import { useState } from "react";
@@ -38,7 +40,7 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
   };
 
   // Check if the active tab is in the "more" section
-  const isMoreActive = activeTab === "doctors" || activeTab === "pharmacies" || activeTab === "notes" || activeTab === "emergency";
+  const isMoreActive = activeTab === "doctors" || activeTab === "pharmacies" || activeTab === "notes" || activeTab === "emergency" || activeTab === "blood-pressure" || activeTab === "glucose-insulin";
 
   return (
     <nav className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-10">
@@ -94,7 +96,7 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
             <span className="text-xs mt-1">More</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem onClick={() => handleTabChange("notes", "/notes")} className="cursor-pointer">
             <ClipboardList className="h-4 w-4 mr-2" />
             <span>Notes</span>
@@ -106,6 +108,14 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
           <DropdownMenuItem onClick={() => handleTabChange("pharmacies", "/pharmacies")} className="cursor-pointer">
             <Building2 className="h-4 w-4 mr-2" />
             <span>Pharmacies</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleTabChange("blood-pressure", "/blood-pressure")} className="cursor-pointer">
+            <Activity className="h-4 w-4 mr-2 text-blue-500" />
+            <span>Blood Pressure</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleTabChange("glucose-insulin", "/glucose-insulin")} className="cursor-pointer">
+            <Droplets className="h-4 w-4 mr-2 text-blue-500" />
+            <span>Glucose & Insulin</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleTabChange("emergency", "/emergency")} className="cursor-pointer">
             <ShieldAlert className="h-4 w-4 mr-2 text-red-500" />
