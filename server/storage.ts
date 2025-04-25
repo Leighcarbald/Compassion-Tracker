@@ -457,17 +457,20 @@ export const storage = {
   async createMeal(mealData: any) {
     console.log('Storage: creating meal with data:', mealData);
     try {
+      // Handle consumedAt format - convert ISO string to Date object if needed
+      let processedData = { ...mealData };
+      
+      if (typeof processedData.consumedAt === 'string') {
+        processedData.consumedAt = new Date(processedData.consumedAt);
+      }
+      
       // Ensure careRecipientId is a number
-      const sanitizedData = {
-        ...mealData,
-        careRecipientId: parseInt(mealData.careRecipientId.toString())
-      };
+      processedData.careRecipientId = parseInt(processedData.careRecipientId.toString());
       
-      console.log('Storage: sanitized meal data:', sanitizedData);
-      const validatedData = insertMealSchema.parse(sanitizedData);
-      console.log('Storage: validated meal data:', validatedData);
+      console.log('Storage: processed meal data:', processedData);
       
-      const [newMeal] = await db.insert(meals).values(validatedData).returning();
+      // Create meal record with proper Date object
+      const [newMeal] = await db.insert(meals).values(processedData).returning();
       console.log('Storage: meal created successfully:', newMeal);
       return newMeal;
     } catch (error) {
@@ -485,9 +488,28 @@ export const storage = {
   },
 
   async createBowelMovement(movementData: any) {
-    const validatedData = insertBowelMovementSchema.parse(movementData);
-    const [newMovement] = await db.insert(bowelMovements).values(validatedData).returning();
-    return newMovement;
+    console.log('Storage: creating bowel movement with data:', movementData);
+    try {
+      // Handle occuredAt format - convert ISO string to Date object if needed
+      let processedData = { ...movementData };
+      
+      if (typeof processedData.occuredAt === 'string') {
+        processedData.occuredAt = new Date(processedData.occuredAt);
+      }
+      
+      // Ensure careRecipientId is a number
+      processedData.careRecipientId = parseInt(processedData.careRecipientId.toString());
+      
+      console.log('Storage: processed bowel movement data:', processedData);
+      
+      // Create bowel movement record with proper Date object
+      const [newMovement] = await db.insert(bowelMovements).values(processedData).returning();
+      console.log('Storage: bowel movement created successfully:', newMovement);
+      return newMovement;
+    } catch (error) {
+      console.error('Storage: Error creating bowel movement:', error);
+      throw error;
+    }
   },
   
   async deleteBowelMovement(id: number) {
