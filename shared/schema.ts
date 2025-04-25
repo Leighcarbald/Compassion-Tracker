@@ -214,6 +214,45 @@ export const medicationPharmacies = pgTable("medication_pharmacies", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// Blood Pressure tracking
+export const bloodPressure = pgTable("blood_pressure", {
+  id: serial("id").primaryKey(),
+  careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  systolic: integer("systolic").notNull(), // The top number in blood pressure reading (e.g., 120 in 120/80)
+  diastolic: integer("diastolic").notNull(), // The bottom number in blood pressure reading (e.g., 80 in 120/80)
+  pulse: integer("pulse"), // Heart rate in beats per minute
+  timeOfReading: timestamp("time_of_reading").notNull(),
+  position: text("position"), // Standing, sitting, or lying down
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Glucose tracking
+export const glucose = pgTable("glucose", {
+  id: serial("id").primaryKey(),
+  careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  level: integer("level").notNull(), // Blood glucose level (e.g., 120 mg/dL)
+  timeOfReading: timestamp("time_of_reading").notNull(),
+  readingType: text("reading_type").notNull(), // Fasting, before meal, after meal, bedtime, etc.
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Insulin tracking
+export const insulin = pgTable("insulin", {
+  id: serial("id").primaryKey(),
+  careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  units: integer("units").notNull(), // Units of insulin administered
+  insulinType: text("insulin_type").notNull(), // Type of insulin (e.g., Rapid-acting, Long-acting)
+  timeAdministered: timestamp("time_administered").notNull(),
+  site: text("site"), // Injection site (e.g., abdomen, thigh)
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 // Users table (keeping existing structure)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -244,7 +283,10 @@ export const careRecipientsRelations = relations(careRecipients, ({ one, many })
   notes: many(notes),
   doctors: many(doctors),
   pharmacies: many(pharmacies),
-  emergencyInfo: many(emergencyInfo)
+  emergencyInfo: many(emergencyInfo),
+  bloodPressureReadings: many(bloodPressure),
+  glucoseReadings: many(glucose),
+  insulinRecords: many(insulin)
 }));
 
 export const medicationsRelations = relations(medications, ({ one, many }) => ({
