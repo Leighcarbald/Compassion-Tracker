@@ -162,9 +162,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       // Show PIN dialog to unlock
       setShowPinDialog(true);
     } else {
+      // Lock the information
       setIsLocked(true);
       setPin("");
       setPinError("");
+      
+      // Clear the authenticated state when locking
+      if (emergencyInfo?.id) {
+        localStorage.removeItem(`emergency_info_authenticated_${emergencyInfo.id}`);
+      }
     }
   };
   
@@ -181,6 +187,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         setShowPinDialog(false);
         setPin("");
         setPinError("");
+        
+        // Store that we've successfully authenticated with the PIN
+        // This will help solve the issue where it keeps asking for a new PIN
+        localStorage.setItem(`emergency_info_authenticated_${emergencyInfo?.id}`, 'true');
       } else {
         setPinError("Incorrect PIN. Please try again.");
       }
@@ -205,6 +215,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           description: "Emergency information PIN has been updated successfully",
           variant: "default",
         });
+        
+        // Store that we've successfully set a PIN and are authenticated
+        localStorage.setItem(`emergency_info_authenticated_${emergencyInfo?.id}`, 'true');
+        
         // Refresh emergency info data to get updated pinHash status
         queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
       }
