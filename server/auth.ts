@@ -69,11 +69,14 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
+    name: 'caregivers.sid', // Custom name to avoid fingerprinting
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      httpOnly: true, // Prevents JavaScript access to cookie
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: "lax"
+      sameSite: "lax", // Protects against CSRF
+      path: '/', // Only sent to this path
+      domain: process.env.NODE_ENV === 'production' ? process.env.DOMAIN : undefined // Only for our domain in production
     }
   };
 
@@ -112,6 +115,35 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Password strength validation function
+  function validatePasswordStrength(password: string): { valid: boolean; message?: string } {
+    if (password.length < 8) {
+      return { valid: false, message: "Password must be at least 8 characters long" };
+    }
+    
+    // Check for at least one uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, message: "Password must contain at least one uppercase letter" };
+    }
+    
+    // Check for at least one lowercase letter
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, message: "Password must contain at least one lowercase letter" };
+    }
+    
+    // Check for at least one number
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, message: "Password must contain at least one number" };
+    }
+    
+    // Check for at least one special character
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      return { valid: false, message: "Password must contain at least one special character" };
+    }
+    
+    return { valid: true };
+  }
+
   app.post("/api/register", registrationLimiter, async (req, res, next) => {
     try {
       const existingUser = await db.query.users.findFirst({
@@ -120,6 +152,12 @@ export function setupAuth(app: Express) {
       
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(req.body.password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ message: passwordValidation.message });
       }
 
       const hashedPassword = await hashPassword(req.body.password);
@@ -140,7 +178,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/login", loginLimiter, (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
@@ -170,10 +208,18 @@ export function setupAuth(app: Express) {
   });
 
   // Protected route middleware
-  const isAuthenticated = (req, res, next) => {
+  const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+    // In production, require HTTPS
+    if (process.env.NODE_ENV === 'production' && !req.secure) {
+      return res.status(403).json({ 
+        message: "HTTPS required for secure operations"
+      });
+    }
+
     if (req.isAuthenticated()) {
       return next();
     }
+    
     res.status(401).json({ message: "Not authenticated" });
   };
   
