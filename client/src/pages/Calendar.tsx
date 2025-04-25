@@ -94,6 +94,7 @@ export default function Calendar({ activeTab, setActiveTab }: CalendarProps) {
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 className="rounded-md border"
+                // We'll implement date highlights differently in a future update
               />
             </CardContent>
           </Card>
