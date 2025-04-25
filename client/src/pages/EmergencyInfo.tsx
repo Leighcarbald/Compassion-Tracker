@@ -109,13 +109,23 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         additionalInfo: emergencyInfo.additionalInfo || ""
       });
       
-      // Check if we have previously authenticated this emergency info
-      if (isUnlocked(emergencyInfo.id)) {
-        console.log('Found record of PIN being unlocked, unlocking now');
-        setIsLocked(false);
-      } else {
-        console.log('No unlocked PIN found, staying locked');
-      }
+      // Check with the server if this emergency info is already verified in the current session
+      fetch(`/api/emergency-info/${emergencyInfo.id}/check-verified`)
+        .then(response => response.json())
+        .then(data => {
+          console.log(`Server verification check for PIN ${emergencyInfo.id}:`, data);
+          if (data.verified) {
+            console.log('Emergency info is verified in current session, unlocking...');
+            setIsLocked(false);
+            // Also update local state to reflect this
+            unlockPin(emergencyInfo.id);
+          } else {
+            console.log('Emergency info not verified in current session, staying locked');
+          }
+        })
+        .catch(error => {
+          console.error('Error checking PIN verification status:', error);
+        });
     }
   }, [emergencyInfo, isUnlocked]);
 

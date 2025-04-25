@@ -704,64 +704,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PIN Verification for Emergency Info
   app.post(`${apiPrefix}/emergency-info/:id/verify-pin`, async (req, res) => {
     try {
-      const id = req.params.id;
+      const id = parseInt(req.params.id);
       const { pin } = req.body;
       
+      console.log(`Attempting to verify PIN for emergency info #${id}`);
+      
       if (!pin) {
-        return res.status(400).json({ message: 'PIN is required' });
+        console.log(`PIN verification failed: PIN required`);
+        return res.status(400).json({ message: 'PIN is required', verified: false });
       }
       
       // Validate PIN format (6 digits)
       if (!/^\d{6}$/.test(pin)) {
-        return res.status(400).json({ message: 'PIN must be a 6-digit number' });
+        console.log(`PIN verification failed: Invalid PIN format`);
+        return res.status(400).json({ message: 'PIN must be a 6-digit number', verified: false });
       }
       
-      const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
+      if (isNaN(id)) {
+        console.log(`PIN verification failed: Invalid ID ${req.params.id}`);
+        return res.status(400).json({ message: 'Invalid emergency info ID', verified: false });
+      }
+      
+      const emergencyInfo = await storage.getEmergencyInfoById(id);
       
       if (!emergencyInfo) {
-        return res.status(404).json({ message: 'Emergency info not found' });
+        console.log(`PIN verification failed: Emergency info #${id} not found`);
+        return res.status(404).json({ message: 'Emergency info not found', verified: false });
       }
       
-      const isPinValid = await storage.verifyEmergencyInfoPin(parseInt(id), pin);
+      // Verify the PIN
+      const isPinValid = await storage.verifyEmergencyInfoPin(id, pin);
       
       if (!isPinValid) {
-        return res.status(401).json({ message: 'Invalid PIN' });
+        console.log(`PIN verification failed: Invalid PIN for emergency info #${id}`);
+        return res.status(200).json({ message: 'Invalid PIN', verified: false });
       }
       
-      res.status(200).json({ message: 'PIN verified successfully', verified: true });
+      // Store the verified status in the session
+      if (!req.session.verifiedEmergencyInfos) {
+        req.session.verifiedEmergencyInfos = [];
+      }
+      
+      if (!req.session.verifiedEmergencyInfos.includes(id)) {
+        req.session.verifiedEmergencyInfos.push(id);
+        console.log(`Emergency info #${id} added to verified session list: ${req.session.verifiedEmergencyInfos}`);
+      }
+      
+      // Save session explicitly to ensure it's stored
+      req.session.save((err) => {
+        if (err) {
+          console.error(`Error saving session:`, err);
+        } else {
+          console.log(`Session saved successfully`);
+        }
+      });
+      
+      console.log(`PIN verified successfully for emergency info #${id}`);
+      res.status(200).json({ 
+        message: 'PIN verified successfully', 
+        verified: true,
+        id: id
+      });
     } catch (error) {
       console.error('Error verifying PIN:', error);
-      res.status(500).json({ message: 'Error verifying PIN' });
+      res.status(500).json({ message: 'Error verifying PIN', verified: false });
+    }
+  });
+  
+  // Check if a PIN is verified for an emergency info in the session
+  app.get(`${apiPrefix}/emergency-info/:id/check-verified`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        console.log(`Check verified failed: Invalid ID ${req.params.id}`);
+        return res.status(400).json({ message: 'Invalid emergency info ID', verified: false });
+      }
+      
+      // Check if the ID is in the list of verified IDs
+      const isVerified = req.session.verifiedEmergencyInfos && 
+                        Array.isArray(req.session.verifiedEmergencyInfos) &&
+                        req.session.verifiedEmergencyInfos.includes(id);
+      
+      console.log(`Check verified for emergency info #${id}: ${isVerified ? 'YES' : 'NO'}`);
+      console.log(`Session verified IDs:`, req.session.verifiedEmergencyInfos || []);
+      
+      return res.status(200).json({ 
+        verified: !!isVerified,
+        id
+      });
+    } catch (error) {
+      console.error('Error checking if PIN is verified:', error);
+      res.status(500).json({ message: 'Server error', verified: false });
     }
   });
   
   // Set PIN for Emergency Info
   app.post(`${apiPrefix}/emergency-info/:id/set-pin`, async (req, res) => {
     try {
-      const id = req.params.id;
+      const id = parseInt(req.params.id);
       const { pin } = req.body;
       
+      console.log(`Setting PIN for emergency info #${id}`);
+      
       if (!pin) {
-        return res.status(400).json({ message: 'PIN is required' });
+        console.log(`Set PIN failed: PIN required`);
+        return res.status(400).json({ message: 'PIN is required', success: false });
+      }
+      
+      if (isNaN(id)) {
+        console.log(`Set PIN failed: Invalid ID ${req.params.id}`);
+        return res.status(400).json({ message: 'Invalid emergency info ID', success: false });
       }
       
       // Validate PIN format (6 digits)
       if (!/^\d{6}$/.test(pin)) {
-        return res.status(400).json({ message: 'PIN must be a 6-digit number' });
+        console.log(`Set PIN failed: Invalid PIN format`);
+        return res.status(400).json({ message: 'PIN must be a 6-digit number', success: false });
       }
       
-      const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
+      const emergencyInfo = await storage.getEmergencyInfoById(id);
       
       if (!emergencyInfo) {
-        return res.status(404).json({ message: 'Emergency info not found' });
+        console.log(`Set PIN failed: Emergency info #${id} not found`);
+        return res.status(404).json({ message: 'Emergency info not found', success: false });
       }
       
-      await storage.setEmergencyInfoPin(parseInt(id), pin);
+      await storage.setEmergencyInfoPin(id, pin);
       
-      res.status(200).json({ message: 'PIN set successfully', success: true });
+      // Also mark this PIN as verified in the current session
+      if (!req.session.verifiedEmergencyInfos) {
+        req.session.verifiedEmergencyInfos = [];
+      }
+      
+      if (!req.session.verifiedEmergencyInfos.includes(id)) {
+        req.session.verifiedEmergencyInfos.push(id);
+        console.log(`Emergency info #${id} added to verified session list after setting PIN: ${req.session.verifiedEmergencyInfos}`);
+      }
+      
+      // Save session explicitly to ensure it's stored
+      req.session.save((err) => {
+        if (err) {
+          console.error(`Error saving session:`, err);
+        } else {
+          console.log(`Session saved successfully after setting PIN`);
+        }
+      });
+      
+      console.log(`PIN set successfully for emergency info #${id}`);
+      res.status(200).json({ 
+        message: 'PIN set successfully', 
+        success: true,
+        id
+      });
     } catch (error) {
       console.error('Error setting PIN:', error);
-      res.status(500).json({ message: 'Error setting PIN' });
+      res.status(500).json({ message: 'Error setting PIN', success: false });
     }
   });
 
