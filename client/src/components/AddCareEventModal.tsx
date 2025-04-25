@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,10 +18,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { Pill, Utensils, Toilet } from "lucide-react";
@@ -43,7 +50,8 @@ const eventSchema = z.object({
   time: z.string().min(1, "Time is required"),
   notes: z.string().optional(),
   reminder: z.boolean().default(false),
-  careRecipientId: z.number().positive()
+  careRecipientId: z.number().positive(),
+  medicationId: z.number().positive().optional()
 });
 
 export default function AddCareEventModal({
@@ -55,6 +63,18 @@ export default function AddCareEventModal({
 }: AddCareEventModalProps) {
   const [eventType, setEventType] = useState<EventType>(defaultEventType);
 
+  // Fetch medications for this care recipient
+  const { data: medications = [] } = useQuery({
+    queryKey: ['/api/medications', careRecipientId],
+    queryFn: async () => {
+      if (!careRecipientId) return [];
+      const res = await fetch(`/api/medications?careRecipientId=${careRecipientId}`);
+      if (!res.ok) throw new Error('Failed to fetch medications');
+      return res.json();
+    },
+    enabled: !!careRecipientId && isOpen && eventType === "medication"
+  });
+
   const form = useForm({
     resolver: zodResolver(eventSchema),
     defaultValues: {
@@ -64,9 +84,21 @@ export default function AddCareEventModal({
       time: format(new Date(), "HH:mm"),
       notes: "",
       reminder: true,
-      careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0
+      careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
+      medicationId: undefined
     }
   });
+  
+  // When medication is selected, update the name field
+  useEffect(() => {
+    const medicationId = form.watch('medicationId');
+    if (medicationId && medications.length > 0) {
+      const selected = medications.find((med: any) => med.id === medicationId);
+      if (selected) {
+        form.setValue('name', selected.name);
+      }
+    }
+  }, [form.watch('medicationId'), medications]);
 
   const addEvent = useMutation({
     mutationFn: async (data: z.infer<typeof eventSchema>) => {
@@ -179,16 +211,46 @@ export default function AddCareEventModal({
               </div>
             </div>
             
+            {eventType === "medication" && (
+              <FormField
+                control={form.control}
+                name="medicationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Medication</FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        defaultValue={field.value?.toString()}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a medication" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {medications.map((med: any) => (
+                            <SelectItem key={med.id} value={med.id.toString()}>
+                              {med.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{eventType === "medication" ? "Description" : "Name"}</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder={
-                        eventType === "medication" ? "Blood Pressure Medicine" : 
+                        eventType === "medication" ? "Morning dose" : 
                         eventType === "meal" ? "Breakfast" : 
                         eventType === "bowel" ? "Bowel Movement" :
                         "Dr. Appointment"
