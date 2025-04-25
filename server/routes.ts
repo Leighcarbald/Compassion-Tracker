@@ -711,6 +711,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'PIN is required' });
       }
       
+      // Validate PIN format (6 digits)
+      if (!/^\d{6}$/.test(pin)) {
+        return res.status(400).json({ message: 'PIN must be a 6-digit number' });
+      }
+      
       const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
       
       if (!emergencyInfo) {
@@ -740,9 +745,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'PIN is required' });
       }
       
-      // Validate PIN format (4 digits)
-      if (!/^\d{4}$/.test(pin)) {
-        return res.status(400).json({ message: 'PIN must be a 4-digit number' });
+      // Validate PIN format (6 digits)
+      if (!/^\d{6}$/.test(pin)) {
+        return res.status(400).json({ message: 'PIN must be a 6-digit number' });
       }
       
       const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
