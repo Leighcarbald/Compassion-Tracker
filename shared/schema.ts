@@ -221,6 +221,7 @@ export const bloodPressure = pgTable("blood_pressure", {
   systolic: integer("systolic").notNull(), // The top number in blood pressure reading (e.g., 120 in 120/80)
   diastolic: integer("diastolic").notNull(), // The bottom number in blood pressure reading (e.g., 80 in 120/80)
   pulse: integer("pulse"), // Heart rate in beats per minute
+  oxygenLevel: integer("oxygen_level"), // Blood oxygen saturation level (SpO2) as percentage
   timeOfReading: timestamp("time_of_reading").notNull(),
   position: text("position"), // Standing, sitting, or lying down
   notes: text("notes"),

@@ -34,6 +34,7 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
   const [systolic, setSystolic] = useState("");
   const [diastolic, setDiastolic] = useState("");
   const [pulse, setPulse] = useState("");
+  const [oxygenLevel, setOxygenLevel] = useState("");
   const [position, setPosition] = useState("sitting");
   const [notes, setNotes] = useState("");
   const { toast } = useToast();
@@ -66,6 +67,7 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
       systolic: number;
       diastolic: number;
       pulse: number | null;
+      oxygenLevel: number | null;
       timeOfReading: Date;
       position: string;
       notes: string;
@@ -88,6 +90,7 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
       setSystolic("");
       setDiastolic("");
       setPulse("");
+      setOxygenLevel("");
       setPosition("sitting");
       setNotes("");
       
@@ -140,6 +143,7 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
       systolic: Number(systolic),
       diastolic: Number(diastolic),
       pulse: pulse ? Number(pulse) : null,
+      oxygenLevel: oxygenLevel ? Number(oxygenLevel) : null,
       timeOfReading,
       position,
       notes,
@@ -239,6 +243,21 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="oxygenLevel">Oxygen Level (%)</Label>
+                  <Input
+                    id="oxygenLevel"
+                    type="number"
+                    placeholder="98"
+                    value={oxygenLevel}
+                    onChange={(e) => setOxygenLevel(e.target.value)}
+                    min="0"
+                    max="100"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
                   <Label htmlFor="position">Position</Label>
                   <Select value={position} onValueChange={setPosition}>
                     <SelectTrigger id="position">
@@ -250,6 +269,9 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
                       <SelectItem value="lying">Lying down</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  {/* Empty space for balance */}
                 </div>
               </div>
 
