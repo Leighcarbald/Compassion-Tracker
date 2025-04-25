@@ -399,6 +399,22 @@ export const storage = {
     const [newLog] = await db.insert(medicationLogs).values(validatedData).returning();
     return newLog;
   },
+  
+  async deleteMedicationLog(logId: number) {
+    // Find the log first to ensure it exists
+    const logToDelete = await db.query.medicationLogs.findFirst({
+      where: eq(medicationLogs.id, logId)
+    });
+    
+    if (!logToDelete) {
+      throw new Error('Medication log not found');
+    }
+    
+    // Delete the log
+    await db.delete(medicationLogs).where(eq(medicationLogs.id, logId));
+    
+    return { success: true };
+  },
 
   // Appointments
   async getAppointments(careRecipientId: number, date?: string) {
