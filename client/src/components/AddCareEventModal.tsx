@@ -140,6 +140,7 @@ export default function AddCareEventModal({
             occuredAt: dateTime.toISOString(),
             careRecipientId: data.careRecipientId
           };
+          console.log("Submitting bowel movement data:", postData);
           break;
         case "appointment":
           endpoint = "/api/appointments";
@@ -393,21 +394,24 @@ export default function AddCareEventModal({
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="reminder"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <Checkbox 
-                      checked={field.value} 
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm text-gray-700">Set reminder</FormLabel>
-                </FormItem>
-              )}
-            />
+            {/* Only show reminders for appointments and medications */}
+            {(eventType === "appointment" || eventType === "medication") && (
+              <FormField
+                control={form.control}
+                name="reminder"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value} 
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm text-gray-700">Set reminder</FormLabel>
+                  </FormItem>
+                )}
+              />
+            )}
             
             <DialogFooter className="flex justify-end space-x-3">
               <Button
