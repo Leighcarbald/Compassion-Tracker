@@ -30,6 +30,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating care recipient' });
     }
   });
+  
+  app.delete(`${apiPrefix}/care-recipients/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const result = await storage.deleteCareRecipient(id);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error deleting care recipient:', error);
+      res.status(500).json({ message: 'Error deleting care recipient' });
+    }
+  });
 
   // Today's Care Stats
   app.get(`${apiPrefix}/care-stats/today`, async (req, res) => {

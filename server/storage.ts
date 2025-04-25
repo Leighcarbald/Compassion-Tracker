@@ -75,6 +75,97 @@ export const storage = {
     const [newRecipient] = await db.insert(careRecipients).values(validatedData).returning();
     return newRecipient;
   },
+  
+  async deleteCareRecipient(id: number) {
+    // Delete all related data first to maintain referential integrity
+    // This is a cascading delete operation
+    
+    // Delete medication logs and schedules for all medications of this care recipient
+    const recipientMedications = await db.query.medications.findMany({
+      where: eq(medications.careRecipientId, id)
+    });
+    
+    for (const medication of recipientMedications) {
+      // Delete medication logs
+      await db.delete(medicationLogs)
+        .where(eq(medicationLogs.medicationId, medication.id));
+      
+      // Delete medication schedules
+      await db.delete(medicationSchedules)
+        .where(eq(medicationSchedules.medicationId, medication.id));
+        
+      // Delete medication pharmacy relations
+      await db.delete(medicationPharmacies)
+        .where(eq(medicationPharmacies.medicationId, medication.id));
+    }
+    
+    // Delete medications
+    await db.delete(medications)
+      .where(eq(medications.careRecipientId, id));
+    
+    // Delete appointments
+    await db.delete(appointments)
+      .where(eq(appointments.careRecipientId, id));
+    
+    // Delete meals
+    await db.delete(meals)
+      .where(eq(meals.careRecipientId, id));
+    
+    // Delete bowel movements
+    await db.delete(bowelMovements)
+      .where(eq(bowelMovements.careRecipientId, id));
+    
+    // Delete supplies and supply usages
+    const recipientSupplies = await db.query.supplies.findMany({
+      where: eq(supplies.careRecipientId, id)
+    });
+    
+    for (const supply of recipientSupplies) {
+      await db.delete(supplyUsages)
+        .where(eq(supplyUsages.supplyId, supply.id));
+    }
+    
+    await db.delete(supplies)
+      .where(eq(supplies.careRecipientId, id));
+    
+    // Delete sleep records
+    await db.delete(sleep)
+      .where(eq(sleep.careRecipientId, id));
+    
+    // Delete notes
+    await db.delete(notes)
+      .where(eq(notes.careRecipientId, id));
+    
+    // Delete doctors
+    await db.delete(doctors)
+      .where(eq(doctors.careRecipientId, id));
+    
+    // Delete pharmacies
+    await db.delete(pharmacies)
+      .where(eq(pharmacies.careRecipientId, id));
+    
+    // Delete emergency info
+    await db.delete(emergencyInfo)
+      .where(eq(emergencyInfo.careRecipientId, id));
+    
+    // Delete blood pressure readings
+    await db.delete(bloodPressure)
+      .where(eq(bloodPressure.careRecipientId, id));
+    
+    // Delete glucose readings
+    await db.delete(glucose)
+      .where(eq(glucose.careRecipientId, id));
+    
+    // Delete insulin records
+    await db.delete(insulin)
+      .where(eq(insulin.careRecipientId, id));
+    
+    // Finally delete the care recipient
+    await db.delete(careRecipients)
+      .where(eq(careRecipients.id, id));
+    
+    return { success: true, message: "Care recipient and all associated data deleted successfully" };
+  },
 
   // Today's Stats
   async getTodayStats(careRecipientId: number) {
