@@ -187,8 +187,8 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
               medications.map((med) => (
                 <div key={med.id} className="p-3 border-b border-gray-100">
                   <div className="flex items-start mb-2">
-                    <div className={`w-10 h-10 rounded-full bg-${med.iconColor.replace('#', '')}-100 flex items-center justify-center mr-3`}>
-                      {renderMedicationIcon(med.icon, med.iconColor.replace('#', ''))}
+                    <div className={`w-10 h-10 rounded-full bg-${med.iconColor ? med.iconColor.replace('#', '') : 'gray'}-100 flex items-center justify-center mr-3`}>
+                      {renderMedicationIcon(med.icon || 'pill', med.iconColor ? med.iconColor.replace('#', '') : 'gray')}
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
@@ -196,7 +196,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                           <div className="text-sm font-medium">{med.name}</div>
                           <div className="text-xs text-gray-500">{med.dosage}</div>
                         </div>
-                        {med.currentQuantity !== undefined && med.currentQuantity <= (med.reorderThreshold || 5) ? (
+                        {med.currentQuantity !== undefined && med.currentQuantity !== null && med.currentQuantity <= (med.reorderThreshold || 5) ? (
                           <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
                             Reorder Soon
                           </div>
@@ -216,11 +216,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                           <span>Quantity: {med.currentQuantity || 0}</span>
                           <span>Refills: {med.refillsRemaining || 0}</span>
                         </div>
-                        {med.prescribingDoctor && (
-                          <div className="mt-1 text-gray-500">
-                            Dr. {med.prescribingDoctor.name}
-                          </div>
-                        )}
+                        {/* Doctor information will be added later */}
                       </div>
                     </div>
                   </div>
