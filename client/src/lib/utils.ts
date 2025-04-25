@@ -9,6 +9,23 @@ export function cn(...inputs: ClassValue[]) {
 export function formatTime(date: Date | string): string {
   try {
     if (!date) return "N/A";
+    
+    // Handle time strings in format "HH:MM:SS"
+    if (typeof date === "string" && date.includes(":") && !date.includes("T")) {
+      const [hours, minutes] = date.split(":");
+      const hoursNum = parseInt(hours, 10);
+      const minutesNum = parseInt(minutes, 10);
+      
+      // Create a date object for today with the specified time
+      const dateObj = new Date();
+      dateObj.setHours(hoursNum);
+      dateObj.setMinutes(minutesNum);
+      dateObj.setSeconds(0);
+      
+      return format(dateObj, "h:mm a");
+    }
+    
+    // Handle regular date objects or ISO date strings
     const dateObj = typeof date === "string" ? new Date(date) : date;
     
     // Check if date is valid
