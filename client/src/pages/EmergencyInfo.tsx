@@ -517,7 +517,6 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               </Button>
             )}
           </div>
-        </div>
 
         {!selectedCareRecipient ? (
           <div className="text-center p-8">
