@@ -785,6 +785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Check if a PIN is verified for an emergency info by checking the cookie
+  // DO NOT apply rate limiting to this endpoint - it's used to check verification status
   app.get(`${apiPrefix}/emergency-info/:id/check-verified`, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -797,9 +798,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check for the cookie that indicates PIN verification
       const cookieName = `emergency_info_verified_${id}`;
       const isVerified = req.signedCookies[cookieName] === 'true';
-      
-      console.log(`Check verified cookie for emergency info #${id}:`, req.signedCookies[cookieName]);
-      console.log(`Verification status: ${isVerified ? 'YES' : 'NO'}`);
       
       return res.status(200).json({ 
         verified: isVerified,

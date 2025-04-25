@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import crypto from 'crypto';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 
 // Generate a random session secret if one isn't provided in environment
 if (!process.env.SESSION_SECRET) {
@@ -33,6 +34,20 @@ app.use(helmet({
 app.use(express.json({ limit: '1mb' })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.SESSION_SECRET)); // Use the same secret for cookies as sessions
+
+// Configure rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  message: { message: 'Too many requests, please try again after 15 minutes' },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Skip rate limiting for PIN verification checks
+  skip: (req) => req.path.includes('/check-verified')
+});
+
+// Apply to all API routes
+app.use('/api', apiLimiter);
 
 app.use((req, res, next) => {
   const start = Date.now();
