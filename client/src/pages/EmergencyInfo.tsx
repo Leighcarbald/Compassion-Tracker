@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
-import { useEmergencyAuth } from "@/hooks/use-emergency-auth";
+import { usePinAuth } from "@/hooks/use-pin-auth";
 
 interface EmergencyInfoProps {
   activeTab: TabType;
@@ -70,8 +70,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     additionalInfo: ""
   });
 
-  // Get authentication state from context
-  const { isAuthenticated, setAuthenticated } = useEmergencyAuth();
+  // Get authentication state from our new context
+  const { isUnlocked, unlockPin, lockPin } = usePinAuth();
 
   // Update form when emergency info changes
   useEffect(() => {
@@ -97,15 +97,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         additionalInfo: emergencyInfo.additionalInfo || ""
       });
       
-      // Check if we have previously authenticated this emergency info using our context
-      if (isAuthenticated(emergencyInfo.id)) {
-        console.log('Found previous authentication in context, unlocking');
+      // Check if we have previously authenticated this emergency info
+      if (isUnlocked(emergencyInfo.id)) {
+        console.log('Found record of PIN being unlocked, unlocking now');
         setIsLocked(false);
       } else {
-        console.log('No previous authentication found in context, staying locked');
+        console.log('No unlocked PIN found, staying locked');
       }
     }
-  }, [emergencyInfo, isAuthenticated]);
+  }, [emergencyInfo, isUnlocked]);
 
   // Handle care recipient selection
   const handleCareRecipientChange = (id: string) => {
@@ -189,8 +189,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       
       // Clear the authenticated state when locking
       if (emergencyInfo?.id) {
-        // Use our helper function for better error handling
-        setAuthenticated(emergencyInfo.id, false);
+        lockPin(emergencyInfo.id);
       }
     }
   };
@@ -212,7 +211,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         // Store that we've successfully authenticated with the PIN
         // This will help solve the issue where it keeps asking for a new PIN
         if (emergencyInfo?.id) {
-          setAuthenticated(emergencyInfo.id, true);
+          unlockPin(emergencyInfo.id);
         }
       } else {
         setPinError("Incorrect PIN. Please try again.");
