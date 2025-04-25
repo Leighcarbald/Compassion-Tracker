@@ -369,6 +369,14 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
                         <span>{reading.pulse} bpm</span>
                       </div>
                     )}
+                    {reading.oxygenLevel && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Oxygen Level:</span>
+                        <span className={reading.oxygenLevel >= 95 ? "text-green-500" : reading.oxygenLevel >= 90 ? "text-amber-500" : "text-red-500"}>
+                          {reading.oxygenLevel}%
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Position:</span>
                       <span className="capitalize">{reading.position || "Not recorded"}</span>
