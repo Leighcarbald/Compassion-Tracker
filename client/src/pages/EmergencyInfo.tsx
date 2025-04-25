@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
-import { usePinAuth } from "@/hooks/use-pin-auth";
+import { isPinUnlocked, unlockPin, lockPin } from "@/lib/pinStorage";
 
 interface EmergencyInfoProps {
   activeTab: TabType;
@@ -70,9 +70,6 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     additionalInfo: ""
   });
 
-  // Get authentication state from our new context
-  const { isUnlocked, unlockPin, lockPin } = usePinAuth();
-
   // Update form when emergency info changes
   useEffect(() => {
     if (emergencyInfo) {
@@ -98,14 +95,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       });
       
       // Check if we have previously authenticated this emergency info
-      if (isUnlocked(emergencyInfo.id)) {
+      if (isPinUnlocked(emergencyInfo.id)) {
         console.log('Found record of PIN being unlocked, unlocking now');
         setIsLocked(false);
       } else {
         console.log('No unlocked PIN found, staying locked');
       }
     }
-  }, [emergencyInfo, isUnlocked]);
+  }, [emergencyInfo]);
 
   // Handle care recipient selection
   const handleCareRecipientChange = (id: string) => {
