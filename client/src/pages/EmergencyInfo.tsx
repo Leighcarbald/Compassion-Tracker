@@ -32,8 +32,11 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Start with locked state, but we'll check for authentication in useEffect
   const [isLocked, setIsLocked] = useState(true);
   const [showPinDialog, setShowPinDialog] = useState(false);
+  const [showSetPinDialog, setShowSetPinDialog] = useState(false);
   const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
   const [pinError, setPinError] = useState("");
+  const [confirmPinError, setConfirmPinError] = useState("");
   const { toast } = useToast();
   
   // Track initialization status
@@ -250,10 +253,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     }
   });
   
-  // State for PIN confirmation
-  const [confirmPin, setConfirmPin] = useState("");
-  const [confirmPinError, setConfirmPinError] = useState("");
-  const [showSetPinDialog, setShowSetPinDialog] = useState(false);
+  // This section was previously declared above
   
   // Set PIN mutation
   const setPinMutation = useMutation({
@@ -265,8 +265,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     onSuccess: (data: { message: string; success: boolean; id?: number } | null) => {
       if (data?.success) {
         toast({
-          title: "PIN Updated",
-          description: "Emergency information PIN has been updated successfully",
+          title: "PIN Created",
+          description: "Emergency information PIN has been set successfully",
           variant: "default",
         });
         
@@ -291,7 +291,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to update PIN",
+        description: "Failed to set PIN",
         variant: "destructive",
       });
       console.error("PIN update error:", error);
