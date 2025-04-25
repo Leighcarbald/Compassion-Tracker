@@ -902,7 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Blood Pressure Tracking
-  app.get(`${apiPrefix}/blood-pressure`, isAuthenticated, async (req, res) => {
+  app.get(`${apiPrefix}/blood-pressure`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
       
@@ -918,7 +918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/blood-pressure`, isAuthenticated, async (req, res) => {
+  app.post(`${apiPrefix}/blood-pressure`, async (req, res) => {
     try {
       const newReading = await storage.createBloodPressureReading(req.body);
       res.status(201).json(newReading);
@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Glucose Tracking
-  app.get(`${apiPrefix}/glucose`, isAuthenticated, async (req, res) => {
+  app.get(`${apiPrefix}/glucose`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
       
@@ -945,7 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/glucose`, isAuthenticated, async (req, res) => {
+  app.post(`${apiPrefix}/glucose`, async (req, res) => {
     try {
       const newReading = await storage.createGlucoseReading(req.body);
       res.status(201).json(newReading);
@@ -956,7 +956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Insulin Tracking
-  app.get(`${apiPrefix}/insulin`, isAuthenticated, async (req, res) => {
+  app.get(`${apiPrefix}/insulin`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
       
@@ -972,7 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/insulin`, isAuthenticated, async (req, res) => {
+  app.post(`${apiPrefix}/insulin`, async (req, res) => {
     try {
       const newRecord = await storage.createInsulinRecord(req.body);
       res.status(201).json(newRecord);
