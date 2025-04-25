@@ -240,7 +240,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         
         // Store that we've successfully set a PIN and are authenticated
         if (emergencyInfo?.id) {
-          setAuthenticated(emergencyInfo.id, true);
+          unlockPin(emergencyInfo.id);
         }
         
         // Refresh emergency info data to get updated pinHash status
@@ -695,8 +695,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     
                     // Set the authenticated state immediately
                     if (emergencyInfo?.id) {
-                      // Use our helper function for better error handling
-                      setAuthenticated(emergencyInfo.id, true);
+                      // Use our context function to remember the PIN is unlocked
+                      unlockPin(emergencyInfo.id);
                     }
                   }
                 }} 
