@@ -813,20 +813,38 @@ export const storage = {
 
   // Inspiration
   async getDailyInspiration() {
+    // Check if we need to select a new daily inspiration
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const lastInspirationStr = format(lastInspirationDate, 'yyyy-MM-dd');
+    
+    // If we already have today's inspiration and it's from today, return it
+    if (todaysInspiration && todayStr === lastInspirationStr) {
+      return todaysInspiration;
+    }
+    
+    // Otherwise, select a new inspiration for today
     const allInspirationalMessages = await db.query.inspirationMessages.findMany({
       where: eq(inspirationMessages.active, true)
     });
     
     if (allInspirationalMessages.length === 0) {
-      return {
+      // Default inspiration if none in database
+      todaysInspiration = {
         message: "Caregiving often calls us to lean into love we didn't know possible.",
         author: "Tia Walker"
       };
+    } else {
+      // Get a random message for today
+      const randomIndex = Math.floor(Math.random() * allInspirationalMessages.length);
+      todaysInspiration = allInspirationalMessages[randomIndex];
     }
     
-    // Get a random message
-    const randomIndex = Math.floor(Math.random() * allInspirationalMessages.length);
-    return allInspirationalMessages[randomIndex];
+    // Update the last inspiration date
+    lastInspirationDate = today;
+    console.log(`New daily inspiration selected for ${todayStr}`);
+    
+    return todaysInspiration;
   },
 
   // Doctors
