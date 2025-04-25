@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get(`${apiPrefix}/emergency-info/:id`, isAuthenticated, async (req, res) => {
+  app.get(`${apiPrefix}/emergency-info/:id`, async (req, res) => {
     try {
       const id = req.params.id;
       const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
@@ -675,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/emergency-info`, isAuthenticated, async (req, res) => {
+  app.post(`${apiPrefix}/emergency-info`, async (req, res) => {
     try {
       const newEmergencyInfo = await storage.createEmergencyInfo(req.body);
       res.status(201).json(newEmergencyInfo);
@@ -685,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch(`${apiPrefix}/emergency-info/:id`, isAuthenticated, async (req, res) => {
+  app.patch(`${apiPrefix}/emergency-info/:id`, async (req, res) => {
     try {
       const id = req.params.id;
       const updatedEmergencyInfo = await storage.updateEmergencyInfo(parseInt(id), req.body);
@@ -702,7 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // PIN Verification for Emergency Info
-  app.post(`${apiPrefix}/emergency-info/:id/verify-pin`, isAuthenticated, async (req, res) => {
+  app.post(`${apiPrefix}/emergency-info/:id/verify-pin`, async (req, res) => {
     try {
       const id = req.params.id;
       const { pin } = req.body;
@@ -731,7 +731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Set PIN for Emergency Info
-  app.post(`${apiPrefix}/emergency-info/:id/set-pin`, isAuthenticated, async (req, res) => {
+  app.post(`${apiPrefix}/emergency-info/:id/set-pin`, async (req, res) => {
     try {
       const id = req.params.id;
       const { pin } = req.body;
