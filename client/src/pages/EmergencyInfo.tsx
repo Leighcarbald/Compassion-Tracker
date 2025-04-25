@@ -119,19 +119,32 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         additionalInfo: emergencyInfo.additionalInfo || ""
       });
       
+      // When isLocked is already false, we don't need to check verification status
+      // This helps prevent constant re-verification loops
+      if (!isLocked) {
+        console.log(`Emergency info is already unlocked, skipping verification check`);
+        return;
+      }
+      
       // First check local PIN storage - this is using our enhanced security
       // with automatic expiration after 15 minutes
       const pinUnlockedLocally = emergencyInfo.id ? isUnlocked(emergencyInfo.id) : false;
-      console.log(`PIN ${emergencyInfo.id} IS UNLOCKED: ${pinUnlockedLocally}`);
+      console.log(`PIN ${emergencyInfo.id} IS UNLOCKED LOCALLY: ${pinUnlockedLocally}`);
       
       if (pinUnlockedLocally) {
         console.log(`PIN ${emergencyInfo.id} is verified in local storage with security expiration, unlocking...`);
         setIsLocked(false);
         console.log(`VERIFICATION: PIN ${emergencyInfo.id} is now unlocked: ${!isLocked}`);
-      } else {
-        // Double-check with server if this emergency info is verified there
-        // This is useful during development and as a fallback
-        console.log(`PIN ${emergencyInfo.id} not found in local secure storage, checking with server...`);
+        return;
+      } 
+      
+      // If we're here, the PIN isn't verified locally
+      // We'll check with the server once when the emergency info first loads
+      // but only when the component initially mounts (using initialLoadRef)
+      if (initialLoadRef.current && emergencyInfo.id) {
+        initialLoadRef.current = false;
+        
+        console.log(`Initial load check: checking server verification status for PIN ${emergencyInfo.id}...`);
         fetch(`/api/emergency-info/${emergencyInfo.id}/check-verified`)
           .then(response => response.json())
           .then(data => {
@@ -143,21 +156,17 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               unlockPin(emergencyInfo.id);
             } else {
               console.log('Emergency info not verified in current session, staying locked');
-              // Ensure it's locked locally too for consistency
-              setIsLocked(true);
-              if (emergencyInfo.id) {
-                lockPin(emergencyInfo.id);
-              }
+              // We don't need to explicitly set isLocked to true here
+              // as it's already true (default state)
             }
           })
           .catch(error => {
             console.error('Error checking PIN verification status:', error);
-            // Keep locked on error for security
-            setIsLocked(true);
+            // Keep locked on error for security (already locked by default)
           });
       }
     }
-  }, [emergencyInfo, isUnlocked]);
+  }, [emergencyInfo, isLocked, isUnlocked]);
 
   // Handle care recipient selection
   const handleCareRecipientChange = (id: string) => {
@@ -258,10 +267,36 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         return;
       }
       
-      // Show PIN verification dialog
-      setShowPinDialog(true);
-      setPin("");
-      setPinError("");
+      // First check if the server already has this PIN verified (via cookies)
+      console.log(`Checking if PIN ${emergencyInfo.id} is already verified on server before showing dialog...`);
+      fetch(`/api/emergency-info/${emergencyInfo.id}/check-verified`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.verified) {
+            // PIN is already verified via server cookie, unlock without prompting
+            console.log('Server already has this PIN verified, unlocking without prompting');
+            setIsLocked(false);
+            unlockPin(emergencyInfo.id);
+            toast({
+              title: "Authenticated",
+              description: "Emergency information unlocked via existing session",
+              duration: 2000,
+            });
+          } else {
+            // Not verified on server, show dialog for manual entry
+            console.log('PIN not verified in server session, showing verification dialog');
+            setShowPinDialog(true);
+            setPin("");
+            setPinError("");
+          }
+        })
+        .catch(error => {
+          console.error('Error checking PIN verification status:', error);
+          // Show verification dialog on error
+          setShowPinDialog(true);
+          setPin("");
+          setPinError("");
+        });
     } else {
       // Lock the information (this is immediate)
       setIsLocked(true);
