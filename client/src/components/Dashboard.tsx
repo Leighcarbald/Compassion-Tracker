@@ -122,12 +122,9 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
                   <div className="flex-1">
                     <div className="text-sm font-medium">{event.title}</div>
                     <div className="text-xs text-gray-500">
-                      {/* Format time (handle case where time is just a time string without date) */}
-                      {typeof event.time === 'string' && event.time.includes('T') 
-                        ? formatTime(event.time)
-                        : event.time
-                      } 
-                      {event.details && `- ${event.details}`}
+                      {/* Always use formatTime for any time format */}
+                      {formatTime(event.time)}
+                      {event.details && ` - ${event.details}`}
                     </div>
                   </div>
                 </div>
