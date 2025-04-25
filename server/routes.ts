@@ -797,10 +797,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set PIN for Emergency Info
   app.post(`${apiPrefix}/emergency-info/:id/set-pin`, async (req, res) => {
     try {
+      console.log('Set PIN request received with body:', req.body);
+      console.log('Request params:', req.params);
+      
       const id = parseInt(req.params.id);
       const { pin } = req.body;
       
-      console.log(`Setting PIN for emergency info #${id}`);
+      console.log(`Setting PIN for emergency info #${id}, pin value type: ${typeof pin}, pin length: ${pin ? pin.length : 'undefined'}`);
       
       if (!pin) {
         console.log(`Set PIN failed: PIN required`);
@@ -813,8 +816,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate PIN format (6 digits)
-      if (!/^\d{6}$/.test(pin)) {
-        console.log(`Set PIN failed: Invalid PIN format`);
+      if (!/^\d{6}$/.test(pin.toString())) {
+        console.log(`Set PIN failed: Invalid PIN format, value: ${pin}`);
         return res.status(400).json({ message: 'PIN must be a 6-digit number', success: false });
       }
       
