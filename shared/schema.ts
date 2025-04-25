@@ -23,6 +23,9 @@ export const medications = pgTable("medications", {
   icon: text("icon").default("pills"),
   iconColor: text("icon_color").default("#4F46E5"),
   careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  doctorId: integer("doctor_id").references(() => doctors.id),
+  prescriptionNumber: text("prescription_number"),
+  expirationDate: date("expiration_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -146,6 +149,44 @@ export const inspirationMessages = pgTable("inspiration_messages", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// Doctors
+export const doctors = pgTable("doctors", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  specialty: text("specialty").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  address: text("address"),
+  email: text("email"),
+  notes: text("notes"),
+  careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Pharmacies
+export const pharmacies = pgTable("pharmacies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  notes: text("notes"),
+  careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Medication Pharmacy Relation - which medications are filled at which pharmacies
+export const medicationPharmacies = pgTable("medication_pharmacies", {
+  id: serial("id").primaryKey(),
+  medicationId: integer("medication_id").references(() => medications.id).notNull(),
+  pharmacyId: integer("pharmacy_id").references(() => pharmacies.id).notNull(),
+  refillInfo: text("refill_info"),
+  lastRefillDate: date("last_refill_date"),
+  nextRefillDate: date("next_refill_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 // Users table (keeping existing structure)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -173,7 +214,9 @@ export const careRecipientsRelations = relations(careRecipients, ({ one, many })
   bowelMovements: many(bowelMovements),
   supplies: many(supplies),
   sleepRecords: many(sleep),
-  notes: many(notes)
+  notes: many(notes),
+  doctors: many(doctors),
+  pharmacies: many(pharmacies)
 }));
 
 export const medicationsRelations = relations(medications, ({ one, many }) => ({
@@ -181,8 +224,40 @@ export const medicationsRelations = relations(medications, ({ one, many }) => ({
     fields: [medications.careRecipientId],
     references: [careRecipients.id]
   }),
+  prescribingDoctor: one(doctors, {
+    fields: [medications.doctorId],
+    references: [doctors.id]
+  }),
   schedules: many(medicationSchedules),
-  logs: many(medicationLogs)
+  logs: many(medicationLogs),
+  pharmacyRelations: many(medicationPharmacies)
+}));
+
+export const doctorsRelations = relations(doctors, ({ one, many }) => ({
+  careRecipient: one(careRecipients, {
+    fields: [doctors.careRecipientId],
+    references: [careRecipients.id]
+  }),
+  prescriptions: many(medications)
+}));
+
+export const pharmaciesRelations = relations(pharmacies, ({ one, many }) => ({
+  careRecipient: one(careRecipients, {
+    fields: [pharmacies.careRecipientId],
+    references: [careRecipients.id]
+  }),
+  medicationRelations: many(medicationPharmacies)
+}));
+
+export const medicationPharmaciesRelations = relations(medicationPharmacies, ({ one }) => ({
+  medication: one(medications, {
+    fields: [medicationPharmacies.medicationId],
+    references: [medications.id]
+  }),
+  pharmacy: one(pharmacies, {
+    fields: [medicationPharmacies.pharmacyId],
+    references: [pharmacies.id]
+  })
 }));
 
 export const medicationSchedulesRelations = relations(medicationSchedules, ({ one, many }) => ({
@@ -230,6 +305,12 @@ export const insertNoteSchema = createInsertSchema(notes);
 
 export const insertInspirationMessageSchema = createInsertSchema(inspirationMessages);
 
+export const insertDoctorSchema = createInsertSchema(doctors);
+
+export const insertPharmacySchema = createInsertSchema(pharmacies);
+
+export const insertMedicationPharmacySchema = createInsertSchema(medicationPharmacies);
+
 // Define types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -269,3 +350,12 @@ export type InsertNote = z.infer<typeof insertNoteSchema>;
 
 export type InspirationMessage = typeof inspirationMessages.$inferSelect;
 export type InsertInspirationMessage = z.infer<typeof insertInspirationMessageSchema>;
+
+export type Doctor = typeof doctors.$inferSelect;
+export type InsertDoctor = z.infer<typeof insertDoctorSchema>;
+
+export type Pharmacy = typeof pharmacies.$inferSelect;
+export type InsertPharmacy = z.infer<typeof insertPharmacySchema>;
+
+export type MedicationPharmacy = typeof medicationPharmacies.$inferSelect;
+export type InsertMedicationPharmacy = z.infer<typeof insertMedicationPharmacySchema>;
