@@ -724,28 +724,93 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 {verifyPinMutation.isPending ? 'Verifying...' : 'Unlock'}
               </Button>
             ) : (
-              // If no PIN exists yet, show set PIN button
+              // If no PIN exists yet, show button to go to confirmation dialog
               <Button 
                 type="button" 
                 onClick={() => {
-                  // Set new PIN
-                  if (pin.length === 6) {
-                    setPinMutation.mutate(pin);
-                    setShowPinDialog(false);
-                    setIsLocked(false);
-                    
-                    // Set the authenticated state immediately
-                    if (emergencyInfo?.id) {
-                      // Use our context function to remember the PIN is unlocked
-                      unlockPin(emergencyInfo.id);
-                    }
+                  // First validate the PIN
+                  if (pin.length !== 6) {
+                    setPinError('PIN must be 6 digits');
+                    return;
                   }
+                  
+                  // Store the PIN temporarily and show the confirmation dialog
+                  setConfirmPin("");
+                  setConfirmPinError("");
+                  setShowPinDialog(false);
+                  setShowSetPinDialog(true);
                 }} 
-                disabled={pin.length !== 6 || setPinMutation.isPending}
+                disabled={pin.length !== 6}
               >
-                {setPinMutation.isPending ? 'Creating...' : 'Create PIN'}
+                Continue
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* PIN Confirmation Dialog */}
+      <Dialog open={showSetPinDialog} onOpenChange={(open) => !open && setShowSetPinDialog(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm your PIN</DialogTitle>
+            <DialogDescription>
+              Please confirm your 6-digit PIN to ensure it's correctly entered.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="confirmPin">Re-enter PIN Code</Label>
+              <Input
+                id="confirmPin"
+                type="password"
+                placeholder="Enter 6-digit PIN again"
+                maxLength={6}
+                value={confirmPin}
+                onChange={(e) => {
+                  // Only allow numeric input
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setConfirmPin(value);
+                  if (confirmPinError) setConfirmPinError('');
+                }}
+              />
+              {confirmPinError && <p className="text-sm text-red-500">{confirmPinError}</p>}
+              <p className="text-xs text-gray-500 mt-2">
+                Make sure to remember this PIN. It will be needed to access emergency information.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowSetPinDialog(false);
+                setShowPinDialog(true);
+              }}
+            >
+              Back
+            </Button>
+            <Button 
+              type="button" 
+              onClick={() => {
+                if (confirmPin.length !== 6) {
+                  setConfirmPinError('PIN must be 6 digits');
+                  return;
+                }
+                
+                if (pin !== confirmPin) {
+                  setConfirmPinError('PINs do not match. Please try again.');
+                  return;
+                }
+                
+                // PINs match, proceed with setting the PIN
+                setPinMutation.mutate(pin);
+              }} 
+              disabled={confirmPin.length !== 6 || setPinMutation.isPending}
+            >
+              {setPinMutation.isPending ? 'Creating PIN...' : 'Create PIN'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
