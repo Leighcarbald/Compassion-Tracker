@@ -1,9 +1,35 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import crypto from 'crypto';
+import helmet from 'helmet';
+
+// Generate a random session secret if one isn't provided in environment
+if (!process.env.SESSION_SECRET) {
+  process.env.SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+  log('Generated random SESSION_SECRET for development use', 'security');
+  log('For production, set a persistent SESSION_SECRET in your environment variables', 'security');
+}
 
 const app = express();
-app.use(express.json());
+
+// Apply security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for development
+      connectSrc: ["'self'", "ws:", "wss:"], // Allow WebSocket connections for development
+      imgSrc: ["'self'", "data:", "blob:"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", "data:"],
+    },
+  },
+  // Disable for development as it can interfere with hot module reload
+  crossOriginEmbedderPolicy: process.env.NODE_ENV === 'production',
+}));
+
+app.use(express.json({ limit: '1mb' })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
@@ -39,12 +65,29 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Global error handler
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    
+    // Log the full error only in development
+    if (app.get('env') === 'development') {
+      console.error(`Error (${req.method} ${req.path}):`, err);
+    } else {
+      // In production, just log the error message without the stack trace
+      console.error(`Error (${req.method} ${req.path}): ${message}`);
+    }
 
-    res.status(status).json({ message });
-    throw err;
+    // Don't expose error details in production
+    const response = {
+      message,
+      ...(app.get('env') === 'development' && { 
+        stack: err.stack,
+        details: err.details || err.errors || undefined
+      })
+    };
+
+    res.status(status).json(response);
   });
 
   // importantly only setup vite in development and after

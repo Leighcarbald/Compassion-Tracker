@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  const { isAuthenticated } = setupAuth(app);
+  
   // API prefix
   const apiPrefix = '/api';
 
@@ -407,8 +410,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Emergency Info
-  app.get(`${apiPrefix}/emergency-info`, async (req, res) => {
+  // Emergency Info - Protected Routes
+  app.get(`${apiPrefix}/emergency-info`, isAuthenticated, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
       
@@ -424,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get(`${apiPrefix}/emergency-info/:id`, async (req, res) => {
+  app.get(`${apiPrefix}/emergency-info/:id`, isAuthenticated, async (req, res) => {
     try {
       const id = req.params.id;
       const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
@@ -440,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/emergency-info`, async (req, res) => {
+  app.post(`${apiPrefix}/emergency-info`, isAuthenticated, async (req, res) => {
     try {
       const newEmergencyInfo = await storage.createEmergencyInfo(req.body);
       res.status(201).json(newEmergencyInfo);
@@ -450,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch(`${apiPrefix}/emergency-info/:id`, async (req, res) => {
+  app.patch(`${apiPrefix}/emergency-info/:id`, isAuthenticated, async (req, res) => {
     try {
       const id = req.params.id;
       const updatedEmergencyInfo = await storage.updateEmergencyInfo(parseInt(id), req.body);

@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -9,6 +9,7 @@ import * as schema from "@shared/schema";
 import { eq } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "../db";
+import rateLimit from "express-rate-limit";
 
 declare global {
   namespace Express {
@@ -32,6 +33,34 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Set up rate limiters to prevent brute force attacks
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // limit each IP to 10 login attempts per windowMs
+    message: { message: "Too many login attempts, please try again after 15 minutes" },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const registrationLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // limit each IP to 5 registration attempts per windowMs
+    message: { message: "Too many registration attempts, please try again after an hour" },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 300, // limit each IP to 300 requests per windowMs
+    message: { message: "Too many requests, please try again after 15 minutes" },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Apply the API rate limiter to all api routes
+  app.use('/api', apiLimiter);
+  
   const PostgresSessionStore = connectPg(session);
   const sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
 
@@ -83,7 +112,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", registrationLimiter, async (req, res, next) => {
     try {
       const existingUser = await db.query.users.findFirst({
         where: eq(schema.users.username, req.body.username)
