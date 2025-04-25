@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { eq, and, lt, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, lt, gte, lte, desc, sql, inArray } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import {
@@ -80,12 +80,14 @@ export const storage = {
   async getTodayStats(careRecipientId: number) {
     const { start, end } = getTodayDateRange();
     
-    // Get medication stats
+    // First get all medications for this care recipient
+    const meds = await db.query.medications.findMany({
+      where: eq(medications.careRecipientId, careRecipientId)
+    });
+    
+    // Get medication stats using the medication IDs
     const medicationCount = await db.query.medicationSchedules.findMany({
-      where: eq(medicationSchedules.medicationId, sql`
-        SELECT id FROM ${medications} 
-        WHERE ${medications.careRecipientId} = ${careRecipientId}
-      `),
+      where: meds.length > 0 ? inArray(medicationSchedules.medicationId, meds.map(med => med.id)) : undefined,
       with: {
         medication: true
       }
@@ -178,12 +180,14 @@ export const storage = {
     const now = new Date();
     const endOfToday = endOfDay(now);
     
-    // Get upcoming medication schedules
+    // First get all medications for this care recipient
+    const meds = await db.query.medications.findMany({
+      where: eq(medications.careRecipientId, careRecipientId)
+    });
+    
+    // Get upcoming medication schedules using the medication IDs
     const medicationEvents = await db.query.medicationSchedules.findMany({
-      where: eq(medicationSchedules.medicationId, sql`
-        SELECT id FROM ${medications} 
-        WHERE ${medications.careRecipientId} = ${careRecipientId}
-      `),
+      where: meds.length > 0 ? inArray(medicationSchedules.medicationId, meds.map(med => med.id)) : undefined,
       with: {
         medication: true
       },
