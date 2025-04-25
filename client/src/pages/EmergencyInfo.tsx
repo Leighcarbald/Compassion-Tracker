@@ -26,6 +26,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const [selectedCareRecipient, setSelectedCareRecipient] = useState<string | null>(null);
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  // Start with locked state, but we'll check for authentication in useEffect
   const [isLocked, setIsLocked] = useState(true);
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [pin, setPin] = useState("");
@@ -88,6 +89,12 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         dnrOrder: emergencyInfo.dnrOrder || false,
         additionalInfo: emergencyInfo.additionalInfo || ""
       });
+      
+      // Check if we have previously authenticated this emergency info
+      const wasAuthenticated = localStorage.getItem(`emergency_info_authenticated_${emergencyInfo.id}`);
+      if (wasAuthenticated === 'true') {
+        setIsLocked(false);
+      }
     }
   }, [emergencyInfo]);
 
@@ -96,7 +103,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     setSelectedCareRecipient(id);
     // Reset editing state when changing care recipient
     setIsEditing(false);
-    setIsLocked(true);
+    
+    // We'll let the useEffect that checks localStorage determine
+    // if this emergency info should be locked or unlocked
+    // based on previous authentication
   };
 
   // Handle form field changes
@@ -142,7 +152,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       });
       queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
       setIsEditing(false);
-      setIsLocked(true);
+      // Don't lock the information after saving - this would be frustrating for users
+      // who want to continue viewing the information after saving
     },
     onError: (error) => {
       toast({
