@@ -49,6 +49,9 @@ function Router() {
         <Route path="/glucose-insulin">
           <GlucoseInsulin activeTab={activeTab} setActiveTab={setActiveTab} />
         </Route>
+        <Route path="/bowel-movements">
+          <BowelMovements activeTab={activeTab} setActiveTab={setActiveTab} />
+        </Route>
         <Route component={NotFound} />
       </Switch>
       <Toaster />
