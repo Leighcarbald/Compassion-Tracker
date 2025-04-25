@@ -91,6 +91,29 @@ export default function AddCareEventModal({
     }
   });
   
+  // When the modal is opened or closed, reset the form
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form when modal opens
+      form.reset({
+        type: defaultEventType || "meal",
+        name: "",
+        date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+        time: format(new Date(), "HH:mm"),
+        notes: "",
+        reminder: false,
+        careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
+        medicationId: undefined,
+        mealType: defaultEventType === "meal" ? "breakfast" : undefined
+      });
+      
+      // Set initial event type
+      setEventType(defaultEventType || "meal");
+      
+      console.log("Form reset on modal open with values:", form.getValues());
+    }
+  }, [isOpen, form, selectedDate, defaultEventType, careRecipientId]);
+  
   // When medication is selected, update the name field
   useEffect(() => {
     const medicationId = form.watch('medicationId');
@@ -304,15 +327,20 @@ export default function AddCareEventModal({
   const handleTypeChange = (type: EventType) => {
     setEventType(type);
     
-    // Reset form values when changing types to prevent 
-    // data from one event type carrying over to another
-    form.setValue("type", type);
-    form.setValue("name", "");  // Clear the name/type/food field
+    // Completely reset the form when changing types to prevent data carryover
+    form.reset({
+      type: type,
+      name: "", // Clear the name/type/food field
+      date: form.getValues("date"),  // Preserve the date
+      time: form.getValues("time"),  // Preserve the time
+      notes: "", // Reset notes
+      reminder: false,
+      careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
+      medicationId: undefined,
+      mealType: type === "meal" ? "breakfast" : undefined
+    });
     
-    // Reset specific fields based on the new type
-    if (type === "meal") {
-      form.setValue("mealType", "breakfast");
-    }
+    console.log("Form reset to event type:", type, "with values:", form.getValues());
   };
 
   return (
