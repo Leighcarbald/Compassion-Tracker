@@ -24,7 +24,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
-import { Pill, Utensils, Thermometer } from "lucide-react";
+import { Pill, Utensils, Toilet } from "lucide-react";
 
 type EventType = "medication" | "meal" | "bowel" | "appointment";
 
@@ -173,7 +173,7 @@ export default function AddCareEventModal({
                   } rounded-md flex flex-col items-center`}
                   onClick={() => handleTypeChange("bowel")}
                 >
-                  <Thermometer className="h-5 w-5 mb-1" />
+                  <Toilet className="h-5 w-5 mb-1" />
                   <span className="text-xs">Bowel</span>
                 </Button>
               </div>

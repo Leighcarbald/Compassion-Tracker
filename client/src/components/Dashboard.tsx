@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatTime, getTimeAgo } from "@/lib/utils";
 import StatusCard from "./StatusCard";
-import { Pill, Utensils, Thermometer, Moon, Heart } from "lucide-react";
+import { Pill, Utensils, Toilet, Moon, Heart } from "lucide-react";
 
 interface DashboardProps {
   careRecipientId: string | null;
@@ -65,7 +65,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
         <StatusCard
           title="Bowel Movement"
           value={todayStats?.bowelMovement?.lastTime || "None today"}
-          icon={<Thermometer className="h-4 w-4" />}
+          icon={<Toilet className="h-4 w-4" />}
           color="accent"
           secondaryText={todayStats?.supplies?.depends 
             ? `${todayStats.supplies.depends} depends remaining` 
