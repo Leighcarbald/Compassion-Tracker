@@ -27,6 +27,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
   const { toast } = useToast();
 
   // Fetch care recipients
@@ -156,12 +159,25 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
 
   const toggleLock = () => {
     if (isLocked) {
-      // Show confirmation dialog before unlocking
-      if (confirm("You are about to view sensitive personal information. Please ensure privacy.")) {
-        setIsLocked(false);
-      }
+      // Show PIN dialog to unlock
+      setShowPinDialog(true);
     } else {
       setIsLocked(true);
+      setPin("");
+      setPinError("");
+    }
+  };
+  
+  const handlePinSubmit = () => {
+    // For this demo, we're using a hardcoded PIN "1234"
+    // In a real app, this would be stored securely and validated against a hashed version
+    if (pin === "1234") {
+      setIsLocked(false);
+      setShowPinDialog(false);
+      setPin("");
+      setPinError("");
+    } else {
+      setPinError("Incorrect PIN. Please try again.");
     }
   };
 
@@ -532,6 +548,48 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           careRecipientId={selectedCareRecipient}
         />
       )}
+
+      {/* PIN Dialog */}
+      <Dialog open={showPinDialog} onOpenChange={(open) => !open && setShowPinDialog(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enter Security PIN</DialogTitle>
+            <DialogDescription>
+              Please enter your 4-digit PIN to unlock sensitive information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="pin">PIN Code</Label>
+              <Input
+                id="pin"
+                type="password"
+                placeholder="Enter 4-digit PIN"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => {
+                  // Only allow numeric input
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setPin(value);
+                  if (pinError) setPinError('');
+                }}
+              />
+              {pinError && <p className="text-sm text-red-500">{pinError}</p>}
+              <p className="text-xs text-gray-500 mt-2">
+                For demo purposes, use PIN: 1234
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowPinDialog(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handlePinSubmit} disabled={pin.length !== 4}>
+              Unlock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
