@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
+import PageHeader from "@/components/PageHeader";
 
 // Use our centralized PIN authentication hook for better state management
 import { usePinAuth } from "@/hooks/use-pin-auth";
