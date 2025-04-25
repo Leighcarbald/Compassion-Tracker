@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { formatTime, getTimeAgo } from "@/lib/utils";
 import StatusCard from "./StatusCard";
 import { Pill, Utensils, Toilet, Moon, Heart } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface DashboardProps {
   careRecipientId: string | null;
@@ -42,13 +43,12 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
     enabled: !!careRecipientId,
   });
 
+  const [_, setLocation] = useLocation();
+  
   return (
     <section className="p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Dashboard</h2>
-        <Button variant="ghost" size="sm" className="text-primary">
-          Edit <span className="ml-1">✏️</span>
-        </Button>
       </div>
 
       {/* Status Cards */}
@@ -157,7 +157,14 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
       <div className="mb-6">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-md font-medium">Recent Notes</h3>
-          <Button variant="link" size="sm" className="text-primary">See All</Button>
+          <Button 
+            variant="link" 
+            size="sm" 
+            className="text-primary"
+            onClick={() => setLocation('/notes')}
+          >
+            See All
+          </Button>
         </div>
         <Card className="overflow-hidden">
           <CardContent className="p-0">
