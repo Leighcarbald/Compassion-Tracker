@@ -250,6 +250,11 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     }
   });
   
+  // State for PIN confirmation
+  const [confirmPin, setConfirmPin] = useState("");
+  const [confirmPinError, setConfirmPinError] = useState("");
+  const [showSetPinDialog, setShowSetPinDialog] = useState(false);
+  
   // Set PIN mutation
   const setPinMutation = useMutation({
     mutationFn: async (newPin: string) => {
@@ -257,7 +262,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/set-pin`, { pin: newPin });
       return response.json();
     },
-    onSuccess: (data: { message: string; success: boolean } | null) => {
+    onSuccess: (data: { message: string; success: boolean; id?: number } | null) => {
       if (data?.success) {
         toast({
           title: "PIN Updated",
@@ -265,9 +270,18 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           variant: "default",
         });
         
+        setShowSetPinDialog(false);
+        setPin("");
+        setConfirmPin("");
+        setConfirmPinError("");
+        
+        // Unlock immediately
+        setIsLocked(false);
+        
         // Store that we've successfully set a PIN and are authenticated
         if (emergencyInfo?.id) {
           unlockPin(emergencyInfo.id);
+          console.log(`Set new PIN for ID ${emergencyInfo.id}, storing in localStorage and session`);
         }
         
         // Refresh emergency info data to get updated pinHash status
