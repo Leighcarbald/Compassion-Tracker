@@ -44,16 +44,80 @@ import {
   insertGlucoseSchema,
   insertInsulinSchema
 } from "@shared/schema";
-import { format, startOfDay, endOfDay, addHours, formatDistance } from "date-fns";
+import { format, startOfDay, endOfDay, addHours, formatDistance, isToday } from "date-fns";
 
-// Helper function to get today's date range
+// Store the last date reset was performed to track day changes
+let lastResetDate = new Date();
+let midnightResetInitialized = false;
+
+// Helper function to check if a date is from today
+const isDateFromToday = (date: Date): boolean => {
+  return isToday(new Date(date));
+};
+
+// Helper function to get today's date range and check for date changes
 const getTodayDateRange = () => {
   const today = new Date();
+  
+  // Check if we need to reset daily stats (if the current day is different from last reset day)
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const lastResetStr = format(lastResetDate, 'yyyy-MM-dd');
+  
+  if (todayStr !== lastResetStr) {
+    console.log(`Daily stats reset triggered: Current date ${todayStr} differs from last reset date ${lastResetStr}`);
+    lastResetDate = today; // Update the last reset date
+    
+    // The date has changed - this could be due to a server restart or midnight passing
+    // We don't need to do anything special here as the stats are calculated fresh on each request
+    // The getTodayDateRange function ensures we're always using today's date range
+  }
+  
   return {
     start: startOfDay(today),
     end: endOfDay(today)
   };
 };
+
+// Schedule midnight reset job - exported and called from routes.ts
+export const scheduleMidnightReset = () => {
+  if (midnightResetInitialized) {
+    return; // Only initialize once
+  }
+  
+  midnightResetInitialized = true;
+  console.log('Midnight reset scheduler initialized');
+  
+  const runMidnightReset = () => {
+    const now = new Date();
+    const night = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1, // tomorrow
+      0, // hour: 0 = midnight
+      0, // minute
+      5 // 5 seconds after midnight to make sure we're in the new day
+    );
+    
+    const msUntilMidnight = night.getTime() - now.getTime();
+    
+    // Schedule the reset at midnight
+    setTimeout(() => {
+      console.log('Executing midnight reset for daily stats');
+      // Reset the date so the next getTodayDateRange call will trigger a reset
+      lastResetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // Schedule next day's reset
+      setTimeout(runMidnightReset, 1000);
+    }, msUntilMidnight);
+    
+    console.log(`Midnight reset scheduled to run in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`);
+  };
+  
+  // Start the reset scheduling cycle
+  runMidnightReset();
+};
+
+// Export the reset scheduler function to be called when server starts
 
 export const storage = {
   // Users
