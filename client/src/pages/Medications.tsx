@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import AddCareEventModal from "@/components/AddCareEventModal";
 import MedicationInventoryModal from "@/components/MedicationInventoryModal";
+import AddMedicationModal from "@/components/AddMedicationModal";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MedicationLog, CareRecipient, Medication } from "@shared/schema";
@@ -27,6 +28,7 @@ interface MedicationsProps {
 
 export default function Medications({ activeTab, setActiveTab }: MedicationsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'today' | 'week' | 'all'>('today');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
@@ -144,9 +146,24 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         <section className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Medications</h2>
-            <Button size="sm" variant="outline" className="text-primary" onClick={() => setIsModalOpen(true)}>
-              Add New <Plus className="ml-1 h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-primary" 
+                onClick={() => setIsAddMedicationModalOpen(true)}
+              >
+                Add Medication <Plus className="ml-1 h-4 w-4" />
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-primary" 
+                onClick={() => setIsModalOpen(true)}
+              >
+                Log Dose <Plus className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Filters */}
@@ -285,6 +302,13 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         isOpen={isInventoryModalOpen}
         onClose={() => setIsInventoryModalOpen(false)}
         medication={selectedMedication}
+      />
+      
+      {/* Add Medication Modal */}
+      <AddMedicationModal
+        isOpen={isAddMedicationModalOpen}
+        onClose={() => setIsAddMedicationModalOpen(false)}
+        careRecipientId={activeCareRecipient}
       />
     </>
   );
