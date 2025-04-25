@@ -406,6 +406,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Emergency Info
+  app.get(`${apiPrefix}/emergency-info`, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const emergencyInfo = await storage.getEmergencyInfo(parseInt(careRecipientId));
+      res.json(emergencyInfo);
+    } catch (error) {
+      console.error('Error fetching emergency info:', error);
+      res.status(500).json({ message: 'Error fetching emergency info' });
+    }
+  });
+
+  app.get(`${apiPrefix}/emergency-info/:id`, async (req, res) => {
+    try {
+      const id = req.params.id;
+      const emergencyInfo = await storage.getEmergencyInfoById(parseInt(id));
+      
+      if (!emergencyInfo) {
+        return res.status(404).json({ message: 'Emergency info not found' });
+      }
+      
+      res.json(emergencyInfo);
+    } catch (error) {
+      console.error('Error fetching emergency info by ID:', error);
+      res.status(500).json({ message: 'Error fetching emergency info by ID' });
+    }
+  });
+
+  app.post(`${apiPrefix}/emergency-info`, async (req, res) => {
+    try {
+      const newEmergencyInfo = await storage.createEmergencyInfo(req.body);
+      res.status(201).json(newEmergencyInfo);
+    } catch (error) {
+      console.error('Error creating emergency info:', error);
+      res.status(500).json({ message: 'Error creating emergency info' });
+    }
+  });
+
+  app.patch(`${apiPrefix}/emergency-info/:id`, async (req, res) => {
+    try {
+      const id = req.params.id;
+      const updatedEmergencyInfo = await storage.updateEmergencyInfo(parseInt(id), req.body);
+      
+      if (!updatedEmergencyInfo) {
+        return res.status(404).json({ message: 'Emergency info not found' });
+      }
+      
+      res.json(updatedEmergencyInfo);
+    } catch (error) {
+      console.error('Error updating emergency info:', error);
+      res.status(500).json({ message: 'Error updating emergency info' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

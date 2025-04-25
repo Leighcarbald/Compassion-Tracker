@@ -295,6 +295,13 @@ export const medicationSchedulesRelations = relations(medicationSchedules, ({ on
   logs: many(medicationLogs)
 }));
 
+export const emergencyInfoRelations = relations(emergencyInfo, ({ one }) => ({
+  careRecipient: one(careRecipients, {
+    fields: [emergencyInfo.careRecipientId],
+    references: [careRecipients.id]
+  })
+}));
+
 // Create insert/select schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -338,9 +345,14 @@ export const insertPharmacySchema = createInsertSchema(pharmacies);
 
 export const insertMedicationPharmacySchema = createInsertSchema(medicationPharmacies);
 
+export const insertEmergencyInfoSchema = createInsertSchema(emergencyInfo);
+
 // Define types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type EmergencyInfo = typeof emergencyInfo.$inferSelect;
+export type InsertEmergencyInfo = z.infer<typeof insertEmergencyInfoSchema>;
 
 export type CareRecipient = typeof careRecipients.$inferSelect;
 export type InsertCareRecipient = z.infer<typeof insertCareRecipientSchema>;

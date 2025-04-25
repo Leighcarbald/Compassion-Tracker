@@ -9,6 +9,7 @@ import Calendar from "@/pages/Calendar";
 import Notes from "@/pages/Notes";
 import Doctors from "@/pages/Doctors";
 import Pharmacies from "@/pages/Pharmacies";
+import EmergencyInfo from "@/pages/EmergencyInfo";
 import { useState } from "react";
 import { TabType } from "./lib/types";
 
@@ -35,6 +36,9 @@ function Router() {
         </Route>
         <Route path="/pharmacies">
           <Pharmacies activeTab={activeTab} setActiveTab={setActiveTab} />
+        </Route>
+        <Route path="/emergency">
+          <EmergencyInfo activeTab={activeTab} setActiveTab={setActiveTab} />
         </Route>
         <Route component={NotFound} />
       </Switch>

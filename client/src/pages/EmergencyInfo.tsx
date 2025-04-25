@@ -1,0 +1,537 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import Header from "@/components/Header";
+import BottomNavigation from "@/components/BottomNavigation";
+import { TabType } from "@/lib/types";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { ShieldAlert, Save, Plus, Trash2, Edit, Lock, Unlock } from "lucide-react";
+import AddCareEventModal from "@/components/AddCareEventModal";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
+
+interface EmergencyInfoProps {
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
+}
+
+export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfoProps) {
+  const [selectedCareRecipient, setSelectedCareRecipient] = useState<string | null>(null);
+  const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLocked, setIsLocked] = useState(true);
+  const { toast } = useToast();
+
+  // Fetch care recipients
+  const { data: careRecipients = [] } = useQuery<CareRecipient[]>({
+    queryKey: ["/api/care-recipients"],
+  });
+
+  // Fetch emergency info for selected care recipient
+  const { data: emergencyInfo, isLoading } = useQuery<EmergencyInfoType>({
+    queryKey: ["/api/emergency-info", selectedCareRecipient],
+    enabled: !!selectedCareRecipient,
+  });
+
+  // Form state for emergency info
+  const [formData, setFormData] = useState({
+    dateOfBirth: "",
+    socialSecurityNumber: "",
+    insuranceProvider: "",
+    insurancePolicyNumber: "",
+    insuranceGroupNumber: "",
+    insurancePhone: "",
+    emergencyContact1Name: "",
+    emergencyContact1Phone: "",
+    emergencyContact1Relation: "",
+    emergencyContact2Name: "",
+    emergencyContact2Phone: "",
+    emergencyContact2Relation: "",
+    allergies: "",
+    medicationAllergies: "",
+    bloodType: "",
+    advanceDirectives: false,
+    dnrOrder: false,
+    additionalInfo: ""
+  });
+
+  // Update form when emergency info changes
+  useEffect(() => {
+    if (emergencyInfo) {
+      setFormData({
+        dateOfBirth: emergencyInfo.dateOfBirth ? new Date(emergencyInfo.dateOfBirth).toISOString().split('T')[0] : "",
+        socialSecurityNumber: emergencyInfo.socialSecurityNumber || "",
+        insuranceProvider: emergencyInfo.insuranceProvider || "",
+        insurancePolicyNumber: emergencyInfo.insurancePolicyNumber || "",
+        insuranceGroupNumber: emergencyInfo.insuranceGroupNumber || "",
+        insurancePhone: emergencyInfo.insurancePhone || "",
+        emergencyContact1Name: emergencyInfo.emergencyContact1Name || "",
+        emergencyContact1Phone: emergencyInfo.emergencyContact1Phone || "",
+        emergencyContact1Relation: emergencyInfo.emergencyContact1Relation || "",
+        emergencyContact2Name: emergencyInfo.emergencyContact2Name || "",
+        emergencyContact2Phone: emergencyInfo.emergencyContact2Phone || "",
+        emergencyContact2Relation: emergencyInfo.emergencyContact2Relation || "",
+        allergies: emergencyInfo.allergies || "",
+        medicationAllergies: emergencyInfo.medicationAllergies || "",
+        bloodType: emergencyInfo.bloodType || "",
+        advanceDirectives: emergencyInfo.advanceDirectives || false,
+        dnrOrder: emergencyInfo.dnrOrder || false,
+        additionalInfo: emergencyInfo.additionalInfo || ""
+      });
+    }
+  }, [emergencyInfo]);
+
+  // Handle care recipient selection
+  const handleCareRecipientChange = (id: string) => {
+    setSelectedCareRecipient(id);
+    // Reset editing state when changing care recipient
+    setIsEditing(false);
+    setIsLocked(true);
+  };
+
+  // Handle form field changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle checkbox/switch changes
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  // Handle select changes
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [value]: value }));
+  };
+
+  // Save emergency info mutation
+  const saveEmergencyInfoMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedCareRecipient) return;
+      
+      const careRecipientId = parseInt(selectedCareRecipient);
+      const payload = {
+        ...formData,
+        careRecipientId
+      };
+
+      if (emergencyInfo) {
+        // Update existing record
+        return apiRequest("PATCH", `/api/emergency-info/${emergencyInfo.id}`, payload);
+      } else {
+        // Create new record
+        return apiRequest("POST", "/api/emergency-info", payload);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Emergency information saved successfully",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
+      setIsEditing(false);
+      setIsLocked(true);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to save emergency information",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSave = () => {
+    saveEmergencyInfoMutation.mutate();
+  };
+
+  const toggleLock = () => {
+    if (isLocked) {
+      // Show confirmation dialog before unlocking
+      if (confirm("You are about to view sensitive personal information. Please ensure privacy.")) {
+        setIsLocked(false);
+      }
+    } else {
+      setIsLocked(true);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
+      <Header
+        activeCareRecipient={selectedCareRecipient}
+        careRecipients={careRecipients}
+        onChangeRecipient={handleCareRecipientChange}
+        isLoading={false}
+      />
+
+      <main className="flex-1 overflow-y-auto p-4 pb-24">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold flex items-center">
+            <ShieldAlert className="mr-2 text-red-500" />
+            Emergency Information
+          </h1>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant={isLocked ? "outline" : "destructive"} 
+              onClick={toggleLock}
+            >
+              {isLocked ? <Lock className="h-4 w-4 mr-1" /> : <Unlock className="h-4 w-4 mr-1" />}
+              {isLocked ? "Unlock" : "Lock"}
+            </Button>
+            {!isLocked && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setIsEditing(!isEditing)}
+                disabled={!selectedCareRecipient}
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                {isEditing ? "Cancel" : "Edit"}
+              </Button>
+            )}
+            {isEditing && (
+              <Button 
+                size="sm" 
+                onClick={handleSave}
+                disabled={saveEmergencyInfoMutation.isPending}
+              >
+                <Save className="h-4 w-4 mr-1" />
+                Save
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {!selectedCareRecipient ? (
+          <div className="text-center p-8">
+            <p className="text-gray-500">Please select a care recipient to view or edit emergency information.</p>
+          </div>
+        ) : isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+        ) : isLocked ? (
+          <div className="bg-white p-6 rounded-lg shadow-md text-center space-y-4 mt-4">
+            <Lock className="h-12 w-12 mx-auto text-gray-400" />
+            <h2 className="text-xl font-medium">Sensitive Information Protected</h2>
+            <p className="text-gray-500">
+              This section contains sensitive personal and medical information.
+              Click the "Unlock" button to view and edit this information.
+            </p>
+            <p className="text-sm text-gray-400">
+              Please ensure privacy when viewing sensitive information.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Personal Information Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>Basic personal details and identifiers</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      name="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="socialSecurityNumber">Social Security Number</Label>
+                    <Input
+                      id="socialSecurityNumber"
+                      name="socialSecurityNumber"
+                      value={formData.socialSecurityNumber}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="XXX-XX-XXXX"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bloodType">Blood Type</Label>
+                    <Select 
+                      disabled={!isEditing}
+                      value={formData.bloodType}
+                      onValueChange={(value) => handleSelectChange("bloodType", value)}
+                    >
+                      <SelectTrigger id="bloodType">
+                        <SelectValue placeholder="Select blood type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A+">A+</SelectItem>
+                        <SelectItem value="A-">A-</SelectItem>
+                        <SelectItem value="B+">B+</SelectItem>
+                        <SelectItem value="B-">B-</SelectItem>
+                        <SelectItem value="AB+">AB+</SelectItem>
+                        <SelectItem value="AB-">AB-</SelectItem>
+                        <SelectItem value="O+">O+</SelectItem>
+                        <SelectItem value="O-">O-</SelectItem>
+                        <SelectItem value="Unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Insurance Information Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Insurance Information</CardTitle>
+                <CardDescription>Health insurance details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="insuranceProvider">Insurance Provider</Label>
+                  <Input
+                    id="insuranceProvider"
+                    name="insuranceProvider"
+                    value={formData.insuranceProvider}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="insurancePolicyNumber">Policy Number</Label>
+                    <Input
+                      id="insurancePolicyNumber"
+                      name="insurancePolicyNumber"
+                      value={formData.insurancePolicyNumber}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="insuranceGroupNumber">Group Number</Label>
+                    <Input
+                      id="insuranceGroupNumber"
+                      name="insuranceGroupNumber"
+                      value={formData.insuranceGroupNumber}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="insurancePhone">Insurance Phone</Label>
+                  <Input
+                    id="insurancePhone"
+                    name="insurancePhone"
+                    value={formData.insurancePhone}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    placeholder="(XXX) XXX-XXXX"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Emergency Contacts Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Emergency Contacts</CardTitle>
+                <CardDescription>People to contact in case of emergency</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="font-medium">Primary Contact</div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContact1Name">Name</Label>
+                    <Input
+                      id="emergencyContact1Name"
+                      name="emergencyContact1Name"
+                      value={formData.emergencyContact1Name}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="emergencyContact1Phone">Phone</Label>
+                      <Input
+                        id="emergencyContact1Phone"
+                        name="emergencyContact1Phone"
+                        value={formData.emergencyContact1Phone}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="(XXX) XXX-XXXX"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emergencyContact1Relation">Relationship</Label>
+                      <Input
+                        id="emergencyContact1Relation"
+                        name="emergencyContact1Relation"
+                        value={formData.emergencyContact1Relation}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-200 space-y-4">
+                  <div className="font-medium">Secondary Contact</div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContact2Name">Name</Label>
+                    <Input
+                      id="emergencyContact2Name"
+                      name="emergencyContact2Name"
+                      value={formData.emergencyContact2Name}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="emergencyContact2Phone">Phone</Label>
+                      <Input
+                        id="emergencyContact2Phone"
+                        name="emergencyContact2Phone"
+                        value={formData.emergencyContact2Phone}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="(XXX) XXX-XXXX"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emergencyContact2Relation">Relationship</Label>
+                      <Input
+                        id="emergencyContact2Relation"
+                        name="emergencyContact2Relation"
+                        value={formData.emergencyContact2Relation}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Allergies Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Allergies</CardTitle>
+                <CardDescription>Important allergy information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="allergies">General Allergies</Label>
+                  <Textarea
+                    id="allergies"
+                    name="allergies"
+                    value={formData.allergies}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    placeholder="Food, environmental, or other allergies"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="medicationAllergies">Medication Allergies</Label>
+                  <Textarea
+                    id="medicationAllergies"
+                    name="medicationAllergies"
+                    value={formData.medicationAllergies}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    placeholder="List all medication allergies"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Medical Directives Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Medical Directives</CardTitle>
+                <CardDescription>Advanced medical decisions and preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="advanceDirectives">Advance Directives</Label>
+                    <p className="text-sm text-gray-500">Has advance directives on file</p>
+                  </div>
+                  <Switch
+                    id="advanceDirectives"
+                    checked={formData.advanceDirectives}
+                    onCheckedChange={(checked) => handleSwitchChange("advanceDirectives", checked)}
+                    disabled={!isEditing}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="dnrOrder" className="text-red-600 font-medium">DNR Order</Label>
+                    <p className="text-sm text-gray-500">Do Not Resuscitate order on file</p>
+                  </div>
+                  <Switch
+                    id="dnrOrder"
+                    checked={formData.dnrOrder}
+                    onCheckedChange={(checked) => handleSwitchChange("dnrOrder", checked)}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Additional Information Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Additional Information</CardTitle>
+                <CardDescription>Any other important emergency information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Textarea
+                    id="additionalInfo"
+                    name="additionalInfo"
+                    value={formData.additionalInfo}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    placeholder="Enter any additional information that may be important in an emergency"
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </main>
+
+      <BottomNavigation
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
+        onAddEvent={() => setIsAddEventModalOpen(true)}
+      />
+
+      {isAddEventModalOpen && (
+        <AddCareEventModal
+          isOpen={isAddEventModalOpen}
+          onClose={() => setIsAddEventModalOpen(false)}
+          careRecipientId={selectedCareRecipient}
+        />
+      )}
+    </div>
+  );
+}

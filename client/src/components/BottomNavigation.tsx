@@ -8,7 +8,9 @@ import {
   Plus, 
   MoreHorizontal, 
   User, 
-  Building2 
+  Building2,
+  AlertCircle,
+  ShieldAlert
 } from "lucide-react";
 import { TabType } from "@/lib/types";
 import { useState } from "react";
@@ -36,7 +38,7 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
   };
 
   // Check if the active tab is in the "more" section
-  const isMoreActive = activeTab === "doctors" || activeTab === "pharmacies";
+  const isMoreActive = activeTab === "doctors" || activeTab === "pharmacies" || activeTab === "notes" || activeTab === "emergency";
 
   return (
     <nav className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-10">
@@ -104,6 +106,10 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
           <DropdownMenuItem onClick={() => handleTabChange("pharmacies", "/pharmacies")} className="cursor-pointer">
             <Building2 className="h-4 w-4 mr-2" />
             <span>Pharmacies</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleTabChange("emergency", "/emergency")} className="cursor-pointer">
+            <ShieldAlert className="h-4 w-4 mr-2 text-red-500" />
+            <span>Emergency Info</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -17,6 +17,7 @@ import {
   doctors,
   pharmacies,
   medicationPharmacies,
+  emergencyInfo,
   insertUserSchema,
   insertCareRecipientSchema,
   insertMedicationSchema,
@@ -32,7 +33,8 @@ import {
   insertInspirationMessageSchema,
   insertDoctorSchema,
   insertPharmacySchema,
-  insertMedicationPharmacySchema
+  insertMedicationPharmacySchema,
+  insertEmergencyInfoSchema
 } from "@shared/schema";
 import { format, startOfDay, endOfDay, addHours, formatDistance } from "date-fns";
 
@@ -440,5 +442,41 @@ export const storage = {
     const validatedData = insertMedicationPharmacySchema.parse(relationData);
     const [newRelation] = await db.insert(medicationPharmacies).values(validatedData).returning();
     return newRelation;
+  },
+
+  // Emergency Info
+  async getEmergencyInfo(careRecipientId: number) {
+    return db.query.emergencyInfo.findFirst({
+      where: eq(emergencyInfo.careRecipientId, careRecipientId)
+    });
+  },
+
+  async getEmergencyInfoById(id: number) {
+    return db.query.emergencyInfo.findFirst({
+      where: eq(emergencyInfo.id, id)
+    });
+  },
+
+  async createEmergencyInfo(emergencyInfoData: any) {
+    const validatedData = insertEmergencyInfoSchema.parse(emergencyInfoData);
+    const [newEmergencyInfo] = await db.insert(emergencyInfo).values(validatedData).returning();
+    return newEmergencyInfo;
+  },
+
+  async updateEmergencyInfo(id: number, emergencyInfoData: any) {
+    // First check if record exists
+    const existingRecord = await this.getEmergencyInfoById(id);
+    if (!existingRecord) return null;
+
+    // Remove id and careRecipientId from the update data if present
+    const { id: _, careRecipientId: __, ...updateData } = emergencyInfoData;
+    
+    // Update the record
+    await db.update(emergencyInfo)
+      .set(updateData)
+      .where(eq(emergencyInfo.id, id));
+    
+    // Return the updated record
+    return this.getEmergencyInfoById(id);
   }
 };
