@@ -164,7 +164,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/medication-logs`, async (req, res) => {
     try {
-      const newLog = await storage.createMedicationLog(req.body);
+      // Handle the date conversion - the takenAt comes as a string from the client
+      const logData = { 
+        ...req.body,
+        // Convert string date to actual Date object
+        takenAt: req.body.takenAt ? new Date(req.body.takenAt) : new Date()
+      };
+      
+      const newLog = await storage.createMedicationLog(logData);
       res.status(201).json(newLog);
     } catch (error) {
       console.error('Error creating medication log:', error);
