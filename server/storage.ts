@@ -493,17 +493,41 @@ export const storage = {
       // Handle occuredAt format - convert ISO string to Date object if needed
       let processedData = { ...movementData };
       
-      if (typeof processedData.occuredAt === 'string') {
-        processedData.occuredAt = new Date(processedData.occuredAt);
+      // Ensure required fields are present
+      if (!processedData.type) {
+        processedData.type = "Regular";
+      }
+      
+      if (!processedData.notes) {
+        processedData.notes = "";
+      }
+      
+      if (!processedData.occuredAt) {
+        processedData.occuredAt = new Date();
+      } else if (typeof processedData.occuredAt === 'string') {
+        try {
+          processedData.occuredAt = new Date(processedData.occuredAt);
+          console.log('Storage: converted date string to date object:', processedData.occuredAt);
+        } catch (err) {
+          console.error('Storage: Error converting date string:', err);
+          processedData.occuredAt = new Date();
+        }
       }
       
       // Ensure careRecipientId is a number
+      if (!processedData.careRecipientId) {
+        throw new Error('Care recipient ID is required');
+      }
+      
       processedData.careRecipientId = parseInt(processedData.careRecipientId.toString());
       
       console.log('Storage: processed bowel movement data:', processedData);
-      
+
       // Create bowel movement record with proper Date object
-      const [newMovement] = await db.insert(bowelMovements).values(processedData).returning();
+      const validatedData = insertBowelMovementSchema.parse(processedData);
+      console.log('Storage: validated bowel movement data:', validatedData);
+      
+      const [newMovement] = await db.insert(bowelMovements).values(validatedData).returning();
       console.log('Storage: bowel movement created successfully:', newMovement);
       return newMovement;
     } catch (error) {
