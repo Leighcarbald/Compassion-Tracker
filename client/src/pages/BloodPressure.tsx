@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { BloodPressure } from "@shared/schema";
+import PageHeader from "@/components/PageHeader";
 
 interface BloodPressurePageProps {
   activeTab: TabType;
