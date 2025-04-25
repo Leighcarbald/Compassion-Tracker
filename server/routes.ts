@@ -196,6 +196,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Appointments
+  // First define /appointments/month route (more specific) before the general /appointments route
+  app.get(`${apiPrefix}/appointments/month`, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      const yearMonth = req.query.yearMonth as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      if (!yearMonth || !yearMonth.match(/^\d{4}-\d{2}$/)) {
+        return res.status(400).json({ message: 'Year-Month must be in YYYY-MM format' });
+      }
+      
+      const appointments = await storage.getMonthAppointments(parseInt(careRecipientId), yearMonth);
+      res.json(appointments);
+    } catch (error) {
+      console.error('Error fetching month appointments:', error);
+      res.status(500).json({ message: 'Error fetching month appointments' });
+    }
+  });
+
+  // Then define /appointments route (more general)
   app.get(`${apiPrefix}/appointments`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
@@ -231,27 +254,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting appointment:', error);
       res.status(500).json({ message: 'Error deleting appointment' });
-    }
-  });
-  
-  app.get(`${apiPrefix}/appointments/month`, async (req, res) => {
-    try {
-      const careRecipientId = req.query.careRecipientId as string;
-      const yearMonth = req.query.yearMonth as string;
-      
-      if (!careRecipientId) {
-        return res.status(400).json({ message: 'Care recipient ID is required' });
-      }
-      
-      if (!yearMonth || !yearMonth.match(/^\d{4}-\d{2}$/)) {
-        return res.status(400).json({ message: 'Year-Month must be in YYYY-MM format' });
-      }
-      
-      const appointments = await storage.getMonthAppointments(parseInt(careRecipientId), yearMonth);
-      res.json(appointments);
-    } catch (error) {
-      console.error('Error fetching month appointments:', error);
-      res.status(500).json({ message: 'Error fetching month appointments' });
     }
   });
 
