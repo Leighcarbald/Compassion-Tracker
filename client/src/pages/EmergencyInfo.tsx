@@ -117,7 +117,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         console.log('No unlocked PIN found, staying locked');
       }
     }
-  }, [emergencyInfo]);
+  }, [emergencyInfo, isUnlocked]);
 
   // Handle care recipient selection
   const handleCareRecipientChange = (id: string) => {
