@@ -16,29 +16,66 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
-// SIMPLIFIED APPROACH: Instead of trying to persist between sessions,
-// let's just use a state variable in the EmergencyInfo component.
-// This will work for navigating between tabs during a single session.
+// Using sessionStorage for persistence during browser session
+// Will be lost when tab is closed, but persists during navigation
 
-// Global variable to track unlocked PINs across the application
-// This will persist as long as the page is not refreshed
-const unlockedEmergencyInfoIDs: Set<number> = new Set();
+// Storage key for authorized emergency info IDs
+const SESSION_STORAGE_KEY = 'unlocked_emergency_pins';
 
-// Simple functions to check and manage unlocked emergency info
+// Get all unlocked PINs
+function getUnlockedPins(): number[] {
+  try {
+    const data = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    console.log('Session storage data:', data);
+    if (!data) return [];
+    
+    const ids = JSON.parse(data);
+    console.log('Parsed PIN IDs:', ids);
+    return Array.isArray(ids) ? ids : [];
+  } catch (error) {
+    console.error('Error reading from sessionStorage:', error);
+    return [];
+  }
+}
+
+// Save unlocked PINs
+function saveUnlockedPins(ids: number[]): void {
+  try {
+    console.log('Saving unlocked PINs to sessionStorage:', ids);
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(ids));
+  } catch (error) {
+    console.error('Error saving to sessionStorage:', error);
+  }
+}
+
+// Check if PIN is unlocked
 function isPinUnlocked(id: number): boolean {
-  return unlockedEmergencyInfoIDs.has(id);
+  console.log(`Checking if emergency info ID ${id} is unlocked`);
+  const ids = getUnlockedPins();
+  const isUnlocked = ids.includes(id);
+  console.log(`Emergency info ID ${id} is unlocked:`, isUnlocked);
+  return isUnlocked;
 }
 
+// Unlock PIN
 function unlockPin(id: number): void {
-  console.log(`Setting PIN ${id} as unlocked`);
-  unlockedEmergencyInfoIDs.add(id);
-  console.log(`Current unlocked PINs:`, Array.from(unlockedEmergencyInfoIDs));
+  console.log(`Unlocking emergency info ID ${id}`);
+  const ids = getUnlockedPins();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    saveUnlockedPins(ids);
+  }
 }
 
+// Lock PIN
 function lockPin(id: number): void {
-  console.log(`Setting PIN ${id} as locked`);
-  unlockedEmergencyInfoIDs.delete(id);
-  console.log(`Current unlocked PINs:`, Array.from(unlockedEmergencyInfoIDs));
+  console.log(`Locking emergency info ID ${id}`);
+  const ids = getUnlockedPins();
+  const index = ids.indexOf(id);
+  if (index !== -1) {
+    ids.splice(index, 1);
+    saveUnlockedPins(ids);
+  }
 }
 
 interface EmergencyInfoProps {
