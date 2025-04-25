@@ -223,7 +223,12 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         // Store that we've successfully authenticated with the PIN
         // This will help solve the issue where it keeps asking for a new PIN
         if (emergencyInfo?.id) {
+          console.log(`PIN verified for ID ${emergencyInfo.id}, storing in localStorage`);
           unlockPin(emergencyInfo.id);
+          
+          // Double-check that the PIN is now unlocked in storage
+          const isNowUnlocked = isUnlocked(emergencyInfo.id);
+          console.log(`After unlocking, PIN ${emergencyInfo.id} unlock status: ${isNowUnlocked}`);
         }
       } else {
         setPinError("Incorrect PIN. Please try again.");

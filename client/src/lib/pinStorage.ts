@@ -3,7 +3,7 @@
  * Uses localStorage directly with proper error handling
  */
 
-// Storage key for authorized emergency info IDs
+// Storage key for authorized emergency info IDs - this is the ONLY correct key
 const STORAGE_KEY = 'emergency_pins_unlocked';
 
 /**
@@ -57,6 +57,11 @@ export function getUnlockedPins(): number[] {
  * Check if an emergency info ID is authorized
  */
 export function isPinUnlocked(id: number): boolean {
+  if (typeof id !== 'number') {
+    console.error(`INVALID PIN ID: ${id}`);
+    return false;
+  }
+  
   console.log(`CHECKING IF PIN ${id} IS UNLOCKED`);
   const unlockedPins = getUnlockedPins();
   const isUnlocked = unlockedPins.includes(id);
@@ -68,6 +73,11 @@ export function isPinUnlocked(id: number): boolean {
  * Set an emergency info ID as authorized
  */
 export function unlockPin(id: number): void {
+  if (typeof id !== 'number') {
+    console.error(`CANNOT UNLOCK INVALID PIN ID: ${id}`);
+    return;
+  }
+  
   console.log(`UNLOCKING PIN ${id}`);
   const unlockedPins = getUnlockedPins();
   if (!unlockedPins.includes(id)) {
@@ -83,6 +93,11 @@ export function unlockPin(id: number): void {
  * Remove authorization for an emergency info ID
  */
 export function lockPin(id: number): void {
+  if (typeof id !== 'number') {
+    console.error(`CANNOT LOCK INVALID PIN ID: ${id}`);
+    return;
+  }
+  
   console.log(`LOCKING PIN ${id}`);
   const unlockedPins = getUnlockedPins();
   const index = unlockedPins.indexOf(id);

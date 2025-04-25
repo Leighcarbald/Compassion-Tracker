@@ -1,4 +1,5 @@
 import { createContext, useContext, useCallback, useState, useEffect, ReactNode } from 'react';
+import { getUnlockedPins, isPinUnlocked, lockPin as lockPinStorage, unlockPin as unlockPinStorage } from '@/lib/pinStorage';
 
 // Define the context type with just the minimal functionality needed
 interface PinAuthContextType {
@@ -13,49 +14,54 @@ const PinAuthContext = createContext<PinAuthContextType | null>(null);
 // Create the provider component
 export function PinAuthProvider({ children }: { children: ReactNode }) {
   // State to store unlocked PIN IDs
-  const [unlockedPins, setUnlockedPins] = useState<Record<number, boolean>>({});
+  const [unlockedPins, setUnlockedPins] = useState<number[]>([]);
 
   // Load unlocked pins from localStorage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('emergency_unlocked_pins');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        console.log('Loaded unlocked PINs from localStorage:', parsed);
-        setUnlockedPins(parsed);
-      }
+      const loadedPins = getUnlockedPins();
+      console.log('Loaded unlocked PINs:', loadedPins);
+      setUnlockedPins(loadedPins);
     } catch (error) {
-      console.error('Error loading from localStorage:', error);
+      console.error('Error loading unlocked PINs:', error);
     }
   }, []);
-
-  // Save to localStorage when unlockedPins changes
+  
+  // Always sync our state when localStorage changes
   useEffect(() => {
-    try {
-      localStorage.setItem('emergency_unlocked_pins', JSON.stringify(unlockedPins));
-      console.log('Saved unlocked PINs to localStorage:', unlockedPins);
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
+    function handleStorageChange(e: StorageEvent) {
+      if (e.key === 'emergency_pins_unlocked') {
+        try {
+          const loadedPins = getUnlockedPins();
+          console.log('Storage event detected, reloading PINs:', loadedPins);
+          setUnlockedPins(loadedPins);
+        } catch (error) {
+          console.error('Error handling storage event:', error);
+        }
+      }
     }
-  }, [unlockedPins]);
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Check if a PIN is unlocked
   const isUnlocked = useCallback((id: number): boolean => {
-    return !!unlockedPins[id];
-  }, [unlockedPins]);
+    return isPinUnlocked(id);
+  }, []);
 
   // Unlock a PIN
   const unlockPin = useCallback((id: number): void => {
-    setUnlockedPins(prev => ({ ...prev, [id]: true }));
+    console.log(`Unlocking PIN ${id}`);
+    unlockPinStorage(id);
+    setUnlockedPins(prev => [...prev, id]);
   }, []);
 
   // Lock a PIN
   const lockPin = useCallback((id: number): void => {
-    setUnlockedPins(prev => {
-      const newState = { ...prev };
-      delete newState[id];
-      return newState;
-    });
+    console.log(`Locking PIN ${id}`);
+    lockPinStorage(id);
+    setUnlockedPins(prev => prev.filter(pinId => pinId !== id));
   }, []);
 
   return (
