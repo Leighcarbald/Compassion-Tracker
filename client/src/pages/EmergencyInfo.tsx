@@ -497,7 +497,11 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => {
+                  console.log('Edit button clicked, current isEditing:', isEditing);
+                  setIsEditing(!isEditing);
+                  console.log('isEditing set to:', !isEditing);
+                }}
                 disabled={!selectedCareRecipient}
               >
                 <Edit className="h-4 w-4 mr-1" />
