@@ -58,12 +58,19 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Fetch care recipients
   const { data: careRecipients = [] } = useQuery<CareRecipient[]>({
     queryKey: ["/api/care-recipients"],
+    onSuccess: (data: CareRecipient[]) => {
+      // Auto-select first care recipient if none is selected
+      if (!selectedCareRecipient && data.length > 0) {
+        console.log('Auto-selecting first care recipient:', data[0].id);
+        setSelectedCareRecipient(data[0].id.toString());
+      }
+    }
   });
 
   // Fetch emergency info for selected care recipient
-  const { data: emergencyInfo, isLoading } = useQuery<EmergencyInfoType>({
+  const { data: emergencyInfo, isLoading, error: emergencyInfoError } = useQuery<EmergencyInfoType>({
     queryKey: ["/api/emergency-info", selectedCareRecipient],
-    enabled: !!selectedCareRecipient,
+    enabled: !!selectedCareRecipient
   });
 
   // Form state for emergency info
@@ -226,12 +233,28 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     if (isLocked) {
       // Need to verify PIN before unlocking
       if (!emergencyInfo?.id) {
+        // Handle the case where emergency info isn't loaded yet
+        // We'll create it automatically later, but for now, show appropriate message
         toast({
-          title: "Error",
-          description: "Emergency information not found. Please refresh the page.",
-          variant: "destructive",
-          duration: 5000,
+          title: "Emergency Information",
+          description: "Loading emergency information or creating a new record. Please try again in a moment.",
+          duration: 3000,
         });
+        // Try to trigger creation by refreshing the query
+        if (selectedCareRecipient) {
+          queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
+        }
+        return;
+      }
+      
+      // If no PIN has been set yet, ask to create one instead of verifying
+      if (!emergencyInfo.pinHash) {
+        toast({
+          title: "PIN Required",
+          description: "You need to create a PIN before accessing this information",
+          duration: 3000,
+        });
+        setShowSetPinDialog(true);
         return;
       }
       
