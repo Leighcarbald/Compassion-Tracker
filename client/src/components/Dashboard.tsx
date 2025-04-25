@@ -13,13 +13,25 @@ interface DashboardProps {
 
 export default function Dashboard({ careRecipientId, inspirationMessage }: DashboardProps) {
   // Fetch today's stats
-  const { data: todayStats } = useQuery({
+  const { data: todayStats } = useQuery<{
+    medications: { completed: number; total: number; progress: number };
+    meals: { completed: number; total: number; progress: number };
+    bowelMovement: { lastTime: string };
+    supplies: { depends: number };
+    sleep: { duration: string; quality: string };
+  }>({
     queryKey: ['/api/care-stats/today', careRecipientId],
     enabled: !!careRecipientId,
   });
 
   // Fetch upcoming events
-  const { data: upcomingEvents, isLoading: isLoadingEvents } = useQuery({
+  const { data: upcomingEvents, isLoading: isLoadingEvents } = useQuery<Array<{
+    id: string;
+    type: 'medication' | 'appointment' | 'meal';
+    title: string;
+    time: string;
+    details?: string;
+  }>>({
     queryKey: ['/api/events/upcoming', careRecipientId],
     enabled: !!careRecipientId,
   });
@@ -92,7 +104,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
             ) : !upcomingEvents || upcomingEvents.length === 0 ? (
               <div className="p-4 text-center text-gray-500">No upcoming events</div>
             ) : (
-              upcomingEvents.map((event: any) => (
+              upcomingEvents.map((event) => (
                 <div key={event.id} className="p-3 border-b border-gray-100 flex items-center">
                   <div 
                     className={`w-10 h-10 rounded-full bg-${event.type === 'medication' ? 'primary' : event.type === 'meal' ? 'secondary' : 'blue-400'} bg-opacity-10 flex items-center justify-center mr-3 text-${event.type === 'medication' ? 'primary' : event.type === 'meal' ? 'secondary' : 'blue-400'}`}
