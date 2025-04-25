@@ -30,7 +30,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { Pill, Utensils, Toilet } from "lucide-react";
 
 type EventType = "medication" | "meal" | "bowel" | "appointment";
@@ -51,7 +51,8 @@ const eventSchema = z.object({
   notes: z.string().optional(),
   reminder: z.boolean().default(false),
   careRecipientId: z.number().positive(),
-  medicationId: z.number().positive().optional()
+  medicationId: z.number().positive().optional(),
+  mealType: z.string().optional()
 });
 
 export default function AddCareEventModal({
@@ -85,7 +86,8 @@ export default function AddCareEventModal({
       notes: "",
       reminder: true,
       careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
-      medicationId: undefined
+      medicationId: undefined,
+      mealType: "breakfast"
     }
   });
   
@@ -103,23 +105,56 @@ export default function AddCareEventModal({
   const addEvent = useMutation({
     mutationFn: async (data: z.infer<typeof eventSchema>) => {
       let endpoint = "";
+      let postData = { ...data };
+      
+      // Create a datetime from the date and time fields
+      const dateTimeStr = `${data.date}T${data.time}:00`;
+      const dateTime = new Date(dateTimeStr);
       
       switch (data.type) {
         case "medication":
           endpoint = "/api/medication-logs";
+          postData = {
+            medicationId: data.medicationId,
+            scheduleId: null, // Manual entry doesn't have a schedule
+            takenAt: dateTime.toISOString(),
+            notes: data.notes || "",
+            careRecipientId: data.careRecipientId
+          };
           break;
         case "meal":
           endpoint = "/api/meals";
+          postData = {
+            type: data.mealType,
+            food: data.name,
+            notes: data.notes || "",
+            consumedAt: dateTime.toISOString(),
+            careRecipientId: data.careRecipientId
+          };
           break;
         case "bowel":
           endpoint = "/api/bowel-movements";
+          postData = {
+            type: data.name,
+            notes: data.notes || "",
+            occuredAt: dateTime.toISOString(),
+            careRecipientId: data.careRecipientId
+          };
           break;
         case "appointment":
           endpoint = "/api/appointments";
+          postData = {
+            title: data.name,
+            date: data.date,
+            time: data.time,
+            notes: data.notes || "",
+            reminderEnabled: data.reminder,
+            careRecipientId: data.careRecipientId
+          };
           break;
       }
       
-      const response = await apiRequest("POST", endpoint, data);
+      const response = await apiRequest("POST", endpoint, postData);
       return response.json();
     },
     onSuccess: () => {
@@ -132,10 +167,14 @@ export default function AddCareEventModal({
           queryClient.invalidateQueries({ queryKey: ['/api/medications', careRecipientId] });
           queryClient.invalidateQueries({ queryKey: ['/api/medication-logs', careRecipientId] });
           break;
+        case "meal":
+          queryClient.invalidateQueries({ queryKey: ['/api/meals', careRecipientId] });
+          break;
+        case "bowel":
+          queryClient.invalidateQueries({ queryKey: ['/api/bowel-movements', careRecipientId] });
+          break;
         case "appointment":
-          queryClient.invalidateQueries({ 
-            queryKey: ['/api/appointments', careRecipientId] 
-          });
+          queryClient.invalidateQueries({ queryKey: ['/api/appointments', careRecipientId] });
           break;
       }
       
@@ -247,18 +286,55 @@ export default function AddCareEventModal({
               />
             )}
             
+            {eventType === "meal" && (
+              <FormField
+                control={form.control}
+                name="mealType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meal Type</FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select meal type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="breakfast">Breakfast</SelectItem>
+                          <SelectItem value="lunch">Lunch</SelectItem>
+                          <SelectItem value="dinner">Dinner</SelectItem>
+                          <SelectItem value="snack">Snack</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{eventType === "medication" ? "Description" : "Name"}</FormLabel>
+                  <FormLabel>
+                    {eventType === "medication" 
+                      ? "Description" 
+                      : eventType === "meal" 
+                        ? "Food" 
+                        : eventType === "bowel" 
+                          ? "Type" 
+                          : "Name"}
+                  </FormLabel>
                   <FormControl>
                     <Input 
                       placeholder={
                         eventType === "medication" ? "Morning dose" : 
-                        eventType === "meal" ? "Breakfast" : 
-                        eventType === "bowel" ? "Bowel Movement" :
+                        eventType === "meal" ? "Oatmeal, toast, and orange juice" : 
+                        eventType === "bowel" ? "Regular" :
                         "Dr. Appointment"
                       } 
                       {...field} 
