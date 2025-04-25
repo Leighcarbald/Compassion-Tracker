@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import AddCareEventModal from "@/components/AddCareEventModal";
@@ -57,6 +57,24 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     queryKey: ['/api/medication-logs', activeCareRecipient],
     enabled: !!activeCareRecipient,
   });
+  
+  // Update the taken medications set whenever logs change
+  React.useEffect(() => {
+    if (medicationLogs && medicationLogs.length > 0) {
+      // Check which medications were taken today
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      // Filter logs from today and create a Set of medication IDs
+      const takenToday = new Set<number>(
+        medicationLogs
+          .filter(log => new Date(log.takenAt) >= startOfToday)
+          .map(log => log.medicationId)
+      );
+      
+      setTakenMedicationIds(takenToday);
+    }
+  }, [medicationLogs]);
 
   // Handle modal open/close
   const handleAddEvent = () => {
@@ -115,8 +133,59 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     }
   });
 
+  // Add unmark medication mutation
+  const unmarkAsTakenMutation = useMutation({
+    mutationFn: async (medicationId: number) => {
+      if (!activeCareRecipient) return null;
+      
+      // Find today's log for this medication to delete
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      const todayLog = medicationLogs?.find(log => {
+        return log.medicationId === medicationId && 
+               new Date(log.takenAt) >= startOfToday;
+      });
+      
+      if (!todayLog) {
+        throw new Error("No log found for today");
+      }
+      
+      // Delete the log
+      const response = await apiRequest(
+        "DELETE",
+        `/api/medication-logs/${todayLog.id}`
+      );
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Medication Unmarked",
+        description: "Successfully removed the medication log"
+      });
+      // Refresh logs, medication data, and care stats
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to unmark medication: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleMarkAsTaken = (medicationId: number) => {
-    markAsTakenMutation.mutate(medicationId);
+    // If the medication is already taken, unmark it
+    if (takenMedicationIds.has(medicationId)) {
+      unmarkAsTakenMutation.mutate(medicationId);
+    } else {
+      // Otherwise, mark it as taken
+      markAsTakenMutation.mutate(medicationId);
+    }
   };
 
   // Render medication icon based on the type
@@ -250,11 +319,22 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                     </Button>
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      className="text-xs font-medium text-primary px-3 py-1 rounded-full border border-primary"
+                      variant={takenMedicationIds.has(med.id) ? "default" : "outline"}
+                      className={`text-xs font-medium px-3 py-1 rounded-full ${
+                        takenMedicationIds.has(med.id) 
+                          ? "bg-green-600 text-white border-green-600" 
+                          : "text-primary border border-primary"
+                      }`}
                       onClick={() => handleMarkAsTaken(med.id)}
                     >
-                      Mark as Taken
+                      {takenMedicationIds.has(med.id) ? (
+                        <>
+                          <Check className="mr-1 h-3 w-3" />
+                          Taken
+                        </>
+                      ) : (
+                        "Mark as Taken"
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -275,7 +355,9 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                 medicationLogs.slice(0, 5).map((log) => (
                   <div key={log.id} className="p-3 border-b border-gray-100 text-sm">
                     <div className="flex justify-between">
-                      <div>{log.medicationId} - {log.notes}</div>
+                      <div>
+                        {medications?.find(med => med.id === log.medicationId)?.name || `Med #${log.medicationId}`} - {log.notes}
+                      </div>
                       <div className="text-xs text-gray-500">{getTimeAgo(log.takenAt)}</div>
                     </div>
                   </div>

@@ -178,6 +178,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating medication log' });
     }
   });
+  
+  app.delete(`${apiPrefix}/medication-logs/:id`, async (req, res) => {
+    try {
+      const logId = parseInt(req.params.id);
+      if (isNaN(logId)) {
+        return res.status(400).json({ message: 'Invalid medication log ID' });
+      }
+      
+      // Add a method to delete medication log in storage.ts
+      await storage.deleteMedicationLog(logId);
+      res.status(200).json({ message: 'Medication log deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting medication log:', error);
+      res.status(500).json({ message: 'Error deleting medication log' });
+    }
+  });
 
   // Appointments
   app.get(`${apiPrefix}/appointments`, async (req, res) => {
