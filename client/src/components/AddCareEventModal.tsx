@@ -136,6 +136,16 @@ export default function AddCareEventModal({
             throw new Error("Meal type is required");
           }
           
+          // Detailed logging to debug meal submissions
+          console.log("Creating meal with data:", {
+            mealType: data.mealType, 
+            food: data.name,
+            date: data.date,
+            time: data.time,
+            dateTimeStr,
+            dateTimeObj: dateTime
+          });
+          
           endpoint = "/api/meals";
           postData = {
             type: data.mealType,
