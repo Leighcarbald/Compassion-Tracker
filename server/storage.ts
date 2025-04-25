@@ -85,16 +85,18 @@ export const storage = {
       where: eq(medications.careRecipientId, careRecipientId)
     });
     
-    // Change from counting medication schedules to counting medications directly
-    // This will show medications even if they don't have schedules
-    
-    const takenMedications = await db.query.medicationLogs.findMany({
+    // Get medication logs for today
+    const todayLogs = await db.query.medicationLogs.findMany({
       where: and(
         eq(medicationLogs.careRecipientId, careRecipientId),
         gte(medicationLogs.takenAt, start),
         lt(medicationLogs.takenAt, end)
       )
     });
+    
+    // Count unique medications that have been taken today
+    // Use a Set to track unique medication IDs
+    const takenMedicationIds = new Set(todayLogs.map(log => log.medicationId));
     
     // Get meal stats
     const mealTypes = ["breakfast", "lunch", "dinner"];
@@ -128,10 +130,10 @@ export const storage = {
     
     return {
       medications: {
-        completed: takenMedications.length,
+        completed: takenMedicationIds.size,
         total: meds.length,
         progress: meds.length > 0 
-          ? Math.round((takenMedications.length / meds.length) * 100) 
+          ? Math.round((takenMedicationIds.size / meds.length) * 100) 
           : 0
       },
       meals: {
