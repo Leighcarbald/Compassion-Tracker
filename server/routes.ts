@@ -521,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.setEmergencyInfoPin(parseInt(id), pin);
       
-      res.status(200).json({ message: 'PIN set successfully' });
+      res.status(200).json({ message: 'PIN set successfully', success: true });
     } catch (error) {
       console.error('Error setting PIN:', error);
       res.status(500).json({ message: 'Error setting PIN' });

@@ -346,7 +346,10 @@ export const insertPharmacySchema = createInsertSchema(pharmacies);
 
 export const insertMedicationPharmacySchema = createInsertSchema(medicationPharmacies);
 
-export const insertEmergencyInfoSchema = createInsertSchema(emergencyInfo);
+export const insertEmergencyInfoSchema = createInsertSchema(emergencyInfo, {
+  // Add a transient pin field for PIN handling on create/update
+  pin: z.string().optional()
+});
 
 // Define types
 export type User = typeof users.$inferSelect;
