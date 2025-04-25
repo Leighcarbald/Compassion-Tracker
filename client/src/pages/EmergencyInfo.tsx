@@ -16,7 +16,86 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType, CareRecipient } from "@shared/schema";
-import { isPinUnlocked, unlockPin, lockPin } from "@/lib/pinStorage";
+// Inlined PIN storage utilities directly in this component for better reliability
+// Instead of importing from a separate file
+
+// Storage key for authorized emergency info IDs
+const STORAGE_KEY = 'emergency_pins_unlocked';
+
+// Pin storage utilities
+function saveUnlockedPins(ids: number[]): void {
+  try {
+    console.log('SAVING PINS TO STORAGE:', ids);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+    // Double check it was saved
+    const savedValue = localStorage.getItem(STORAGE_KEY);
+    console.log('CONFIRMED SAVED VALUE:', savedValue);
+  } catch (error) {
+    console.error('Error saving emergency PIN IDs to localStorage:', error);
+  }
+}
+
+function getUnlockedPins(): number[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    console.log('RAW PIN STORAGE VALUE:', stored);
+    
+    if (!stored) {
+      console.log('NO STORED PINS FOUND, RETURNING EMPTY ARRAY');
+      return [];
+    }
+    
+    let parsedIds: any;
+    try {
+      parsedIds = JSON.parse(stored);
+      console.log('PARSED PIN IDS:', parsedIds);
+    } catch (parseError) {
+      console.error('ERROR PARSING PIN STORAGE:', parseError);
+      return [];
+    }
+    
+    // Ensure we have an array
+    const ids = Array.isArray(parsedIds) ? parsedIds : [];
+    console.log('FINAL PIN IDS ARRAY:', ids);
+    return ids;
+  } catch (error) {
+    console.error('CRITICAL ERROR loading emergency PIN IDs from localStorage:', error);
+    return [];
+  }
+}
+
+function isPinUnlocked(id: number): boolean {
+  console.log(`CHECKING IF PIN ${id} IS UNLOCKED`);
+  const unlockedPins = getUnlockedPins();
+  const isUnlocked = unlockedPins.includes(id);
+  console.log(`PIN ${id} IS UNLOCKED: ${isUnlocked}`);
+  return isUnlocked;
+}
+
+function unlockPin(id: number): void {
+  console.log(`UNLOCKING PIN ${id}`);
+  const unlockedPins = getUnlockedPins();
+  if (!unlockedPins.includes(id)) {
+    unlockedPins.push(id);
+    saveUnlockedPins(unlockedPins);
+    console.log(`SUCCESSFULLY UNLOCKED PIN ${id}`);
+  } else {
+    console.log(`PIN ${id} WAS ALREADY UNLOCKED`);
+  }
+}
+
+function lockPin(id: number): void {
+  console.log(`LOCKING PIN ${id}`);
+  const unlockedPins = getUnlockedPins();
+  const index = unlockedPins.indexOf(id);
+  if (index !== -1) {
+    unlockedPins.splice(index, 1);
+    saveUnlockedPins(unlockedPins);
+    console.log(`SUCCESSFULLY LOCKED PIN ${id}`);
+  } else {
+    console.log(`PIN ${id} WAS NOT UNLOCKED`);
+  }
+}
 
 interface EmergencyInfoProps {
   activeTab: TabType;
