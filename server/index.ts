@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import crypto from 'crypto';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 // Generate a random session secret if one isn't provided in environment
 if (!process.env.SESSION_SECRET) {
@@ -31,6 +32,7 @@ app.use(helmet({
 
 app.use(express.json({ limit: '1mb' })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser(process.env.SESSION_SECRET)); // Use the same secret for cookies as sessions
 
 app.use((req, res, next) => {
   const start = Date.now();

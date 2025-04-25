@@ -740,26 +740,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(200).json({ message: 'Invalid PIN', verified: false });
       }
       
-      // Store the verified status in the session
-      if (!req.session.verifiedEmergencyInfos) {
-        req.session.verifiedEmergencyInfos = [];
-      }
+      // Store verification in a signed cookie (secure in prod, httpOnly for all)
+      // Cookie will expire in 24 hours (1 day)
+      const cookieOptions = {
+        httpOnly: true,
+        secure: req.secure || req.get('x-forwarded-proto') === 'https',
+        signed: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      };
       
-      if (!req.session.verifiedEmergencyInfos.includes(id)) {
-        req.session.verifiedEmergencyInfos.push(id);
-        console.log(`Emergency info #${id} added to verified session list: ${req.session.verifiedEmergencyInfos}`);
-      }
+      // Create a cookie storing the verified emergency info ID
+      const cookieName = `emergency_info_verified_${id}`;
+      const cookieValue = 'true';
       
-      // Save session explicitly to ensure it's stored
-      req.session.save((err) => {
-        if (err) {
-          console.error(`Error saving session:`, err);
-        } else {
-          console.log(`Session saved successfully`);
-        }
-      });
+      res.cookie(cookieName, cookieValue, cookieOptions);
       
-      console.log(`PIN verified successfully for emergency info #${id}`);
+      console.log(`PIN verified successfully for emergency info #${id}, cookie set`);
       res.status(200).json({ 
         message: 'PIN verified successfully', 
         verified: true,
@@ -771,7 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Check if a PIN is verified for an emergency info in the session
+  // Check if a PIN is verified for an emergency info by checking the cookie
   app.get(`${apiPrefix}/emergency-info/:id/check-verified`, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -781,16 +777,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid emergency info ID', verified: false });
       }
       
-      // Check if the ID is in the list of verified IDs
-      const isVerified = req.session.verifiedEmergencyInfos && 
-                        Array.isArray(req.session.verifiedEmergencyInfos) &&
-                        req.session.verifiedEmergencyInfos.includes(id);
+      // Check for the cookie that indicates PIN verification
+      const cookieName = `emergency_info_verified_${id}`;
+      const isVerified = req.signedCookies[cookieName] === 'true';
       
-      console.log(`Check verified for emergency info #${id}: ${isVerified ? 'YES' : 'NO'}`);
-      console.log(`Session verified IDs:`, req.session.verifiedEmergencyInfos || []);
+      console.log(`Check verified cookie for emergency info #${id}:`, req.signedCookies[cookieName]);
+      console.log(`Verification status: ${isVerified ? 'YES' : 'NO'}`);
       
       return res.status(200).json({ 
-        verified: !!isVerified,
+        verified: isVerified,
         id
       });
     } catch (error) {
@@ -832,26 +827,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.setEmergencyInfoPin(id, pin);
       
-      // Also mark this PIN as verified in the current session
-      if (!req.session.verifiedEmergencyInfos) {
-        req.session.verifiedEmergencyInfos = [];
-      }
+      // After setting the PIN, mark this emergency info as verified by setting a cookie
+      const cookieOptions = {
+        httpOnly: true,
+        secure: req.secure || req.get('x-forwarded-proto') === 'https',
+        signed: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      };
       
-      if (!req.session.verifiedEmergencyInfos.includes(id)) {
-        req.session.verifiedEmergencyInfos.push(id);
-        console.log(`Emergency info #${id} added to verified session list after setting PIN: ${req.session.verifiedEmergencyInfos}`);
-      }
+      // Create a cookie storing the verified emergency info ID
+      const cookieName = `emergency_info_verified_${id}`;
+      const cookieValue = 'true';
       
-      // Save session explicitly to ensure it's stored
-      req.session.save((err) => {
-        if (err) {
-          console.error(`Error saving session:`, err);
-        } else {
-          console.log(`Session saved successfully after setting PIN`);
-        }
-      });
+      res.cookie(cookieName, cookieValue, cookieOptions);
       
-      console.log(`PIN set successfully for emergency info #${id}`);
+      console.log(`PIN set successfully for emergency info #${id}, cookie set`);
       res.status(200).json({ 
         message: 'PIN set successfully', 
         success: true,
