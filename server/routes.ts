@@ -242,11 +242,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/meals`, async (req, res) => {
     try {
-      const newMeal = await storage.createMeal(req.body);
+      console.log('Received meal creation request with body:', req.body);
+      
+      // Ensure careRecipientId is a number
+      const mealData = { 
+        ...req.body,
+        careRecipientId: parseInt(req.body.careRecipientId.toString())
+      };
+      
+      console.log('Processed meal data:', mealData);
+      
+      const newMeal = await storage.createMeal(mealData);
+      console.log('Meal created successfully:', newMeal);
+      
       res.status(201).json(newMeal);
     } catch (error) {
       console.error('Error creating meal:', error);
-      res.status(500).json({ message: 'Error creating meal' });
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: 'Error creating meal', 
+          error: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      } else {
+        res.status(500).json({ message: 'Unknown error creating meal' });
+      }
     }
   });
 

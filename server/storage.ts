@@ -455,9 +455,25 @@ export const storage = {
   },
 
   async createMeal(mealData: any) {
-    const validatedData = insertMealSchema.parse(mealData);
-    const [newMeal] = await db.insert(meals).values(validatedData).returning();
-    return newMeal;
+    console.log('Storage: creating meal with data:', mealData);
+    try {
+      // Ensure careRecipientId is a number
+      const sanitizedData = {
+        ...mealData,
+        careRecipientId: parseInt(mealData.careRecipientId.toString())
+      };
+      
+      console.log('Storage: sanitized meal data:', sanitizedData);
+      const validatedData = insertMealSchema.parse(sanitizedData);
+      console.log('Storage: validated meal data:', validatedData);
+      
+      const [newMeal] = await db.insert(meals).values(validatedData).returning();
+      console.log('Storage: meal created successfully:', newMeal);
+      return newMeal;
+    } catch (error) {
+      console.error('Storage: Error creating meal:', error);
+      throw error;
+    }
   },
 
   // Bowel Movements
