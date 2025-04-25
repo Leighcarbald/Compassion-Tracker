@@ -91,9 +91,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       });
       
       // Check if we have previously authenticated this emergency info
-      const wasAuthenticated = localStorage.getItem(`emergency_info_authenticated_${emergencyInfo.id}`);
+      const localStorageKey = `emergency_info_authenticated_${emergencyInfo.id}`;
+      const wasAuthenticated = localStorage.getItem(localStorageKey);
+      console.log('Checking localStorage:', localStorageKey, 'Value:', wasAuthenticated);
+      
       if (wasAuthenticated === 'true') {
+        console.log('Found previous authentication, unlocking');
         setIsLocked(false);
+      } else {
+        console.log('No previous authentication found, staying locked');
       }
     }
   }, [emergencyInfo]);
@@ -201,7 +207,13 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         
         // Store that we've successfully authenticated with the PIN
         // This will help solve the issue where it keeps asking for a new PIN
-        localStorage.setItem(`emergency_info_authenticated_${emergencyInfo?.id}`, 'true');
+        const authKey = `emergency_info_authenticated_${emergencyInfo?.id}`;
+        localStorage.setItem(authKey, 'true');
+        console.log('Setting localStorage on successful verification:', authKey, '=', 'true');
+        
+        // Double-check that localStorage was set correctly
+        const storedValue = localStorage.getItem(authKey);
+        console.log('Verification - localStorage value after setting:', storedValue);
       } else {
         setPinError("Incorrect PIN. Please try again.");
       }
@@ -682,7 +694,13 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     
                     // Set the authenticated state immediately
                     if (emergencyInfo?.id) {
-                      localStorage.setItem(`emergency_info_authenticated_${emergencyInfo.id}`, 'true');
+                      const authKey = `emergency_info_authenticated_${emergencyInfo.id}`;
+                      localStorage.setItem(authKey, 'true');
+                      console.log('Setting localStorage on PIN creation dialog:', authKey, '=', 'true');
+                      
+                      // Double-check that localStorage was set correctly
+                      const storedValue = localStorage.getItem(authKey);
+                      console.log('PIN creation - localStorage value after setting:', storedValue);
                     }
                   }
                 }} 
