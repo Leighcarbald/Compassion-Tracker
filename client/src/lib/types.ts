@@ -1,6 +1,6 @@
 // Define types used across the application
 
-export type TabType = "home" | "medications" | "calendar" | "notes";
+export type TabType = "home" | "medications" | "calendar" | "notes" | "doctors" | "pharmacies";
 
 export interface ToastData {
   title: string;

@@ -163,6 +163,32 @@ export const doctors = pgTable("doctors", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// Emergency Info (contains sensitive information)
+export const emergencyInfo = pgTable("emergency_info", {
+  id: serial("id").primaryKey(),
+  careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  dateOfBirth: date("date_of_birth"),
+  socialSecurityNumber: text("social_security_number"),
+  insuranceProvider: text("insurance_provider"),
+  insurancePolicyNumber: text("insurance_policy_number"),
+  insuranceGroupNumber: text("insurance_group_number"),
+  insurancePhone: text("insurance_phone"),
+  emergencyContact1Name: text("emergency_contact1_name"),
+  emergencyContact1Phone: text("emergency_contact1_phone"),
+  emergencyContact1Relation: text("emergency_contact1_relation"),
+  emergencyContact2Name: text("emergency_contact2_name"),
+  emergencyContact2Phone: text("emergency_contact2_phone"),
+  emergencyContact2Relation: text("emergency_contact2_relation"),
+  allergies: text("allergies"), // General allergies (food, environmental, etc.)
+  medicationAllergies: text("medication_allergies"), // Specific medication allergies
+  additionalInfo: text("additional_info"),
+  bloodType: text("blood_type"),
+  advanceDirectives: boolean("advance_directives").default(false),
+  dnrOrder: boolean("dnr_order").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 // Pharmacies
 export const pharmacies = pgTable("pharmacies", {
   id: serial("id").primaryKey(),
@@ -216,7 +242,8 @@ export const careRecipientsRelations = relations(careRecipients, ({ one, many })
   sleepRecords: many(sleep),
   notes: many(notes),
   doctors: many(doctors),
-  pharmacies: many(pharmacies)
+  pharmacies: many(pharmacies),
+  emergencyInfo: many(emergencyInfo)
 }));
 
 export const medicationsRelations = relations(medications, ({ one, many }) => ({
