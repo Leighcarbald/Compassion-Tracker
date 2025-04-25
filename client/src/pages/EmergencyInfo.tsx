@@ -756,7 +756,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           <DialogHeader>
             <DialogTitle>Enter Security PIN</DialogTitle>
             <DialogDescription>
-              Please enter your 4-digit PIN to unlock sensitive information.
+              Please enter your 6-digit PIN to unlock sensitive information.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -765,8 +765,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               <Input
                 id="pin"
                 type="password"
-                placeholder="Enter 4-digit PIN"
-                maxLength={4}
+                placeholder="Enter 6-digit PIN"
+                maxLength={6}
                 value={pin}
                 onChange={(e) => {
                   // Only allow numeric input
@@ -778,7 +778,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               {pinError && <p className="text-sm text-red-500">{pinError}</p>}
               {!emergencyInfo?.pinHash && (
                 <p className="text-xs text-gray-500 mt-2">
-                  No PIN set yet. Please create a new 4-digit PIN to secure this information.
+                  No PIN set yet. Please create a new 6-digit PIN to secure this information.
                 </p>
               )}
             </div>
@@ -792,7 +792,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               <Button 
                 type="button" 
                 onClick={handlePinSubmit} 
-                disabled={pin.length !== 4 || verifyPinMutation.isPending}
+                disabled={pin.length !== 6 || verifyPinMutation.isPending}
               >
                 {verifyPinMutation.isPending ? 'Verifying...' : 'Unlock'}
               </Button>
@@ -802,7 +802,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 type="button" 
                 onClick={() => {
                   // Set new PIN
-                  if (pin.length === 4) {
+                  if (pin.length === 6) {
                     setPinMutation.mutate(pin);
                     setShowPinDialog(false);
                     setIsLocked(false);
