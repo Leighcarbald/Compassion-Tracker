@@ -139,17 +139,49 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                           <div className="text-sm font-medium">{med.name}</div>
                           <div className="text-xs text-gray-500">{med.dosage}</div>
                         </div>
-                        <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                          Taken
-                        </div>
+                        {med.currentQuantity !== undefined && med.currentQuantity <= (med.reorderThreshold || 5) ? (
+                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                            Reorder Soon
+                          </div>
+                        ) : (
+                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                            In Stock
+                          </div>
+                        )}
                       </div>
                       <div className="mt-1 text-xs text-gray-500">
                         {med.instructions || "Take as directed"}
                       </div>
+                      
+                      {/* Inventory Section */}
+                      <div className="mt-2 p-2 bg-gray-50 rounded-md text-xs">
+                        <div className="flex justify-between text-gray-600">
+                          <span>Quantity: {med.currentQuantity || 0}</span>
+                          <span>Refills: {med.refillsRemaining || 0}</span>
+                        </div>
+                        {med.prescribingDoctor && (
+                          <div className="mt-1 text-gray-500">
+                            Dr. {med.prescribingDoctor.name}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex justify-end mt-1">
-                    <Button size="sm" variant="outline" className="text-xs font-medium text-primary px-3 py-1 rounded-full border border-primary">
+                  <div className="flex justify-between mt-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-xs font-medium text-blue-500 px-2 py-1 rounded-full border border-blue-500"
+                      onClick={() => handleInventoryUpdate(med.id)}
+                    >
+                      Update Inventory
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-xs font-medium text-primary px-3 py-1 rounded-full border border-primary"
+                      onClick={() => handleMarkAsTaken(med.id)}
+                    >
                       Mark as Taken
                     </Button>
                   </div>

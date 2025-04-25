@@ -29,6 +29,7 @@ export const medications = pgTable("medications", {
   // Inventory tracking fields
   currentQuantity: integer("current_quantity").default(0),
   reorderThreshold: integer("reorder_threshold").default(5),
+  daysToReorder: integer("days_to_reorder").default(7), // Days in advance to alert for reorder (1-30 days)
   originalQuantity: integer("original_quantity").default(0), // Original prescription amount
   refillsRemaining: integer("refills_remaining").default(0),
   lastRefillDate: date("last_refill_date"),

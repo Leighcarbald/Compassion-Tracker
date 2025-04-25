@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { eq, and, lt, gte, desc, sql } from "drizzle-orm";
+import { eq, and, lt, gte, lte, desc, sql } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import {
@@ -232,9 +232,97 @@ export const storage = {
     return db.query.medications.findMany({
       where: eq(medications.careRecipientId, careRecipientId),
       with: {
-        schedules: true
+        schedules: true,
+        prescribingDoctor: true
       }
     });
+  },
+  
+  async getMedicationsNeedingReorder(careRecipientId: number) {
+    return db.query.medications.findMany({
+      where: and(
+        eq(medications.careRecipientId, careRecipientId),
+        lte(medications.currentQuantity, medications.reorderThreshold)
+      ),
+      with: {
+        prescribingDoctor: true
+      }
+    });
+  },
+  
+  async updateMedicationInventory(medicationId: number, inventoryData: {
+    currentQuantity?: number,
+    reorderThreshold?: number,
+    daysToReorder?: number,
+    originalQuantity?: number,
+    refillsRemaining?: number,
+    lastRefillDate?: Date | string
+  }) {
+    // Create an update object with only the provided fields
+    const updateData: any = {};
+    
+    if (inventoryData.currentQuantity !== undefined) {
+      updateData.currentQuantity = inventoryData.currentQuantity;
+    }
+    
+    if (inventoryData.reorderThreshold !== undefined) {
+      updateData.reorderThreshold = inventoryData.reorderThreshold;
+    }
+    
+    if (inventoryData.daysToReorder !== undefined) {
+      // Ensure daysToReorder is within the 1-30 days range
+      updateData.daysToReorder = Math.max(1, Math.min(30, inventoryData.daysToReorder));
+    }
+    
+    if (inventoryData.originalQuantity !== undefined) {
+      updateData.originalQuantity = inventoryData.originalQuantity;
+    }
+    
+    if (inventoryData.refillsRemaining !== undefined) {
+      updateData.refillsRemaining = inventoryData.refillsRemaining;
+    }
+    
+    if (inventoryData.lastRefillDate !== undefined) {
+      updateData.lastRefillDate = inventoryData.lastRefillDate;
+    }
+    
+    updateData.updatedAt = new Date();
+    
+    // Update the medication record
+    const [updatedMedication] = await db.update(medications)
+      .set(updateData)
+      .where(eq(medications.id, medicationId))
+      .returning();
+    
+    return updatedMedication;
+  },
+  
+  async refillMedication(medicationId: number, refillAmount: number, refillDate: Date = new Date()) {
+    // Get the current medication data
+    const medication = await db.query.medications.findFirst({
+      where: eq(medications.id, medicationId)
+    });
+    
+    if (!medication) {
+      throw new Error('Medication not found');
+    }
+    
+    // Calculate new values
+    const newQuantity = (medication.currentQuantity || 0) + refillAmount;
+    const newRefillsRemaining = Math.max(0, (medication.refillsRemaining || 0) - 1);
+    
+    // Update the medication with new inventory values
+    const [updatedMedication] = await db.update(medications)
+      .set({
+        currentQuantity: newQuantity,
+        refillsRemaining: newRefillsRemaining,
+        lastRefillDate: refillDate,
+        updatedAt: new Date()
+      })
+      .where(eq(medications.id, medicationId))
+      .returning();
+    
+    return updatedMedication;
   },
 
   async createMedication(medicationData: any) {
