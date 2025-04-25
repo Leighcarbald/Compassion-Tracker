@@ -820,17 +820,25 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                   return;
                 }
                 
+                if (!emergencyInfo?.id) {
+                  toast({
+                    title: "Error",
+                    description: "Emergency info record not found. Please refresh and try again.",
+                    variant: "destructive",
+                  });
+                  
+                  // Try to re-fetch emergency info
+                  queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", selectedCareRecipient] });
+                  return;
+                }
+                
+                console.log("Setting PIN for emergency info with ID:", emergencyInfo.id);
+                
                 // PINs match, proceed with setting the PIN
                 setPinMutation.mutate(pin);
                 
-                // Close dialog, unlock immediately for better UX
-                setShowSetPinDialog(false);
-                setIsLocked(false);
-                
-                // Store that we've successfully set a PIN and are authenticated
-                if (emergencyInfo?.id) {
-                  unlockPin(emergencyInfo.id);
-                }
+                // Dialog will be closed by the onSuccess handler after PIN is set
+                // Don't set isLocked to false here - let the mutation success handler do it
               }} 
               disabled={confirmPin.length !== 6 || setPinMutation.isPending}
             >

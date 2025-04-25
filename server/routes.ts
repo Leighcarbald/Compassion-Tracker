@@ -651,7 +651,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Care recipient ID is required' });
       }
       
-      const emergencyInfo = await storage.getEmergencyInfo(parseInt(careRecipientId));
+      const recipientIdNum = parseInt(careRecipientId);
+      let emergencyInfo = await storage.getEmergencyInfo(recipientIdNum);
+      
+      console.log(`Emergency info for care recipient #${careRecipientId}:`, emergencyInfo);
+      
+      // If no emergency info exists, create a default one
+      if (!emergencyInfo) {
+        console.log(`No emergency info found for care recipient #${careRecipientId}, creating default entry`);
+        
+        // Create a default emergency info entry
+        emergencyInfo = await storage.createEmergencyInfo({
+          careRecipientId: recipientIdNum,
+          // All other fields will be empty/null
+        });
+        
+        console.log(`Created default emergency info:`, emergencyInfo);
+      }
+      
       res.json(emergencyInfo);
     } catch (error) {
       console.error('Error fetching emergency info:', error);
