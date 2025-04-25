@@ -480,12 +480,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       />
 
       <main className="flex-1 overflow-y-auto p-4 pb-24">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold flex items-center">
-            <ShieldAlert className="mr-2 text-red-500" />
-            Emergency Information
-          </h1>
-          <div className="flex gap-2">
+        <PageHeader title="Emergency Information" icon={<ShieldAlert className="h-6 w-6 text-red-500" />} />
+        
+        <div className="flex justify-end gap-2 mt-2 mb-4">
             <Button 
               size="sm" 
               variant={isLocked ? "outline" : "destructive"} 
