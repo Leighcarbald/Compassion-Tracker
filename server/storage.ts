@@ -272,9 +272,13 @@ export const storage = {
       )
     });
     
-    // Get bowel movement stats
+    // Get bowel movement stats for today
     const lastBowelMovement = await db.query.bowelMovements.findFirst({
-      where: eq(bowelMovements.careRecipientId, careRecipientId),
+      where: and(
+        eq(bowelMovements.careRecipientId, careRecipientId),
+        gte(bowelMovements.occuredAt, start),
+        lt(bowelMovements.occuredAt, end)
+      ),
       orderBy: desc(bowelMovements.occuredAt)
     });
     
@@ -286,9 +290,13 @@ export const storage = {
       )
     });
     
-    // Get sleep stats
+    // Get sleep stats for today
     const lastSleep = await db.query.sleep.findFirst({
-      where: eq(sleep.careRecipientId, careRecipientId),
+      where: and(
+        eq(sleep.careRecipientId, careRecipientId),
+        gte(sleep.startTime, start),
+        lt(sleep.startTime, end)
+      ),
       orderBy: desc(sleep.startTime)
     });
     
