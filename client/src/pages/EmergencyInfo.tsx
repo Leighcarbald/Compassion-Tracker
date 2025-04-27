@@ -482,8 +482,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 variant={isEditing ? "destructive" : "outline"} 
                 onClick={() => setIsEditing(!isEditing)}
               >
-                {isEditing ? "Cancel" : <Edit className="h-4 w-4 mr-1" />}
-                {isEditing ? "Cancel" : "Edit"}
+                {isEditing ? (
+                  <>Cancel</>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </>
+                )}
               </Button>
             )}
         </div>
@@ -915,7 +921,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 {isEditing && (
                   <div className="flex justify-end gap-2 mt-6 mb-10">
                     <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      Cancel
+                      Return
                     </Button>
                     <Button onClick={handleSave} disabled={saveEmergencyInfoMutation.isPending}>
                       {saveEmergencyInfoMutation.isPending ? (
