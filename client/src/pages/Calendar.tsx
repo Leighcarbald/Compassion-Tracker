@@ -242,9 +242,11 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
 
                 {/* Daily Health Details */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid grid-cols-4 mb-2">
+                  <TabsList className="grid grid-cols-6 mb-2">
                     <TabsTrigger value="events">Events</TabsTrigger>
-                    <TabsTrigger value="health">Health</TabsTrigger>
+                    <TabsTrigger value="bp">BP</TabsTrigger>
+                    <TabsTrigger value="glucose">Glucose</TabsTrigger>
+                    <TabsTrigger value="bowel">Bowel</TabsTrigger>
                     <TabsTrigger value="meds">Meds</TabsTrigger>
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                   </TabsList>
@@ -346,50 +348,11 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </div>
                     )}
 
-                    {/* Bowel Movements */}
-                    <h4 className="text-sm font-medium text-gray-700 mt-4">Bowel Movements</h4>
-                    {!dateStats.bowelMovements || dateStats.bowelMovements.length === 0 ? (
-                      <Card>
-                        <CardContent className="p-4 text-center">
-                          <p className="text-gray-500">No bowel movements recorded</p>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <div className="space-y-2">
-                        {dateStats.bowelMovements.map((movement) => (
-                          <Card key={movement.id}>
-                            <CardContent className="p-3">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium">
-                                    {formatTime(movement.occuredAt)}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    Type: {movement.type || 'Not specified'}
-                                    {movement.color && `, Color: ${movement.color}`}
-                                  </p>
-                                  {movement.consistency && (
-                                    <p className="text-sm text-gray-500">
-                                      Consistency: {movement.consistency}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              {movement.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {movement.notes}
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
+
                   </TabsContent>
 
-                  {/* Health Tab */}
-                  <TabsContent value="health" className="space-y-4">
-                    {/* Blood Pressure */}
+                  {/* Blood Pressure Tab */}
+                  <TabsContent value="bp" className="space-y-4">
                     <h4 className="text-sm font-medium text-gray-700">Blood Pressure</h4>
                     {!dateStats.bloodPressure || dateStats.bloodPressure.length === 0 ? (
                       <Card>
@@ -431,9 +394,11 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                         ))}
                       </div>
                     )}
+                  </TabsContent>
 
-                    {/* Glucose Readings */}
-                    <h4 className="text-sm font-medium text-gray-700 mt-4">Glucose Readings</h4>
+                  {/* Glucose Tab */}
+                  <TabsContent value="glucose" className="space-y-4">
+                    <h4 className="text-sm font-medium text-gray-700">Glucose Readings</h4>
                     {!dateStats.glucose || dateStats.glucose.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center">
