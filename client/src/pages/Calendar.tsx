@@ -517,7 +517,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                   {/* Meds Tab */}
                   <TabsContent value="meds">
                     <h4 className="text-sm font-medium text-gray-700">Medication Logs</h4>
-                    {!dateStats.medicationLogs || dateStats.medicationLogs.length === 0 ? (
+                    {!dateStats.medications?.logs || dateStats.medications.logs.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center">
                           <p className="text-gray-500">No medications taken on this date</p>
@@ -525,7 +525,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2 mt-2">
-                        {dateStats.medicationLogs.map((log) => (
+                        {dateStats.medications.logs.map((log) => (
                           <Card key={log.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">

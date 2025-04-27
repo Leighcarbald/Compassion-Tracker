@@ -353,6 +353,22 @@ export const storage = {
       )
     });
     
+    // Debug medication logs
+    console.log(`Date stats for ${start.toISOString()} to ${end.toISOString()}:`);
+    console.log(`Medications total: ${meds.length}, taken: ${takenMedicationIds.size}`);
+    console.log(`Medication logs: ${dateLogs.length}`, dateLogs);
+    
+    // Get medication logs with medication details
+    const medicationLogsWithDetails = await Promise.all(dateLogs.map(async (log) => {
+      const medication = await db.query.medications.findFirst({
+        where: eq(medications.id, log.medicationId)
+      });
+      return {
+        ...log,
+        medication
+      };
+    }));
+
     return {
       // Summary stats
       medications: {
@@ -361,7 +377,7 @@ export const storage = {
         progress: meds.length > 0 
           ? Math.round((takenMedicationIds.size / meds.length) * 100) 
           : 0,
-        logs: dateLogs
+        logs: medicationLogsWithDetails
       },
       meals: {
         completed: dateMeals.length,
