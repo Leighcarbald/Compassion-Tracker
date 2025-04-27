@@ -287,7 +287,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   });
 
   // Function to start editing a medication
-  const handleEditMedication = (medication: Medication) => {
+  const handleEditMedication = (medication: MedicationWithSchedules) => {
     setEditingMedicationId(medication.id);
     setEditedMedication({
       ...medication,
@@ -449,7 +449,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                       {/* Schedules Section - Display medication schedules */}
                       {med.schedules && Array.isArray(med.schedules) && med.schedules.length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {med.schedules.map((schedule: any) => (
+                          {med.schedules.map((schedule: MedicationSchedule) => (
                             <Button
                               key={schedule.id}
                               size="sm"
@@ -461,7 +461,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                               }`}
                               onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
                             >
-                              {schedule.time?.slice(0, 5) || "Take"}
+                              {schedule.time?.toString().slice(0, 5) || "Take"}
                               {isDoseTaken(med.id, schedule.id) && (
                                 <Check className="ml-1 h-3 w-3" />
                               )}
