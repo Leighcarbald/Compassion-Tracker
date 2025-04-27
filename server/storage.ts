@@ -262,13 +262,16 @@ export const storage = {
       where: eq(medications.careRecipientId, careRecipientId)
     });
     
-    // Get medication logs for the specified date
+    // Get medication logs for the specified date with medication details
     const dateLogs = await db.query.medicationLogs.findMany({
       where: and(
         eq(medicationLogs.careRecipientId, careRecipientId),
         gte(medicationLogs.takenAt, start),
         lt(medicationLogs.takenAt, end)
-      )
+      ),
+      with: {
+        medication: true
+      }
     });
     
     // Count unique medications that have been taken on the specified date
@@ -356,18 +359,9 @@ export const storage = {
     // Debug medication logs
     console.log(`Date stats for ${start.toISOString()} to ${end.toISOString()}:`);
     console.log(`Medications total: ${meds.length}, taken: ${takenMedicationIds.size}`);
-    console.log(`Medication logs: ${dateLogs.length}`, dateLogs);
+    console.log(`Medication logs: ${dateLogs.length}`);
     
-    // Get medication logs with medication details
-    const medicationLogsWithDetails = await Promise.all(dateLogs.map(async (log) => {
-      const medication = await db.query.medications.findFirst({
-        where: eq(medications.id, log.medicationId)
-      });
-      return {
-        ...log,
-        medication
-      };
-    }));
+    // The logs now already include medication details through the with: { medication: true } relation
 
     return {
       // Summary stats
@@ -377,7 +371,7 @@ export const storage = {
         progress: meds.length > 0 
           ? Math.round((takenMedicationIds.size / meds.length) * 100) 
           : 0,
-        logs: medicationLogsWithDetails
+        logs: dateLogs
       },
       meals: {
         completed: dateMeals.length,
