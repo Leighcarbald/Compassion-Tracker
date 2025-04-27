@@ -151,7 +151,8 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
         <section className="p-4">
           <PageHeader 
             title={isToday ? "Today's Health Report" : "Historical Health Report"} 
-            icon={<CalendarIcon className="h-6 w-6" />} 
+            icon={<CalendarIcon className="h-6 w-6" />}
+            showHomeButton={false}
           />
 
           {/* Calendar */}
