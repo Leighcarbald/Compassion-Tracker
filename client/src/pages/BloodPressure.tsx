@@ -175,7 +175,8 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
     <div className="p-4 md:p-6">
       <PageHeader title="Blood Pressure Tracker" icon={<Activity className="h-6 w-6" />} />
       
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <div></div> {/* Empty div for flex spacing */}
         <Button onClick={() => setShowAddForm(!showAddForm)}>
           {showAddForm ? "Cancel" : "Add Reading"}
           {!showAddForm && <PlusCircle className="ml-2 h-4 w-4" />}

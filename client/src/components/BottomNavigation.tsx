@@ -48,7 +48,7 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
                       activeTab === "meals" || activeTab === "bowel-movements" || activeTab === "sleep";
 
   return (
-    <nav className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-10">
+    <nav className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-10">
       <Button
         variant="ghost"
         className={`flex flex-col items-center justify-center w-full h-auto py-1 ${
