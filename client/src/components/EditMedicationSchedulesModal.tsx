@@ -32,7 +32,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, PlusCircle } from "lucide-react";
+import { Trash2, PlusCircle, Loader2 } from "lucide-react";
 import { Medication } from "@shared/schema";
 
 interface EditMedicationSchedulesModalProps {
