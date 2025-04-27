@@ -30,7 +30,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'today' | 'week' | 'all'>('today');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [takenMedicationIds, setTakenMedicationIds] = useState<Set<number>>(new Set());
@@ -48,7 +47,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
 
   // Fetch medications
   const { data: medications, isLoading: isLoadingMedications } = useQuery<Medication[]>({
-    queryKey: ['/api/medications', activeCareRecipient, activeFilter],
+    queryKey: ['/api/medications', activeCareRecipient, 'all'],
     enabled: !!activeCareRecipient,
   });
 
@@ -237,33 +236,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex mb-4 text-sm">
-            <Button 
-              variant={activeFilter === 'today' ? 'default' : 'outline'} 
-              size="sm" 
-              className={`mr-2 rounded-full ${activeFilter === 'today' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}
-              onClick={() => setActiveFilter('today')}
-            >
-              Today
-            </Button>
-            <Button 
-              variant={activeFilter === 'week' ? 'default' : 'outline'} 
-              size="sm" 
-              className={`mr-2 rounded-full ${activeFilter === 'week' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}
-              onClick={() => setActiveFilter('week')}
-            >
-              This Week
-            </Button>
-            <Button 
-              variant={activeFilter === 'all' ? 'default' : 'outline'} 
-              size="sm" 
-              className={`rounded-full ${activeFilter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}
-              onClick={() => setActiveFilter('all')}
-            >
-              All
-            </Button>
-          </div>
+          {/* Filter section removed as medical history shows this information */}
 
           {/* Medication List */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-6">
