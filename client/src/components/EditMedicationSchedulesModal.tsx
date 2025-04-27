@@ -158,6 +158,43 @@ export default function EditMedicationSchedulesModal({
     }
   }, [medication, form]);
 
+  // Mutation for deleting a schedule
+  const deleteSchedule = useMutation({
+    mutationFn: async (scheduleId: number) => {
+      console.log(`Deleting schedule with ID ${scheduleId}`);
+      const url = `/api/medication-schedules/${scheduleId}`;
+      
+      console.log(`API Request: DELETE ${url}`);
+      const response = await apiRequest("DELETE", url);
+      console.log(`API Response: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error deleting schedule: ${errorText}`);
+      }
+      
+      return scheduleId;
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      
+      toast({
+        title: "Success",
+        description: "Medication schedule deleted successfully",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Error deleting schedule:", error);
+      toast({
+        title: "Error Deleting Schedule",
+        description: error.message || "Failed to delete medication schedule. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const saveSchedules = useMutation({
     mutationFn: async (data: z.infer<typeof scheduleSchema>) => {
       if (!medication) throw new Error("No medication selected");
@@ -303,9 +340,28 @@ export default function EditMedicationSchedulesModal({
                       variant="ghost"
                       size="icon"
                       className="absolute top-2 right-2 text-destructive"
-                      onClick={() => remove(index)}
+                      onClick={() => {
+                        const schedule = fields[index];
+                        if (schedule.id) {
+                          // If it has an ID, it exists in the database, so delete it
+                          deleteSchedule.mutate(schedule.id, {
+                            onSuccess: () => {
+                              // After deleting from server, remove from form
+                              remove(index);
+                            }
+                          });
+                        } else {
+                          // If no ID, it's a new schedule that doesn't exist in the database yet
+                          remove(index);
+                        }
+                      }}
+                      disabled={deleteSchedule.isPending}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {deleteSchedule.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                     
                     <FormField
