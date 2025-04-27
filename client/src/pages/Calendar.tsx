@@ -40,6 +40,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("events"); // Tab for the health data sections
+  const [modalEventType, setModalEventType] = useState<string>("appointment");
 
   // Fetch care recipients
   const { data: careRecipients, isLoading: isLoadingRecipients } = useQuery<CareRecipient[]>({
@@ -47,14 +48,19 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
   });
 
   // Set default active recipient if none selected
-  if (!activeCareRecipient && careRecipients && careRecipients.length > 0) {
-    setActiveCareRecipient(String(careRecipients[0].id));
-  }
+  useEffect(() => {
+    if (!activeCareRecipient && careRecipients && careRecipients.length > 0) {
+      setActiveCareRecipient(String(careRecipients[0].id));
+    }
+  }, [activeCareRecipient, careRecipients]);
 
   // Format the selected date for API calls
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-
-  // Fetch detailed stats for the selected date
+  
+  // Check if selected date is today
+  const isToday = selectedDate ? isSameDay(selectedDate, new Date()) : false;
+  
+  // Fetch detailed stats for the selected date (only for past dates, not today)  
   const { data: dateStats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['/api/care-stats/date', activeCareRecipient, formattedDate],
     queryFn: async () => {
@@ -62,7 +68,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
       if (!res.ok) throw new Error('Failed to fetch date stats');
       return res.json();
     },
-    enabled: !!activeCareRecipient && !!selectedDate,
+    enabled: !!activeCareRecipient && !!selectedDate && !isToday, // Don't fetch for today
   });
 
   // Fetch appointments for the selected date
@@ -134,7 +140,8 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
     );
   };
 
-  const isToday = selectedDate ? isSameDay(selectedDate, new Date()) : false;
+  // Create showTodayMessage state based on if today is selected
+  const showTodayMessage = isToday;
 
   return (
     <>
@@ -187,7 +194,21 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
               )}
             </h3>
 
-            {isLoadingStats ? (
+            {isToday ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">Today's data will be available tomorrow</p>
+                  <p className="text-sm text-gray-400 mt-2">Data for today is still being collected</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4 text-primary" 
+                    onClick={handleAddEvent}
+                  >
+                    Add an Event
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : isLoadingStats ? (
               <div className="p-4 text-center text-gray-500">Loading health data...</div>
             ) : !dateStats ? (
               <Card>
@@ -387,25 +408,23 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                           <Card key={reading.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium text-primary">
-                                    {reading.systolic}/{reading.diastolic} mmHg
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {format(new Date(reading.timeOfReading), 'h:mm a')}
-                                  </p>
-                                  {reading.pulse && (
-                                    <p className="text-sm text-gray-500">
-                                      Pulse: {reading.pulse} bpm
+                                <div className="flex items-center gap-2">
+                                  <Activity className="h-4 w-4 text-red-500" />
+                                  <div>
+                                    <p className="font-medium">
+                                      {reading.systolic}/{reading.diastolic} mmHg
                                     </p>
-                                  )}
-                                  {reading.oxygenLevel && (
                                     <p className="text-sm text-gray-500">
-                                      Oxygen: {reading.oxygenLevel}%
+                                      {format(new Date(reading.timestamp), 'h:mm a')}
+                                      {reading.pulse && `, Pulse: ${reading.pulse} bpm`}
                                     </p>
-                                  )}
+                                    {reading.oxygenLevel && (
+                                      <p className="text-sm text-gray-500">
+                                        Oxygen: {reading.oxygenLevel}%
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                <Activity className="h-5 w-5 text-primary" />
                               </div>
                               {reading.notes && (
                                 <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
@@ -418,7 +437,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </div>
                     )}
 
-                    {/* Glucose */}
+                    {/* Glucose Readings */}
                     <h4 className="text-sm font-medium text-gray-700 mt-4">Glucose Readings</h4>
                     {!dateStats.glucose || dateStats.glucose.length === 0 ? (
                       <Card>
@@ -432,18 +451,18 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                           <Card key={reading.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium">
-                                    {reading.level} mg/dL
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {format(new Date(reading.timeOfReading), 'h:mm a')}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    Type: {reading.readingType}
-                                  </p>
+                                <div className="flex items-center gap-2">
+                                  <Droplets className="h-4 w-4 text-blue-500" />
+                                  <div>
+                                    <p className="font-medium">
+                                      {reading.level} mg/dL
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {format(new Date(reading.timestamp), 'h:mm a')}
+                                      {reading.mealContext && `, ${reading.mealContext}`}
+                                    </p>
+                                  </div>
                                 </div>
-                                <Droplets className="h-5 w-5 text-blue-500" />
                               </div>
                               {reading.notes && (
                                 <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
@@ -456,7 +475,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </div>
                     )}
 
-                    {/* Insulin */}
+                    {/* Insulin Records */}
                     <h4 className="text-sm font-medium text-gray-700 mt-4">Insulin Records</h4>
                     {!dateStats.insulin || dateStats.insulin.length === 0 ? (
                       <Card>
@@ -470,20 +489,23 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                           <Card key={record.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium">
-                                    {record.units} units ({record.insulinType})
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {format(new Date(record.timeAdministered), 'h:mm a')}
-                                  </p>
-                                  {record.site && (
-                                    <p className="text-sm text-gray-500">
-                                      Site: {record.site}
+                                <div className="flex items-center gap-2">
+                                  <Syringe className="h-4 w-4 text-purple-500" />
+                                  <div>
+                                    <p className="font-medium">
+                                      {record.units} units
                                     </p>
-                                  )}
+                                    <p className="text-sm text-gray-500">
+                                      {format(new Date(record.timestamp), 'h:mm a')}
+                                      {record.insulinType && `, ${record.insulinType}`}
+                                    </p>
+                                    {record.site && (
+                                      <p className="text-sm text-gray-500">
+                                        Site: {record.site}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                <Syringe className="h-5 w-5 text-purple-500" />
                               </div>
                               {record.notes && (
                                 <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
@@ -497,79 +519,44 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                     )}
                   </TabsContent>
                   
-                  {/* Medications Tab */}
-                  <TabsContent value="meds" className="space-y-4">
-                    <h4 className="text-sm font-medium text-gray-700">Medications Taken</h4>
-                    {!dateStats.medications.logs || dateStats.medications.logs.length === 0 ? (
+                  {/* Meds Tab */}
+                  <TabsContent value="meds">
+                    <h4 className="text-sm font-medium text-gray-700">Medication Logs</h4>
+                    {!dateStats.medicationLogs || dateStats.medicationLogs.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center">
-                          <p className="text-gray-500">No medications taken</p>
+                          <p className="text-gray-500">No medications taken on this date</p>
                         </CardContent>
                       </Card>
                     ) : (
-                      <div className="space-y-2">
-                        {dateStats.medications.logs.map((log: any) => {
-                          // The server enhances the log with the medication name
-                          const medicationName = log.medicationName || "Medication";
-                          
-                          return (
-                            <Card key={log.id}>
-                              <CardContent className="p-3">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-medium">
-                                      {medicationName}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                      Taken at {format(new Date(log.takenAt), 'h:mm a')}
-                                    </p>
-                                    {log.quantity && (
-                                      <p className="text-sm text-gray-500">
-                                        Quantity: {log.quantity}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <Pill className="h-5 w-5 text-blue-500" />
-                                </div>
-                                {log.notes && (
-                                  <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                    {log.notes}
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Meals */}
-                    <h4 className="text-sm font-medium text-gray-700 mt-4">Meals</h4>
-                    {!dateStats.meals.logs || dateStats.meals.logs.length === 0 ? (
-                      <Card>
-                        <CardContent className="p-4 text-center">
-                          <p className="text-gray-500">No meals recorded</p>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <div className="space-y-2">
-                        {dateStats.meals.logs.map((meal: any) => (
-                          <Card key={meal.id}>
+                      <div className="space-y-2 mt-2">
+                        {dateStats.medicationLogs.map((log: any) => (
+                          <Card key={log.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium">
-                                    {meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {format(new Date(meal.consumedAt), 'h:mm a')}
-                                  </p>
+                                <div className="flex items-center gap-2">
+                                  <Pill className="h-4 w-4 text-blue-500" />
+                                  <div>
+                                    <p className="font-medium">
+                                      {log.medication?.name || "Unknown medication"}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {format(new Date(log.takenAt), 'h:mm a')}
+                                      {log.medication?.dosage && `, ${log.medication.dosage}`}
+                                    </p>
+                                  </div>
                                 </div>
-                                <Utensils className="h-5 w-5 text-green-500" />
+                                <div>
+                                  {log.taken && (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      Taken
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              {meal.description && (
+                              {log.notes && (
                                 <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {meal.description}
+                                  {log.notes}
                                 </div>
                               )}
                             </CardContent>
@@ -578,29 +565,29 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </div>
                     )}
                   </TabsContent>
-                  
+
                   {/* Notes Tab */}
-                  <TabsContent value="notes" className="space-y-4">
-                    <h4 className="text-sm font-medium text-gray-700">Notes</h4>
+                  <TabsContent value="notes">
+                    <h4 className="text-sm font-medium text-gray-700">Daily Notes</h4>
                     {!dateStats.notes || dateStats.notes.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center">
-                          <p className="text-gray-500">No notes recorded</p>
+                          <p className="text-gray-500">No notes for this date</p>
                         </CardContent>
                       </Card>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-2 mt-2">
                         {dateStats.notes.map((note: any) => (
                           <Card key={note.id}>
                             <CardContent className="p-3">
-                              <div className="flex items-center gap-2 mb-2">
-                                <FileText className="h-4 w-4 text-gray-500" />
-                                <p className="font-medium">
-                                  {format(new Date(note.createdAt), 'h:mm a')}
-                                </p>
-                              </div>
-                              <div className="text-sm">
-                                {note.content}
+                              <div className="flex items-start gap-2">
+                                <FileText className="h-4 w-4 text-gray-500 mt-1" />
+                                <div className="flex-1">
+                                  <p className="text-sm text-gray-500">
+                                    {format(new Date(note.createdAt), 'h:mm a')}
+                                  </p>
+                                  <p className="mt-1">{note.content}</p>
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
@@ -609,46 +596,27 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                     )}
                   </TabsContent>
                 </Tabs>
-
-                <div className="mt-4 text-center">
-                  <Button 
-                    variant="outline" 
-                    className="text-primary" 
-                    onClick={handleAddEvent}
-                  >
-                    Add New Health Data
-                    <Plus className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
               </div>
             )}
           </div>
         </section>
       </main>
-      
+
       <BottomNavigation 
         activeTab={navTab} 
         onChangeTab={setNavTab} 
         onAddEvent={handleAddEvent}
       />
-
-      <AddCareEventModal 
-        isOpen={isModalOpen} 
-        onClose={() => {
-          setIsModalOpen(false);
-          // After adding a new event, refresh all data
-          refetchAppointments();
-          queryClient.invalidateQueries({ 
-            queryKey: ['/api/appointments/month', activeCareRecipient]
-          });
-          queryClient.invalidateQueries({ 
-            queryKey: ['/api/care-stats/date', activeCareRecipient, formattedDate] 
-          });
-        }} 
-        careRecipientId={activeCareRecipient}
-        defaultEventType="appointment"
-        selectedDate={selectedDate}
-      />
+      
+      {isModalOpen && (
+        <AddCareEventModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          careRecipientId={activeCareRecipient}
+          selectedDate={selectedDate}
+          defaultEventType={modalEventType === "appointment" ? "appointment" : undefined}
+        />
+      )}
     </>
   );
 }
