@@ -155,6 +155,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating medication' });
     }
   });
+
+  // Update medication information
+  app.patch(`${apiPrefix}/medications/:id`, async (req, res) => {
+    try {
+      const medicationId = parseInt(req.params.id);
+      if (isNaN(medicationId)) {
+        return res.status(400).json({ message: 'Invalid medication ID' });
+      }
+      
+      const updatedMedication = await storage.updateMedication(medicationId, req.body);
+      res.json(updatedMedication);
+    } catch (error) {
+      console.error('Error updating medication:', error);
+      res.status(500).json({ message: 'Error updating medication' });
+    }
+  });
   
   // Update medication inventory
   app.patch(`${apiPrefix}/medications/:id/inventory`, async (req, res) => {

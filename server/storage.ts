@@ -655,6 +655,37 @@ export const storage = {
     const [newMedication] = await db.insert(medications).values(validatedData).returning();
     return newMedication;
   },
+
+  async updateMedication(medicationId: number, medicationData: any) {
+    // First check if the medication exists
+    const existingMedication = await db.query.medications.findFirst({
+      where: eq(medications.id, medicationId)
+    });
+    
+    if (!existingMedication) {
+      throw new Error('Medication not found');
+    }
+    
+    // Update the medication with allowed fields only
+    // We only allow name, dosage, and instructions to be updated
+    const updateData: any = {};
+    if (medicationData.name !== undefined) updateData.name = medicationData.name;
+    if (medicationData.dosage !== undefined) updateData.dosage = medicationData.dosage;
+    if (medicationData.instructions !== undefined) updateData.instructions = medicationData.instructions;
+    
+    // Update the medication
+    if (Object.keys(updateData).length > 0) {
+      const [updatedMedication] = await db.update(medications)
+        .set(updateData)
+        .where(eq(medications.id, medicationId))
+        .returning();
+      
+      return updatedMedication;
+    }
+    
+    // If no changes, return the existing medication
+    return existingMedication;
+  },
   
   // Medication Schedules
   async getMedicationSchedules(medicationId: number) {

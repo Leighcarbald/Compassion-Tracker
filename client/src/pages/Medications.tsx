@@ -18,10 +18,10 @@ import {
   Tablets, 
   Package2,
   Plus,
-  AlertTriangle,
   Edit,
   Save,
-  X
+  X,
+  AlertTriangle
 } from "lucide-react";
 
 interface MedicationsProps {
