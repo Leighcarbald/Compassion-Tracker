@@ -5,21 +5,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatDate } from "@/lib/utils";
 import { ChevronDown, Check } from "lucide-react";
 import CareRecipientTabs from "./CareRecipientTabs";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 
 interface HeaderProps {
-  activeCareRecipient: string | null;
-  careRecipients: CareRecipient[];
-  onChangeRecipient: (id: string) => void;
   isLoading?: boolean;
 }
 
 export default function Header({ 
-  activeCareRecipient, 
-  careRecipients, 
-  onChangeRecipient, 
   isLoading = false 
 }: HeaderProps) {
-  const currentRecipient = careRecipients.find(
+  const { 
+    activeCareRecipientId: activeCareRecipient, 
+    setActiveCareRecipientId: onChangeRecipient, 
+    careRecipients = [] 
+  } = useCareRecipient();
+  
+  const currentRecipient = careRecipients?.find(
     recipient => recipient.id.toString() === activeCareRecipient
   );
 

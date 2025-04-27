@@ -10,10 +10,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format, isSameDay } from "date-fns";
-import { CareRecipient, Appointment } from "@shared/schema";
+import { Appointment } from "@shared/schema";
 import { TabType } from "@/lib/types";
 import { formatTime, formatDate } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -35,22 +36,15 @@ interface CalendarProps {
 
 export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }: CalendarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("meds"); // Tab for the health data sections
   const [modalEventType, setModalEventType] = useState<string>("appointment");
-
-  // Fetch care recipients
-  const { data: careRecipients, isLoading: isLoadingRecipients } = useQuery<CareRecipient[]>({
-    queryKey: ['/api/care-recipients'],
-  });
-
-  // Set default active recipient if none selected
-  useEffect(() => {
-    if (!activeCareRecipient && careRecipients && careRecipients.length > 0) {
-      setActiveCareRecipient(String(careRecipients[0].id));
-    }
-  }, [activeCareRecipient, careRecipients]);
+  
+  // Use global care recipient state
+  const { 
+    activeCareRecipientId: activeCareRecipient, 
+    isLoading: isLoadingRecipients 
+  } = useCareRecipient();
 
   // Format the selected date for API calls
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
@@ -123,11 +117,6 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
     }
   }, [selectedDate, currentYearMonth, activeCareRecipient]);
 
-  // Handle recipient change
-  const handleChangeRecipient = (id: string) => {
-    setActiveCareRecipient(id);
-  };
-  
   // Function to check if a date has appointments
   const hasAppointmentOnDate = (date: Date): boolean => {
     if (!allMonthAppointments) return false;
@@ -140,10 +129,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
 
   return (
     <>
-      <Header 
-        activeCareRecipient={activeCareRecipient} 
-        careRecipients={careRecipients || []} 
-        onChangeRecipient={handleChangeRecipient}
+      <Header
         isLoading={isLoadingRecipients}
       />
       

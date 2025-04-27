@@ -1,10 +1,10 @@
-import { useState } from "react";
 import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useQuery } from "@tanstack/react-query";
-import { type CareRecipient, type InspirationMessage } from "@shared/schema";
+import { type InspirationMessage } from "@shared/schema";
 import { TabType } from "@/lib/types";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 
 interface HomeProps {
   activeTab: TabType;
@@ -12,40 +12,22 @@ interface HomeProps {
 }
 
 export default function Home({ activeTab, setActiveTab }: HomeProps) {
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
-
-  // Fetch care recipients
-  const { data: careRecipients, isLoading: isLoadingRecipients } = useQuery<CareRecipient[]>({
-    queryKey: ['/api/care-recipients'],
-  });
-
-  // Set default active recipient if none selected
-  if (!activeCareRecipient && careRecipients && careRecipients.length > 0) {
-    setActiveCareRecipient(String(careRecipients[0].id));
-  }
+  const { activeCareRecipientId, isLoading: isLoadingRecipients } = useCareRecipient();
 
   // Fetch daily inspiration
   const { data: inspirationMessage } = useQuery<InspirationMessage>({
     queryKey: ['/api/inspiration/daily'],
   });
 
-  // Handle recipient change
-  const handleChangeRecipient = (id: string) => {
-    setActiveCareRecipient(id);
-  };
-
   return (
     <>
       <Header 
-        activeCareRecipient={activeCareRecipient} 
-        careRecipients={careRecipients || []} 
-        onChangeRecipient={handleChangeRecipient}
         isLoading={isLoadingRecipients}
       />
       
       <main className="flex-1 overflow-auto pb-16">
         <Dashboard 
-          careRecipientId={activeCareRecipient} 
+          careRecipientId={activeCareRecipientId} 
           inspirationMessage={inspirationMessage}
         />
       </main>
