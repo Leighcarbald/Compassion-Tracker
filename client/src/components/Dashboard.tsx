@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTime } from "@/lib/utils";
 import StatusCard from "./StatusCard";
-import { Pill, Utensils, Toilet, Moon, Heart } from "lucide-react";
+import { Pill, Utensils, Toilet, Moon, Heart, Activity, Droplets } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface DashboardProps {
@@ -18,6 +18,17 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
     bowelMovement: { lastTime: string };
     supplies: { depends: number };
     sleep: { duration: string; quality: string };
+    bloodPressure: Array<{
+      systolic: number;
+      diastolic: number;
+      pulse: number;
+      timeOfReading: string;
+    }>;
+    glucose: Array<{
+      level: number;
+      timeOfReading: string;
+      whenTaken: string;
+    }>;
   }>({
     queryKey: ['/api/care-stats/today', careRecipientId],
     enabled: !!careRecipientId,
@@ -65,6 +76,32 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
           icon={<Utensils className="h-4 w-4" />}
           color="secondary"
           progress={todayStats?.meals?.progress || 0}
+        />
+
+        {/* Blood Pressure Card */}
+        <StatusCard
+          title="Blood Pressure"
+          value={todayStats?.bloodPressure && todayStats.bloodPressure.length > 0 
+            ? `${todayStats.bloodPressure[0].systolic}/${todayStats.bloodPressure[0].diastolic}`
+            : "No readings"}
+          icon={<Activity className="h-4 w-4" />}
+          color="red-500"
+          secondaryText={todayStats?.bloodPressure && todayStats.bloodPressure.length > 0 
+            ? `Pulse: ${todayStats.bloodPressure[0].pulse}`
+            : ""}
+        />
+
+        {/* Glucose Card */}
+        <StatusCard
+          title="Glucose"
+          value={todayStats?.glucose && todayStats.glucose.length > 0 
+            ? `${todayStats.glucose[0].level} mg/dL`
+            : "No readings"}
+          icon={<Droplets className="h-4 w-4" />}
+          color="blue-500"
+          secondaryText={todayStats?.glucose && todayStats.glucose.length > 0 
+            ? `${todayStats.glucose[0].whenTaken}` 
+            : ""}
         />
 
         {/* Bowel Movements Card */}
