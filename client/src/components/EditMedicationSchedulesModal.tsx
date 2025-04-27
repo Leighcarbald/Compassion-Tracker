@@ -342,9 +342,27 @@ export default function EditMedicationSchedulesModal({
                       className="absolute top-2 right-2 text-destructive"
                       onClick={() => {
                         const schedule = fields[index];
+                        console.log("Field to delete:", schedule);
                         if (schedule.id) {
+                          // Make sure the ID is in the correct format (number)
+                          const scheduleId = typeof schedule.id === 'number' 
+                            ? schedule.id 
+                            : parseInt(String(schedule.id));
+                          
+                          console.log(`Converting schedule ID from ${schedule.id} (${typeof schedule.id}) to ${scheduleId} (${typeof scheduleId})`);
+                          
+                          if (isNaN(scheduleId)) {
+                            console.error("Invalid schedule ID format:", schedule.id);
+                            toast({
+                              title: "Error",
+                              description: "Cannot delete schedule: Invalid ID format",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
                           // If it has an ID, it exists in the database, so delete it
-                          deleteSchedule.mutate(schedule.id, {
+                          deleteSchedule.mutate(scheduleId, {
                             onSuccess: () => {
                               // After deleting from server, remove from form
                               remove(index);
