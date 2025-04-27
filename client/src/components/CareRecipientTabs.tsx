@@ -131,6 +131,37 @@ export default function CareRecipientTabs({
     }
   });
   
+  // Add recipient mutation
+  const addRecipientMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const data = insertCareRecipientSchema.parse({ name, status: 'active' });
+      const res = await apiRequest("POST", "/api/care-recipients", data);
+      return await res.json();
+    },
+    onSuccess: (newRecipient) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/care-recipients'] });
+      
+      // Set the new recipient as active
+      onChangeRecipient(newRecipient.id.toString());
+      
+      toast({
+        title: "Care recipient added",
+        description: `${newRecipientName} has been added to your care list.`,
+        variant: "default",
+      });
+      
+      setNewRecipientName("");
+      setShowAddDialog(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add care recipient. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
   const handleDeleteClick = (recipient: CareRecipient, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent tab change
     setRecipientToDelete(recipient);
@@ -153,6 +184,17 @@ export default function CareRecipientTabs({
   const confirmEdit = () => {
     if (recipientToEdit && newName.trim()) {
       editMutation.mutate({ id: recipientToEdit.id, name: newName.trim() });
+    }
+  };
+  
+  const handleAddClick = () => {
+    setNewRecipientName("");
+    setShowAddDialog(true);
+  };
+  
+  const confirmAdd = () => {
+    if (newRecipientName.trim()) {
+      addRecipientMutation.mutate(newRecipientName.trim());
     }
   };
 
@@ -217,6 +259,7 @@ export default function CareRecipientTabs({
           <Button
             variant="ghost"
             className="py-2 px-1 text-sm text-gray-400 hover:text-primary"
+            onClick={handleAddClick}
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -281,6 +324,48 @@ export default function CareRecipientTabs({
               disabled={!newName.trim() || editMutation.isPending}
             >
               {editMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add Recipient Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Care Recipient</DialogTitle>
+            <DialogDescription>
+              Add a new person to your care list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Input
+              ref={newRecipientInputRef}
+              placeholder="Enter name"
+              value={newRecipientName}
+              onChange={(e) => setNewRecipientName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  confirmAdd();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowAddDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={confirmAdd}
+              disabled={!newRecipientName.trim() || addRecipientMutation.isPending}
+            >
+              {addRecipientMutation.isPending ? "Adding..." : "Add Recipient"}
             </Button>
           </DialogFooter>
         </DialogContent>
