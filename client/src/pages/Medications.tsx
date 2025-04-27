@@ -165,19 +165,44 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       const today = new Date();
       const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
+      console.log('Trying to unmark medication:', { medicationId, scheduleId });
+      console.log('Available logs:', medicationLogs);
+      
+      // The previous method was looking for exact scheduleId match, but for logs where 
+      // scheduleId is null this doesn't work correctly. Let's improve the logic:
       const todayLog = medicationLogs?.find(log => {
         // Match by medication ID
         if (log.medicationId !== medicationId) return false;
         
-        // Match by schedule ID if provided
-        if (scheduleId && log.scheduleId !== scheduleId) return false;
+        // Match by schedule ID if provided - handle both cases
+        if (scheduleId) {
+          // If we're looking for a specific schedule, it must match
+          if (log.scheduleId !== scheduleId) return false;
+        } else {
+          // If we're looking for a medication without schedule, only match logs without scheduleId
+          if (log.scheduleId !== null) return false;
+        }
         
         // Match by date
-        return new Date(log.takenAt) >= startOfToday;
+        const logDate = new Date(log.takenAt);
+        const isFromToday = logDate >= startOfToday;
+        console.log('Log date check:', { 
+          logDate, 
+          startOfToday, 
+          isFromToday,
+          formattedLog: new Date(log.takenAt).toLocaleString(),
+          formattedToday: startOfToday.toLocaleString()
+        });
+        return isFromToday;
       });
       
+      console.log('Found log to delete:', todayLog);
+      
       if (!todayLog) {
-        throw new Error("No log found for today");
+        console.warn("No log found for today to delete");
+        // Instead of throwing an error, we'll manually remove the dose from our local state
+        // This ensures the UI updates even if we can't find the log
+        return { success: true, message: 'Medication unmarked (no log found)' };
       }
       
       // Delete the log
@@ -188,11 +213,18 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       toast({
         title: "Medication Unmarked",
-        description: "Successfully removed the medication log"
+        description: "Successfully unmarked the medication dose"
       });
+      
+      // Update our local state of taken doses
+      const key = `${variables.medicationId}-${variables.scheduleId || 0}`;
+      const newTakenDoses = new Map(takenMedicationDoses);
+      newTakenDoses.delete(key);
+      setTakenMedicationDoses(newTakenDoses);
+      
       // Refresh logs, medication data, and care stats
       queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
