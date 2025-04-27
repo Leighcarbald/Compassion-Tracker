@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { BloodPressure } from "@shared/schema";
 import PageHeader from "@/components/PageHeader";
+import BottomNavigation from "@/components/BottomNavigation";
 
 interface BloodPressurePageProps {
   activeTab: TabType;
@@ -398,6 +399,12 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
           </div>
         )}
       </div>
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation 
+        activeTab={activeTab} 
+        onChangeTab={setActiveTab} 
+      />
     </div>
   );
 }

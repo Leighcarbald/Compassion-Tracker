@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Glucose, Insulin } from "@shared/schema";
 import PageHeader from "@/components/PageHeader";
+import BottomNavigation from "@/components/BottomNavigation";
 
 interface GlucoseInsulinPageProps {
   activeTab: TabType;
