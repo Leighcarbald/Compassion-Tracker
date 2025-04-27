@@ -480,7 +480,11 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       />
 
       <main className="flex-1 overflow-y-auto p-4 pb-24">
-        <PageHeader title="Emergency Information" icon={<ShieldAlert className="h-6 w-6 text-red-500" />} />
+        <PageHeader 
+          title="Emergency Information" 
+          icon={<ShieldAlert className="h-6 w-6 text-red-500" />}
+          showHomeButton={false} 
+        />
         
         <div className="flex justify-end gap-2 mt-2 mb-4">
             <Button 
