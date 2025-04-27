@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDate } from "@/lib/utils";
-import { ChevronDown, Check, CalendarClock, Bell } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import CareRecipientTabs from "./CareRecipientTabs";
 
 interface HeaderProps {
@@ -74,15 +74,6 @@ export default function Header({
       <div className="mt-3 flex justify-between items-center">
         <div className="text-sm text-gray-500">
           {formatDate(new Date())}
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="text-sm text-primary hover:text-primary hover:bg-primary/10">
-            <CalendarClock className="h-4 w-4 mr-1" />
-            Calendar
-          </Button>
-          <Button variant="ghost" size="sm" className="text-sm text-primary hover:text-primary hover:bg-primary/10 p-1">
-            <Bell className="h-4 w-4" />
-          </Button>
         </div>
       </div>
       
