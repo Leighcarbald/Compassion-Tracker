@@ -35,12 +35,12 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
   const { data: meals = [], isLoading: isLoadingMeals } = useQuery({
     queryKey: ['/api/meals', activeCareRecipientId],
     queryFn: async () => {
-      if (!activeCareRecipient) return [];
-      const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipient}`);
+      if (!activeCareRecipientId) return [];
+      const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipientId}`);
       if (!res.ok) throw new Error('Failed to fetch meals');
       return res.json();
     },
-    enabled: !!activeCareRecipient
+    enabled: !!activeCareRecipientId
   });
 
   // Delete meal
@@ -49,8 +49,8 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
       await apiRequest('DELETE', `/api/meals/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/meals', activeCareRecipient] });
-      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', activeCareRecipient] });
+      queryClient.invalidateQueries({ queryKey: ['/api/meals', activeCareRecipientId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', activeCareRecipientId] });
       setIsDetailsOpen(false);
       toast({
         title: "Deleted",
@@ -87,7 +87,7 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
   };
 
   // Group meals by date for better organization
-  const groupedMeals = meals.reduce((groups: Record<string, Meal[]>, meal) => {
+  const groupedMeals = meals.reduce((groups: Record<string, Meal[]>, meal: Meal) => {
     const date = formatDate(meal.consumedAt);
     if (!groups[date]) {
       groups[date] = [];
@@ -98,14 +98,11 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
 
   return (
     <div className="container p-4 max-w-4xl mx-auto">
-      <Header 
-        activeCareRecipient={activeCareRecipient} 
-        careRecipients={careRecipients} 
-        onChangeRecipient={(id) => setActiveCareRecipient(id)}
-        isLoading={isLoadingRecipients}
+      <PageHeader 
+        title="Meal Tracking" 
+        icon={<Utensils className="h-6 w-6" />}
+        showHomeButton={false}
       />
-      
-
       
       <Card className="mb-6">
         <CardHeader className="pb-3">
@@ -143,8 +140,8 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
           ) : (
             <div className="space-y-6">
               {Object.entries(groupedMeals)
-                .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-                .map(([date, dateMeals]) => (
+                .sort((a: [string, any], b: [string, any]) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+                .map(([date, dateMeals]: [string, Meal[]]) => (
                   <div key={date}>
                     <h3 className="font-medium text-gray-900 mb-3 flex items-center">
                       <Calendar className="h-4 w-4 mr-2 text-gray-500" />
@@ -152,8 +149,8 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
                     </h3>
                     <div className="space-y-3">
                       {dateMeals
-                        .sort((a, b) => new Date(b.consumedAt).getTime() - new Date(a.consumedAt).getTime())
-                        .map((meal) => (
+                        .sort((a: Meal, b: Meal) => new Date(b.consumedAt).getTime() - new Date(a.consumedAt).getTime())
+                        .map((meal: Meal) => (
                           <Card 
                             key={meal.id} 
                             className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -259,7 +256,7 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
       <AddMealModal
         isOpen={isAddMealOpen}
         onClose={() => setIsAddMealOpen(false)}
-        careRecipientId={activeCareRecipient}
+        careRecipientId={activeCareRecipientId}
       />
       
       <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
