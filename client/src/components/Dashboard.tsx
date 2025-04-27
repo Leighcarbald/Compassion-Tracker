@@ -37,7 +37,8 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
   // Fetch upcoming events
   const { data: upcomingEvents, isLoading: isLoadingEvents } = useQuery<Array<{
     id: string;
-    type: 'medication' | 'appointment' | 'meal' | 'sleep';
+    // Medication and sleep have been removed from "Next Up" section
+    type: 'appointment' | 'meal';
     title: string;
     time: string;
     details?: string;
@@ -142,12 +143,9 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
               upcomingEvents.map((event) => (
                 <div key={event.id} className="p-3 border-b border-gray-100 flex items-center">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3">
-                    {event.type === 'medication' ? (
-                      <Pill className="h-5 w-5 text-primary" />
-                    ) : event.type === 'meal' ? (
+                    {/* Note: 'medication' and 'sleep' types have been removed from the Next Up section on the server side */}
+                    {event.type === 'meal' ? (
                       <Utensils className="h-5 w-5 text-secondary" />
-                    ) : event.type === 'sleep' ? (
-                      <Moon className="h-5 w-5 text-blue-400" />
                     ) : (
                       <span className="text-lg">👩‍⚕️</span>
                     )}
