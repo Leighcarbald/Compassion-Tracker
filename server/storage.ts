@@ -517,14 +517,9 @@ export const storage = {
     });
     
     // Combine and format events
+    // Medication events removed from "Next Up" section as requested
     const events = [
-      ...medicationEvents.map(schedule => ({
-        id: `med_${schedule.id}`,
-        type: 'medication',
-        title: schedule.medication.name,
-        time: schedule.time,
-        details: `${schedule.quantity} ${schedule.withFood ? 'with food' : ''}`
-      })),
+      // No longer including medication events in the upcoming events list
       ...appointmentEvents.map(appointment => ({
         id: `apt_${appointment.id}`,
         type: 'appointment',
@@ -532,7 +527,7 @@ export const storage = {
         time: appointment.time,
         details: appointment.location
       }))
-      // Sleep events removed from "Next Up" section as requested
+      // Sleep events also removed from "Next Up" section as previously requested
     ];
     
     // Sort by time
