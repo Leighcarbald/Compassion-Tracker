@@ -292,9 +292,54 @@ export const storage = {
       }
     });
     
-    // Count unique medications that have been taken on the specified date
-    // Use a Set to track unique medication IDs
-    const takenMedicationIds = new Set(dateLogs.map(log => log.medicationId));
+    // Get all medication schedules for the medications
+    const medicationSchedules = await db.query.medicationSchedules.findMany({
+      where: eq(medicationSchedules.careRecipientId, careRecipientId)
+    });
+    
+    // Create a map of medication ID to required doses (from schedules)
+    const requiredDosesMap = new Map();
+    
+    // For each medication, count how many doses are required today
+    for (const med of meds) {
+      // Get schedules for this medication
+      const schedules = medicationSchedules.filter(
+        schedule => schedule.medicationId === med.id
+      );
+      
+      // If there are no schedules, the medication only needs to be taken once
+      if (schedules.length === 0) {
+        requiredDosesMap.set(med.id, 1);
+      } else {
+        // Otherwise, count the number of schedules
+        requiredDosesMap.set(med.id, schedules.length);
+      }
+    }
+    
+    // Count how many doses have been taken for each medication
+    const takenDosesMap = new Map();
+    for (const log of dateLogs) {
+      const medId = log.medicationId;
+      takenDosesMap.set(medId, (takenDosesMap.get(medId) || 0) + 1);
+    }
+    
+    // A medication is fully taken if the number of taken doses is at least equal to the required doses
+    const takenMedicationIds = new Set();
+    for (const med of meds) {
+      const requiredDoses = requiredDosesMap.get(med.id) || 1;
+      const takenDoses = takenDosesMap.get(med.id) || 0;
+      
+      if (takenDoses >= requiredDoses) {
+        takenMedicationIds.add(med.id);
+      }
+    }
+    
+    // Debug info
+    console.log(`Medication completion by dose count:`, {
+      requiredDoses: Object.fromEntries(requiredDosesMap),
+      takenDoses: Object.fromEntries(takenDosesMap),
+      completedMeds: Array.from(takenMedicationIds)
+    });
     
     // Get meal stats
     const mealTypes = ["breakfast", "lunch", "dinner"];
