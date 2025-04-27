@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { TabType } from "@/lib/types";
 import { type Sleep as SleepType } from "@shared/schema";
+import AddSleepModal from "@/components/AddSleepModal";
 
 interface SleepProps {
   activeTab: TabType;
@@ -318,33 +319,12 @@ export default function Sleep({ activeTab, setActiveTab }: SleepProps) {
         )}
       </Dialog>
       
-      {/* We would add the SleepForm/AddSleepForm component here */}
-      {/* For now just adding a placeholder dialog */}
-      <Dialog open={isAddSleepOpen} onOpenChange={setIsAddSleepOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl flex items-center">
-              <Moon className="mr-2 h-5 w-5 text-primary" />
-              Add Sleep Record
-            </DialogTitle>
-            <DialogDescription>
-              Add a new sleep record
-            </DialogDescription>
-          </DialogHeader>
-          <div className="pt-4 text-center">
-            <p>Sleep form would go here.</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              To add sleep records, please use the "Add Care Event" feature from the home page for now.
-            </p>
-            <Button 
-              className="mt-4"
-              onClick={() => setIsAddSleepOpen(false)}
-            >
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Add Sleep Modal */}
+      <AddSleepModal
+        isOpen={isAddSleepOpen}
+        onClose={() => setIsAddSleepOpen(false)}
+        careRecipientId={activeCareRecipient}
+      />
       
       <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
     </div>

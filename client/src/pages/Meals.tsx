@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { TabType } from "@/lib/types";
 import { type Meal } from "@shared/schema";
+import AddMealModal from "@/components/AddMealModal";
 
 interface MealsProps {
   activeTab: TabType;
@@ -264,33 +265,12 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
         )}
       </Dialog>
       
-      {/* We would add the MealForm/AddMealForm component here */}
-      {/* For now just adding a placeholder dialog */}
-      <Dialog open={isAddMealOpen} onOpenChange={setIsAddMealOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl flex items-center">
-              <Utensils className="mr-2 h-5 w-5 text-primary" />
-              Add Meal
-            </DialogTitle>
-            <DialogDescription>
-              Add a new meal record
-            </DialogDescription>
-          </DialogHeader>
-          <div className="pt-4 text-center">
-            <p>Meal form would go here.</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              To add meals, please use the "Add Care Event" feature from the home page for now.
-            </p>
-            <Button 
-              className="mt-4"
-              onClick={() => setIsAddMealOpen(false)}
-            >
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Add Meal Modal */}
+      <AddMealModal
+        isOpen={isAddMealOpen}
+        onClose={() => setIsAddMealOpen(false)}
+        careRecipientId={activeCareRecipient}
+      />
       
       <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
     </div>

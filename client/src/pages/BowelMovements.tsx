@@ -10,7 +10,7 @@ import { TabType } from "@/lib/types";
 import { BowelMovement } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
-import AddCareEventModal from "@/components/AddCareEventModal";
+import AddBowelMovementModal from "@/components/AddBowelMovementModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -261,11 +261,10 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
       )}
       
       {/* Add Event Modal */}
-      <AddCareEventModal 
+      <AddBowelMovementModal 
         isOpen={isAddEventOpen}
         onClose={() => setIsAddEventOpen(false)}
         careRecipientId={activeCareRecipient}
-        defaultEventType="bowel"
       />
     </div>
   );
