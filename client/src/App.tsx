@@ -16,6 +16,7 @@ import BowelMovements from "@/pages/BowelMovements";
 import { useState, lazy, Suspense } from "react";
 import { TabType } from "./lib/types";
 import { PinAuthProvider } from "@/hooks/use-pin-auth";
+import { CareRecipientProvider } from "@/hooks/use-care-recipient";
 import { Loader2 } from "lucide-react";
 
 // Lazily load the Meals and Sleep components since they may not be implemented yet
@@ -87,7 +88,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <PinAuthProvider>
-        <Router />
+        <CareRecipientProvider>
+          <Router />
+        </CareRecipientProvider>
       </PinAuthProvider>
     </QueryClientProvider>
   );
