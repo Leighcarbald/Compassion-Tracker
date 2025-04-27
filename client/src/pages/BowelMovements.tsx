@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Clock, Home, Loader2, Plus, Toilet } from "lucide-react";
-import { useLocation } from "wouter";
+import { Clock, Loader2, Plus, Toilet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -14,7 +13,7 @@ import Header from "@/components/Header";
 import AddBowelMovementModal from "@/components/AddBowelMovementModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BottomNavigation from "@/components/BottomNavigation";
 
 interface BowelMovementsProps {
   activeTab: TabType;
@@ -26,7 +25,6 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   
   // Get care recipients
@@ -122,12 +120,7 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
         isLoading={isLoadingRecipients}
       />
       
-      <div className="flex justify-between items-center mb-4">
-        <Button onClick={() => navigate("/")} variant="outline" className="flex items-center gap-1">
-          <Home className="h-4 w-4" />
-          Home
-        </Button>
-      </div>
+
       
       <Card className="mb-6">
         <CardHeader className="pb-3">
@@ -255,6 +248,12 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
         isOpen={isAddEventOpen}
         onClose={() => setIsAddEventOpen(false)}
         careRecipientId={activeCareRecipient}
+      />
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation 
+        activeTab={activeTab} 
+        onChangeTab={setActiveTab} 
       />
     </div>
   );

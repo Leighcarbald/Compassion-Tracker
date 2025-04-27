@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Utensils, Plus, Loader2, Info, Calendar, Clock } from "lucide-react";
+import { Utensils, Plus, Loader2, Info, Calendar, Clock, Home } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { TabType } from "@/lib/types";
 import { type Meal } from "@shared/schema";
 import AddMealModal from "@/components/AddMealModal";
+import { useLocation } from "wouter";
 
 interface MealsProps {
   activeTab: TabType;
@@ -25,6 +26,7 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const { toast } = useToast();
+  const [_, navigate] = useLocation();
   
   // Get care recipients
   const { data: careRecipients = [], isLoading: isLoadingRecipients } = useQuery({
@@ -116,6 +118,8 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
         onChangeRecipient={(id) => setActiveCareRecipient(id)}
         isLoading={isLoadingRecipients}
       />
+      
+
       
       <Card className="mb-6">
         <CardHeader className="pb-3">
