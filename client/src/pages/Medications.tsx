@@ -7,7 +7,7 @@ import AddMedicationModal from "@/components/AddMedicationModal";
 import EditMedicationSchedulesModal from "@/components/EditMedicationSchedulesModal";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { MedicationLog, CareRecipient, Medication } from "@shared/schema";
+import { MedicationLog, CareRecipient, Medication, MedicationSchedule } from "@shared/schema";
 import { TabType } from "@/lib/types";
 import { formatTime, getTimeAgo } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -26,6 +26,11 @@ import {
   AlertTriangle
 } from "lucide-react";
 
+// Define a type that includes the schedules array
+interface MedicationWithSchedules extends Medication {
+  schedules?: MedicationSchedule[];
+}
+
 interface MedicationsProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
@@ -34,7 +39,7 @@ interface MedicationsProps {
 export default function Medications({ activeTab, setActiveTab }: MedicationsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
-  const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
+  const [selectedMedication, setSelectedMedication] = useState<MedicationWithSchedules | null>(null);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [isSchedulesModalOpen, setIsSchedulesModalOpen] = useState(false);
   // Track taken medication doses by schedule
@@ -47,8 +52,8 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   // Use the global care recipient context
   const { activeCareRecipientId, careRecipients, isLoading: isLoadingRecipients } = useCareRecipient();
 
-  // Fetch medications
-  const { data: medications, isLoading: isLoadingMedications } = useQuery<Medication[]>({
+  // Fetch medications with their schedules
+  const { data: medications, isLoading: isLoadingMedications } = useQuery<MedicationWithSchedules[]>({
     queryKey: ['/api/medications', activeCareRecipientId, 'all'],
     enabled: !!activeCareRecipientId,
   });
@@ -442,9 +447,9 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                       )}
                       
                       {/* Schedules Section - Display medication schedules */}
-                      {med.schedules && med.schedules.length > 0 ? (
+                      {med.schedules && Array.isArray(med.schedules) && med.schedules.length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {med.schedules.map((schedule) => (
+                          {med.schedules.map((schedule: any) => (
                             <Button
                               key={schedule.id}
                               size="sm"
@@ -456,7 +461,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                               }`}
                               onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
                             >
-                              {schedule.time.slice(0, 5)}
+                              {schedule.time?.slice(0, 5) || "Take"}
                               {isDoseTaken(med.id, schedule.id) && (
                                 <Check className="ml-1 h-3 w-3" />
                               )}
