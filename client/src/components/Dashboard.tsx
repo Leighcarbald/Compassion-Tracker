@@ -69,16 +69,6 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
           progress={todayStats?.medications?.progress || 0}
         />
 
-        {/* Meals Card */}
-        <StatusCard
-          title="Meals"
-          value={todayStats?.meals?.completed || 0}
-          total={todayStats?.meals?.total || 0}
-          icon={<Utensils className="h-4 w-4" />}
-          color="secondary"
-          progress={todayStats?.meals?.progress || 0}
-        />
-
         {/* Blood Pressure Card */}
         <StatusCard
           title="Blood Pressure"
@@ -107,6 +97,16 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
             : todayStats?.insulin && todayStats.insulin.length > 0 
               ? `${todayStats.insulin[0].insulinType || ""}`
               : ""}
+        />
+
+        {/* Meals Card */}
+        <StatusCard
+          title="Meals"
+          value={todayStats?.meals?.completed || 0}
+          total={todayStats?.meals?.total || 0}
+          icon={<Utensils className="h-4 w-4" />}
+          color="secondary"
+          progress={todayStats?.meals?.progress || 0}
         />
 
         {/* Bowel Movements Card */}
