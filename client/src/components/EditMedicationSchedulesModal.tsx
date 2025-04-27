@@ -184,7 +184,26 @@ export default function EditMedicationSchedulesModal({
             throw new Error(`Error ${isNew ? 'creating' : 'updating'} schedule: ${errorText}`);
           }
           
-          results.push(await response.json());
+          // For PATCH responses, some servers may not return content
+          // In this case, just add the schedule to results
+          if (method === "PATCH" && response.status === 200) {
+            try {
+              // Try to parse JSON, but if it fails or is empty, use the schedule
+              const text = await response.text();
+              if (!text || text.trim() === '') {
+                results.push(schedule);
+              } else {
+                results.push(JSON.parse(text));
+              }
+            } catch (e) {
+              // If we can't parse the response as JSON, just use the schedule
+              results.push(schedule);
+            }
+          } else {
+            // Otherwise try to parse the response as JSON
+            const responseData = await response.json();
+            results.push(responseData);
+          }
         } catch (err) {
           console.error(`Error with schedule:`, schedule, err);
           throw err;

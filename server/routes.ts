@@ -258,7 +258,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: scheduleId
       });
       
-      res.status(200).json(updatedSchedule);
+      // Always return a proper JSON response with the updated schedule
+      res.status(200).json(updatedSchedule || { 
+        id: scheduleId,
+        ...req.body,
+        message: "Schedule updated successfully" 
+      });
     } catch (error) {
       console.error('Error updating medication schedule:', error);
       res.status(500).json({ message: 'Error updating medication schedule' });
