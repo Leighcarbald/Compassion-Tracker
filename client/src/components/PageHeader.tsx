@@ -6,9 +6,10 @@ import { useLocation } from "wouter";
 interface PageHeaderProps {
   title: string;
   icon?: React.ReactNode;
+  showHomeButton?: boolean;
 }
 
-export default function PageHeader({ title, icon }: PageHeaderProps) {
+export default function PageHeader({ title, icon, showHomeButton = true }: PageHeaderProps) {
   const [, setLocation] = useLocation();
 
   return (
@@ -17,15 +18,17 @@ export default function PageHeader({ title, icon }: PageHeaderProps) {
         {icon && <span className="mr-2">{icon}</span>}
         {title}
       </h1>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-gray-500 hover:text-primary flex items-center"
-        onClick={() => setLocation("/")}
-      >
-        <Home className="h-5 w-5 mr-1" />
-        <span className="hidden sm:inline">Home</span>
-      </Button>
+      {showHomeButton && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-gray-500 hover:text-primary flex items-center"
+          onClick={() => setLocation("/")}
+        >
+          <Home className="h-5 w-5 mr-1" />
+          <span className="hidden sm:inline">Home</span>
+        </Button>
+      )}
     </div>
   );
 }
