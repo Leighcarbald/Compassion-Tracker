@@ -29,7 +29,7 @@ import {
 interface BottomNavigationProps {
   activeTab: TabType;
   onChangeTab: (tab: TabType) => void;
-  onAddEvent: () => void;
+  onAddEvent?: () => void; // Making this optional since we no longer have the + button
 }
 
 export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }: BottomNavigationProps) {

@@ -2,9 +2,8 @@ import { useState } from "react";
 import Header from "@/components/Header";
 import Dashboard from "@/components/Dashboard";
 import BottomNavigation from "@/components/BottomNavigation";
-import AddCareEventModal from "@/components/AddCareEventModal";
 import { useQuery } from "@tanstack/react-query";
-import { type CareRecipient } from "@shared/schema";
+import { type CareRecipient, type InspirationMessage } from "@shared/schema";
 import { TabType } from "@/lib/types";
 
 interface HomeProps {
@@ -13,7 +12,6 @@ interface HomeProps {
 }
 
 export default function Home({ activeTab, setActiveTab }: HomeProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
 
   // Fetch care recipients
@@ -27,14 +25,9 @@ export default function Home({ activeTab, setActiveTab }: HomeProps) {
   }
 
   // Fetch daily inspiration
-  const { data: inspirationMessage } = useQuery({
+  const { data: inspirationMessage } = useQuery<InspirationMessage>({
     queryKey: ['/api/inspiration/daily'],
   });
-
-  // Handle modal open/close
-  const handleAddEvent = () => {
-    setIsModalOpen(true);
-  };
 
   // Handle recipient change
   const handleChangeRecipient = (id: string) => {
@@ -59,14 +52,7 @@ export default function Home({ activeTab, setActiveTab }: HomeProps) {
       
       <BottomNavigation 
         activeTab={activeTab} 
-        onChangeTab={setActiveTab} 
-        onAddEvent={handleAddEvent}
-      />
-
-      <AddCareEventModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        careRecipientId={activeCareRecipient}
+        onChangeTab={setActiveTab}
       />
     </>
   );
