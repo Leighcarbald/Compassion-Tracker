@@ -218,7 +218,8 @@ export default function CareRecipientTabs({
     <>
       <div className="mt-3 border-b border-gray-200">
         <div className="flex space-x-6 overflow-x-auto pb-1 scrollbar-hide">
-          {careRecipients.map((recipient) => (
+          {/* Sort care recipients by ID in ascending order to show oldest first */}
+          {[...careRecipients].sort((a, b) => a.id - b.id).map((recipient) => (
             <div key={recipient.id} className="flex items-center">
               <Button
                 variant="ghost"
