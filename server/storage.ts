@@ -293,8 +293,8 @@ export const storage = {
     });
     
     // Get all medication schedules for the medications
-    const medicationSchedules = await db.query.medicationSchedules.findMany({
-      where: eq(medicationSchedules.careRecipientId, careRecipientId)
+    const medSchedules = await db.query.medicationSchedules.findMany({
+      where: inArray(medicationSchedules.medicationId, meds.map(med => med.id))
     });
     
     // Create a map of medication ID to required doses (from schedules)
@@ -303,9 +303,9 @@ export const storage = {
     // For each medication, count how many doses are required today
     for (const med of meds) {
       // Get schedules for this medication
-      const schedules = medicationSchedules.filter(
+      const schedules = Array.isArray(medSchedules) ? medSchedules.filter(
         schedule => schedule.medicationId === med.id
-      );
+      ) : [];
       
       // If there are no schedules, the medication only needs to be taken once
       if (schedules.length === 0) {

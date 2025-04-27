@@ -4,6 +4,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import AddCareEventModal from "@/components/AddCareEventModal";
 import MedicationInventoryModal from "@/components/MedicationInventoryModal";
 import AddMedicationModal from "@/components/AddMedicationModal";
+import EditMedicationSchedulesModal from "@/components/EditMedicationSchedulesModal";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MedicationLog, CareRecipient, Medication } from "@shared/schema";
