@@ -144,7 +144,12 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         title: "Medication Taken",
         description: "Successfully logged the medication as taken"
       });
-      // Refresh logs, medication data, and care stats
+      
+      // We no longer need to update the local state here because we've already 
+      // updated it in the handleMarkDoseAsTaken function before making the API call.
+      // This prevents the issue where checked boxes disappear after navigation.
+      
+      // Just refresh the data without modifying local state
       queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
@@ -221,13 +226,11 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         description: "Successfully unmarked the medication dose"
       });
       
-      // Update our local state of taken doses
-      const key = `${variables.medicationId}-${variables.scheduleId || 0}`;
-      const newTakenDoses = new Map(takenMedicationDoses);
-      newTakenDoses.delete(key);
-      setTakenMedicationDoses(newTakenDoses);
+      // We no longer need to update the local state here because we've already 
+      // updated it in the handleMarkDoseAsTaken function before making the API call.
+      // This prevents the issue where unchecked boxes re-appear after navigation.
       
-      // Refresh logs, medication data, and care stats
+      // Just refresh the data without modifying local state
       queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
@@ -253,9 +256,20 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     
     // If the dose is already taken, unmark it
     if (takenMedicationDoses.has(key)) {
+      // Update local state immediately to reflect the change
+      const updatedMap = new Map(takenMedicationDoses);
+      updatedMap.delete(key);
+      setTakenMedicationDoses(updatedMap);
+      
+      // Then make the API call
       unmarkAsTakenMutation.mutate({ medicationId, scheduleId });
     } else {
-      // Otherwise, mark it as taken
+      // Otherwise, mark it as taken - update local state first
+      const updatedMap = new Map(takenMedicationDoses);
+      updatedMap.set(key, true);
+      setTakenMedicationDoses(updatedMap);
+      
+      // Then make the API call
       markAsTakenMutation.mutate({ medicationId, scheduleId });
     }
   };
