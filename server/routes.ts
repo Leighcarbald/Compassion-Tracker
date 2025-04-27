@@ -65,6 +65,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error fetching today stats' });
     }
   });
+  
+  // Get Care Stats for a specific date
+  app.get(`${apiPrefix}/care-stats/date`, async (req, res) => {
+    try {
+      const careRecipientId = req.query.careRecipientId as string;
+      const date = req.query.date as string;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return res.status(400).json({ message: 'Date must be in YYYY-MM-DD format' });
+      }
+      
+      // Get date range for the specified date
+      const { start, end } = storage.getDateRange(date);
+      
+      // Get stats for the specified date
+      const stats = await storage.getDateStats(parseInt(careRecipientId), start, end);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching date stats:', error);
+      res.status(500).json({ message: 'Error fetching date stats' });
+    }
+  });
 
   // Upcoming Events
   app.get(`${apiPrefix}/events/upcoming`, async (req, res) => {

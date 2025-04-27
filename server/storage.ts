@@ -240,17 +240,30 @@ export const storage = {
     return { success: true, message: "Care recipient and all associated data deleted successfully" };
   },
 
+  // Helper function to get date range for any date
+  getDateRange(date: Date | string) {
+    const targetDate = typeof date === 'string' ? new Date(date) : date;
+    return {
+      start: startOfDay(targetDate),
+      end: endOfDay(targetDate)
+    };
+  },
+  
   // Today's Stats
   async getTodayStats(careRecipientId: number) {
     const { start, end } = getTodayDateRange();
-    
+    return this.getDateStats(careRecipientId, start, end);
+  },
+  
+  // Get stats for any specific date
+  async getDateStats(careRecipientId: number, start: Date, end: Date) {
     // First get all medications for this care recipient
     const meds = await db.query.medications.findMany({
       where: eq(medications.careRecipientId, careRecipientId)
     });
     
-    // Get medication logs for today
-    const todayLogs = await db.query.medicationLogs.findMany({
+    // Get medication logs for the specified date
+    const dateLogs = await db.query.medicationLogs.findMany({
       where: and(
         eq(medicationLogs.careRecipientId, careRecipientId),
         gte(medicationLogs.takenAt, start),
@@ -258,13 +271,13 @@ export const storage = {
       )
     });
     
-    // Count unique medications that have been taken today
+    // Count unique medications that have been taken on the specified date
     // Use a Set to track unique medication IDs
-    const takenMedicationIds = new Set(todayLogs.map(log => log.medicationId));
+    const takenMedicationIds = new Set(dateLogs.map(log => log.medicationId));
     
     // Get meal stats
     const mealTypes = ["breakfast", "lunch", "dinner"];
-    const todayMeals = await db.query.meals.findMany({
+    const dateMeals = await db.query.meals.findMany({
       where: and(
         eq(meals.careRecipientId, careRecipientId),
         gte(meals.consumedAt, start),
@@ -272,14 +285,64 @@ export const storage = {
       )
     });
     
-    // Get bowel movement stats for today
-    const lastBowelMovement = await db.query.bowelMovements.findFirst({
+    // Get bowel movement stats for the specified date
+    const bowelMovements = await db.query.bowelMovements.findMany({
       where: and(
         eq(bowelMovements.careRecipientId, careRecipientId),
         gte(bowelMovements.occuredAt, start),
         lt(bowelMovements.occuredAt, end)
       ),
       orderBy: desc(bowelMovements.occuredAt)
+    });
+    
+    // Get sleep stats for the specified date
+    const sleepRecords = await db.query.sleep.findMany({
+      where: and(
+        eq(sleep.careRecipientId, careRecipientId),
+        gte(sleep.startTime, start),
+        lt(sleep.startTime, end)
+      ),
+      orderBy: desc(sleep.startTime)
+    });
+    
+    // Get blood pressure readings for the specified date
+    const bloodPressureReadings = await db.query.bloodPressure.findMany({
+      where: and(
+        eq(bloodPressure.careRecipientId, careRecipientId),
+        gte(bloodPressure.timeOfReading, start),
+        lt(bloodPressure.timeOfReading, end)
+      ),
+      orderBy: desc(bloodPressure.timeOfReading)
+    });
+    
+    // Get glucose readings for the specified date
+    const glucoseReadings = await db.query.glucose.findMany({
+      where: and(
+        eq(glucose.careRecipientId, careRecipientId),
+        gte(glucose.timeOfReading, start),
+        lt(glucose.timeOfReading, end)
+      ),
+      orderBy: desc(glucose.timeOfReading)
+    });
+    
+    // Get insulin records for the specified date
+    const insulinRecords = await db.query.insulin.findMany({
+      where: and(
+        eq(insulin.careRecipientId, careRecipientId),
+        gte(insulin.timeAdministered, start),
+        lt(insulin.timeAdministered, end)
+      ),
+      orderBy: desc(insulin.timeAdministered)
+    });
+    
+    // Get notes for the specified date
+    const dateNotes = await db.query.notes.findMany({
+      where: and(
+        eq(notes.careRecipientId, careRecipientId),
+        gte(notes.createdAt, start),
+        lt(notes.createdAt, end)
+      ),
+      orderBy: desc(notes.createdAt)
     });
     
     // Get depends supply
@@ -290,42 +353,42 @@ export const storage = {
       )
     });
     
-    // Get sleep stats for today
-    const lastSleep = await db.query.sleep.findFirst({
-      where: and(
-        eq(sleep.careRecipientId, careRecipientId),
-        gte(sleep.startTime, start),
-        lt(sleep.startTime, end)
-      ),
-      orderBy: desc(sleep.startTime)
-    });
-    
     return {
+      // Summary stats
       medications: {
         completed: takenMedicationIds.size,
         total: meds.length,
         progress: meds.length > 0 
           ? Math.round((takenMedicationIds.size / meds.length) * 100) 
-          : 0
+          : 0,
+        logs: dateLogs
       },
       meals: {
-        completed: todayMeals.length,
+        completed: dateMeals.length,
         total: mealTypes.length,
-        progress: Math.round((todayMeals.length / mealTypes.length) * 100)
+        progress: Math.round((dateMeals.length / mealTypes.length) * 100),
+        logs: dateMeals
       },
-      bowelMovement: {
-        lastTime: lastBowelMovement 
-          ? formatDistance(new Date(lastBowelMovement.occuredAt), new Date(), { addSuffix: true }) 
-          : "None recorded"
-      },
+      bowelMovements: bowelMovements,
+      sleepRecords: sleepRecords,
+      bloodPressure: bloodPressureReadings,
+      glucose: glucoseReadings,
+      insulin: insulinRecords,
+      notes: dateNotes,
       supplies: {
         depends: dependsSupply?.quantity || 0
       },
+      // Keep the old format for backward compatibility with dashboard
+      bowelMovement: {
+        lastTime: bowelMovements.length > 0
+          ? formatDistance(new Date(bowelMovements[0].occuredAt), new Date(), { addSuffix: true }) 
+          : "None recorded"
+      },
       sleep: {
-        duration: lastSleep && lastSleep.endTime 
-          ? this.calculateSleepDuration(lastSleep.startTime, lastSleep.endTime) 
+        duration: sleepRecords.length > 0 && sleepRecords[0].endTime 
+          ? this.calculateSleepDuration(sleepRecords[0].startTime, sleepRecords[0].endTime) 
           : "No data",
-        quality: lastSleep?.quality || ""
+        quality: sleepRecords.length > 0 ? sleepRecords[0].quality || "" : ""
       }
     };
   },
