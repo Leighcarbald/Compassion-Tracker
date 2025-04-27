@@ -37,7 +37,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [activeTab, setActiveTab] = useState("events"); // Tab for the health data sections
+  const [activeTab, setActiveTab] = useState("meds"); // Tab for the health data sections
   const [modalEventType, setModalEventType] = useState<string>("appointment");
 
   // Fetch care recipients
@@ -242,104 +242,55 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
 
                 {/* Daily Health Details */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid grid-cols-6 mb-2">
-                    <TabsTrigger value="events">Events</TabsTrigger>
+                  <TabsList className="grid grid-cols-7 mb-2">
+                    <TabsTrigger value="meds">Meds</TabsTrigger>
                     <TabsTrigger value="bp">BP</TabsTrigger>
                     <TabsTrigger value="glucose">Glucose</TabsTrigger>
+                    <TabsTrigger value="meals">Meals</TabsTrigger>
                     <TabsTrigger value="bowel">Bowel</TabsTrigger>
-                    <TabsTrigger value="meds">Meds</TabsTrigger>
+                    <TabsTrigger value="sleep">Sleep</TabsTrigger>
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                   </TabsList>
                   
-                  {/* Events Tab */}
-                  <TabsContent value="events" className="space-y-4">
-                    <h4 className="text-sm font-medium text-gray-700">Appointments</h4>
-                    {isLoadingAppointments ? (
-                      <div className="p-4 text-center text-gray-500">Loading appointments...</div>
-                    ) : !appointments || appointments.length === 0 ? (
+                  {/* Meds Tab */}
+                  <TabsContent value="meds">
+                    <h4 className="text-sm font-medium text-gray-700">Medication Logs</h4>
+                    {!dateStats.medications?.logs || dateStats.medications.logs.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center">
-                          <p className="text-gray-500">No appointments scheduled</p>
+                          <p className="text-gray-500">No medications taken on this date</p>
                         </CardContent>
                       </Card>
                     ) : (
-                      <div className="space-y-2">
-                        {appointments.map((appointment) => (
-                          <Card key={appointment.id} className="overflow-hidden">
-                            <CardContent className="p-0">
-                              <div className="p-3 border-l-4 border-primary">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h4 className="font-medium">{appointment.title}</h4>
-                                    <div className="text-sm text-gray-500 mt-1 flex items-center">
-                                      <Clock className="h-3 w-3 mr-1" />
-                                      {formatTime(appointment.time)}
-                                    </div>
-                                    {appointment.location && (
-                                      <div className="text-sm text-gray-500 flex items-center">
-                                        <MapPin className="h-3 w-3 mr-1" />
-                                        {appointment.location}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
-                                    className="text-gray-400 h-8 w-8 p-0"
-                                    onClick={() => deleteAppointment(appointment.id)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                                {appointment.notes && (
-                                  <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                    {appointment.notes}
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Sleep Records */}
-                    <h4 className="text-sm font-medium text-gray-700 mt-4">Sleep Records</h4>
-                    {!dateStats.sleepRecords || dateStats.sleepRecords.length === 0 ? (
-                      <Card>
-                        <CardContent className="p-4 text-center">
-                          <p className="text-gray-500">No sleep records</p>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <div className="space-y-2">
-                        {dateStats.sleepRecords.map((record) => (
-                          <Card key={record.id}>
+                      <div className="space-y-2 mt-2">
+                        {dateStats.medications.logs.map((log) => (
+                          <Card key={log.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <Moon className="h-4 w-4 text-indigo-400" />
+                                  <Pill className="h-4 w-4 text-blue-500" />
                                   <div>
                                     <p className="font-medium">
-                                      {formatTime(record.startTime)} - 
-                                      {record.endTime ? formatTime(record.endTime) : ' In Progress'}
+                                      {log.medication?.name || 
+                                        (log.medicationId ? `Loading medication #${log.medicationId}...` : "Unknown medication")}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      Quality: {record.quality || 'Not rated'}
+                                      {formatTime(log.takenAt)}
+                                      {log.medication?.dosage && `, ${log.medication.dosage}`}
                                     </p>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <span className="text-sm font-medium">
-                                    {record.endTime 
-                                      ? `${((new Date(record.endTime).getTime() - new Date(record.startTime).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs` 
-                                      : 'In progress'}
-                                  </span>
+                                <div>
+                                  {log.taken && (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      Taken
+                                    </span>
+                                  )}
                                 </div>
                               </div>
-                              {record.notes && (
+                              {log.notes && (
                                 <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {record.notes}
+                                  {log.notes}
                                 </div>
                               )}
                             </CardContent>
@@ -347,10 +298,8 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                         ))}
                       </div>
                     )}
-
-
                   </TabsContent>
-
+                  
                   {/* Blood Pressure Tab */}
                   <TabsContent value="bp" className="space-y-4">
                     <h4 className="text-sm font-medium text-gray-700">Blood Pressure</h4>
@@ -479,45 +428,131 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                     )}
                   </TabsContent>
                   
-                  {/* Meds Tab */}
-                  <TabsContent value="meds">
-                    <h4 className="text-sm font-medium text-gray-700">Medication Logs</h4>
-                    {!dateStats.medications?.logs || dateStats.medications.logs.length === 0 ? (
+                  {/* Meals Tab */}
+                  <TabsContent value="meals" className="space-y-4">
+                    <h4 className="text-sm font-medium text-gray-700">Meals</h4>
+                    {!dateStats.meals || !Array.isArray(dateStats.meals) || dateStats.meals.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center">
-                          <p className="text-gray-500">No medications taken on this date</p>
+                          <p className="text-gray-500">No meals recorded</p>
                         </CardContent>
                       </Card>
                     ) : (
-                      <div className="space-y-2 mt-2">
-                        {dateStats.medications.logs.map((log) => (
-                          <Card key={log.id}>
+                      <div className="space-y-2">
+                        {dateStats.meals.map((meal) => (
+                          <Card key={meal.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <Pill className="h-4 w-4 text-blue-500" />
+                                  <Utensils className="h-4 w-4 text-green-500" />
                                   <div>
                                     <p className="font-medium">
-                                      {log.medication?.name || 
-                                        (log.medicationId ? `Loading medication #${log.medicationId}...` : "Unknown medication")}
+                                      {meal.name || meal.type || 'Meal'}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      {formatTime(log.takenAt)}
-                                      {log.medication?.dosage && `, ${log.medication.dosage}`}
+                                      {formatTime(meal.time)}
                                     </p>
+                                    {meal.foods && (
+                                      <p className="text-sm text-gray-500">
+                                        Foods: {meal.foods}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
+                              </div>
+                              {meal.notes && (
+                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                  {meal.notes}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Bowel Tab */}
+                  <TabsContent value="bowel" className="space-y-4">
+                    <h4 className="text-sm font-medium text-gray-700">Bowel Movements</h4>
+                    {!dateStats.bowelMovements || dateStats.bowelMovements.length === 0 ? (
+                      <Card>
+                        <CardContent className="p-4 text-center">
+                          <p className="text-gray-500">No bowel movements recorded</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-2">
+                        {dateStats.bowelMovements.map((movement) => (
+                          <Card key={movement.id}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center justify-between">
                                 <div>
-                                  {log.taken && (
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                      Taken
-                                    </span>
+                                  <p className="font-medium">
+                                    {formatTime(movement.occuredAt)}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    Type: {movement.type || 'Not specified'}
+                                    {movement.color && `, Color: ${movement.color}`}
+                                  </p>
+                                  {movement.consistency && (
+                                    <p className="text-sm text-gray-500">
+                                      Consistency: {movement.consistency}
+                                    </p>
                                   )}
                                 </div>
                               </div>
-                              {log.notes && (
+                              {movement.notes && (
                                 <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {log.notes}
+                                  {movement.notes}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Sleep Tab */}
+                  <TabsContent value="sleep" className="space-y-4">
+                    {/* Sleep Records */}
+                    <h4 className="text-sm font-medium text-gray-700">Sleep Records</h4>
+                    {!dateStats.sleepRecords || dateStats.sleepRecords.length === 0 ? (
+                      <Card>
+                        <CardContent className="p-4 text-center">
+                          <p className="text-gray-500">No sleep records</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-2">
+                        {dateStats.sleepRecords.map((record) => (
+                          <Card key={record.id}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Moon className="h-4 w-4 text-indigo-400" />
+                                  <div>
+                                    <p className="font-medium">
+                                      {formatTime(record.startTime)} - 
+                                      {record.endTime ? formatTime(record.endTime) : ' In Progress'}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      Quality: {record.quality || 'Not rated'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-sm font-medium">
+                                    {record.endTime 
+                                      ? `${((new Date(record.endTime).getTime() - new Date(record.startTime).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs` 
+                                      : 'In progress'}
+                                  </span>
+                                </div>
+                              </div>
+                              {record.notes && (
+                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                  {record.notes}
                                 </div>
                               )}
                             </CardContent>
