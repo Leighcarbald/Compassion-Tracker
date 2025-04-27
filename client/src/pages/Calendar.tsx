@@ -220,25 +220,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
               </Card>
             ) : (
               <div className="space-y-4">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 gap-2">
-                  <StatusCard
-                    title="Medications"
-                    value={`${dateStats.medications.completed}`}
-                    total={dateStats.medications.total}
-                    icon={<Pill className="h-5 w-5" />}
-                    color="bg-blue-500"
-                    progress={dateStats.medications.progress}
-                  />
-                  <StatusCard
-                    title="Meals"
-                    value={`${dateStats.meals.completed}`}
-                    total={3}
-                    icon={<Utensils className="h-5 w-5" />}
-                    color="bg-green-500"
-                    progress={dateStats.meals.progress}
-                  />
-                </div>
+
 
                 {/* Daily Health Details */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
