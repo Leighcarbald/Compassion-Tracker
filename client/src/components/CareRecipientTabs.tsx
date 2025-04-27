@@ -1,6 +1,15 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +27,7 @@ import {
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { type CareRecipient } from "@shared/schema";
-import { Plus, MoreVertical, Trash2 } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Pencil } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -38,7 +47,18 @@ export default function CareRecipientTabs({
 }: CareRecipientTabsProps) {
   const [recipientToDelete, setRecipientToDelete] = useState<CareRecipient | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [recipientToEdit, setRecipientToEdit] = useState<CareRecipient | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [newName, setNewName] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Focus input field when edit dialog opens
+  useEffect(() => {
+    if (showEditDialog && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [showEditDialog]);
   
   // Delete mutation
   const deleteMutation = useMutation({
@@ -75,15 +95,54 @@ export default function CareRecipientTabs({
     }
   });
   
+  // Edit name mutation
+  const editMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      await apiRequest("PATCH", `/api/care-recipients/${id}`, { name });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/care-recipients'] });
+      
+      toast({
+        title: "Name updated",
+        description: `Name has been updated to "${newName}".`,
+        variant: "default",
+      });
+      
+      setRecipientToEdit(null);
+      setShowEditDialog(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update name. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
   const handleDeleteClick = (recipient: CareRecipient, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent tab change
     setRecipientToDelete(recipient);
     setShowDeleteDialog(true);
   };
   
+  const handleEditClick = (recipient: CareRecipient, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent tab change
+    setRecipientToEdit(recipient);
+    setNewName(recipient.name);
+    setShowEditDialog(true);
+  };
+  
   const confirmDelete = () => {
     if (recipientToDelete) {
       deleteMutation.mutate(recipientToDelete.id);
+    }
+  };
+  
+  const confirmEdit = () => {
+    if (recipientToEdit && newName.trim()) {
+      editMutation.mutate({ id: recipientToEdit.id, name: newName.trim() });
     }
   };
 
@@ -128,6 +187,12 @@ export default function CareRecipientTabs({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem 
+                      onClick={(e) => handleEditClick(recipient, e as unknown as React.MouseEvent)}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit name
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
                       className="text-red-500 focus:text-red-500"
                       onClick={(e) => handleDeleteClick(recipient, e as unknown as React.MouseEvent)}
                     >
@@ -168,6 +233,48 @@ export default function CareRecipientTabs({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Name Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Care Recipient Name</DialogTitle>
+            <DialogDescription>
+              Change the name for this care recipient.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Input
+              ref={nameInputRef}
+              placeholder="Enter name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  confirmEdit();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowEditDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={confirmEdit}
+              disabled={!newName.trim() || editMutation.isPending}
+            >
+              {editMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
