@@ -83,16 +83,9 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
           if (log.scheduleId) {
             takenDosesMap.set(`${log.medicationId}-${log.scheduleId}`, true);
           } else {
-            // For logs without scheduleId (taken manually), mark all schedules as taken
-            const med = medications?.find(m => m.id === log.medicationId);
-            if (med && med.schedules && med.schedules.length > 0) {
-              med.schedules.forEach(schedule => {
-                takenDosesMap.set(`${log.medicationId}-${schedule.id}`, true);
-              });
-            } else {
-              // If medication has no schedules, just mark the medication as taken
-              takenDosesMap.set(`${log.medicationId}-0`, true);
-            }
+            // For logs without scheduleId (taken manually), only mark the medication as taken with key '0'
+            // We no longer auto-mark all scheduled times as taken when a manual log exists
+            takenDosesMap.set(`${log.medicationId}-0`, true);
           }
         });
       
@@ -177,29 +170,23 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       
       // The previous method was looking for exact scheduleId match, but for logs where 
       // scheduleId is null this doesn't work correctly. Let's improve the logic:
+      // Since we no longer mark all schedules as taken when a manual dose is logged,
+      // we need to look specifically for a log with the exact matching scheduleId
       const todayLog = medicationLogs?.find(log => {
         // Match by medication ID
         if (log.medicationId !== medicationId) return false;
         
-        // Match by schedule ID if provided - handle both cases
+        // Exact match for schedule ID (if we're looking for scheduleId=5, we want a log with scheduleId=5)
         if (scheduleId) {
-          // If we're looking for a specific schedule, it must match
           if (log.scheduleId !== scheduleId) return false;
         } else {
-          // If we're looking for a medication without schedule, only match logs without scheduleId
+          // If we're looking for scheduleId=0 (manual log), match logs with null scheduleId
           if (log.scheduleId !== null) return false;
         }
         
-        // Match by date
+        // Match by date (only today's logs)
         const logDate = new Date(log.takenAt);
         const isFromToday = logDate >= startOfToday;
-        console.log('Log date check:', { 
-          logDate, 
-          startOfToday, 
-          isFromToday,
-          formattedLog: new Date(log.takenAt).toLocaleString(),
-          formattedToday: startOfToday.toLocaleString()
-        });
         return isFromToday;
       });
       
