@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CalendarPlus, Clock, ClipboardList, Loader2, Plus, Toilet } from "lucide-react";
+import { Clock, Home, Loader2, Plus, Toilet } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -25,6 +26,7 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   
   // Get care recipients
@@ -120,6 +122,13 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
         isLoading={isLoadingRecipients}
       />
       
+      <div className="flex justify-between items-center mb-4">
+        <Button onClick={() => navigate("/")} variant="outline" className="flex items-center gap-1">
+          <Home className="h-4 w-4" />
+          Home
+        </Button>
+      </div>
+      
       <Card className="mb-6">
         <CardHeader className="pb-3">
           <div className="flex justify-between items-center">
@@ -154,61 +163,42 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
               </Button>
             </div>
           ) : (
-            <Tabs defaultValue="list" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="list">
-                  <ClipboardList className="h-4 w-4 mr-2" /> List View
-                </TabsTrigger>
-                <TabsTrigger value="calendar">
-                  <CalendarPlus className="h-4 w-4 mr-2" /> Calendar View
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="list">
-                <ScrollArea className="h-[400px] rounded-md border">
-                  <div className="p-4 space-y-4">
-                    {movements.map((movement: BowelMovement) => (
-                      <div 
-                        key={movement.id} 
-                        className="flex justify-between items-center p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                        onClick={() => {
-                          setSelectedMovement(movement);
-                          setIsDetailsOpen(true);
-                        }}
-                      >
-                        <div className="flex items-center">
-                          <div className="bg-primary/10 p-2 rounded-full mr-3">
-                            <Toilet className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-medium">
-                              <Badge className={getTypeColor(movement.type)}>
-                                {getBowelTypeLabel(movement.type)}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground flex items-center mt-1">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {formatDate(movement.occuredAt)} at {formatTime(movement.occuredAt)}
-                            </div>
-                          </div>
-                        </div>
-                        {movement.notes && (
-                          <div className="max-w-[200px] truncate text-sm text-muted-foreground">
-                            {movement.notes}
-                          </div>
-                        )}
+            <ScrollArea className="h-[400px] rounded-md border">
+              <div className="p-4 space-y-4">
+                {movements.map((movement: BowelMovement) => (
+                  <div 
+                    key={movement.id} 
+                    className="flex justify-between items-center p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                    onClick={() => {
+                      setSelectedMovement(movement);
+                      setIsDetailsOpen(true);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <div className="bg-primary/10 p-2 rounded-full mr-3">
+                        <Toilet className="h-5 w-5 text-primary" />
                       </div>
-                    ))}
+                      <div>
+                        <div className="font-medium">
+                          <Badge className={getTypeColor(movement.type)}>
+                            {getBowelTypeLabel(movement.type)}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground flex items-center mt-1">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatDate(movement.occuredAt)} at {formatTime(movement.occuredAt)}
+                        </div>
+                      </div>
+                    </div>
+                    {movement.notes && (
+                      <div className="max-w-[200px] truncate text-sm text-muted-foreground">
+                        {movement.notes}
+                      </div>
+                    )}
                   </div>
-                </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="calendar">
-                <div className="p-4 border rounded-lg">
-                  <p className="text-center text-muted-foreground">Calendar view coming soon</p>
-                </div>
-              </TabsContent>
-            </Tabs>
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>
