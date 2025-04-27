@@ -236,6 +236,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.patch(`${apiPrefix}/medication-schedules/:id`, async (req, res) => {
+    try {
+      const scheduleId = parseInt(req.params.id);
+      if (isNaN(scheduleId)) {
+        return res.status(400).json({ message: 'Invalid schedule ID' });
+      }
+      
+      // First get the existing schedule to ensure it exists
+      const existingSchedules = await storage.getMedicationSchedules(req.body.medicationId);
+      const existingSchedule = existingSchedules.find(s => s.id === scheduleId);
+      
+      if (!existingSchedule) {
+        return res.status(404).json({ message: 'Medication schedule not found' });
+      }
+      
+      // Update the schedule by deleting and recreating with the same ID
+      await storage.deleteMedicationSchedule(scheduleId);
+      const updatedSchedule = await storage.createMedicationSchedule({
+        ...req.body,
+        id: scheduleId
+      });
+      
+      res.status(200).json(updatedSchedule);
+    } catch (error) {
+      console.error('Error updating medication schedule:', error);
+      res.status(500).json({ message: 'Error updating medication schedule' });
+    }
+  });
+  
   app.delete(`${apiPrefix}/medication-schedules/:id`, async (req, res) => {
     try {
       const scheduleId = parseInt(req.params.id);

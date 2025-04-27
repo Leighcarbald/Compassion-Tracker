@@ -168,20 +168,27 @@ export default function EditMedicationSchedulesModal({
       
       // Update or create each schedule
       for (const schedule of data.schedules) {
-        const isNew = !schedule.id;
-        const method = isNew ? "POST" : "PATCH";
-        const url = isNew 
-          ? "/api/medication-schedules" 
-          : `/api/medication-schedules/${schedule.id}`;
-        
-        const response = await apiRequest(method, url, schedule);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Error ${isNew ? 'creating' : 'updating'} schedule: ${errorText}`);
+        try {
+          const isNew = !schedule.id;
+          const method = isNew ? "POST" : "PATCH";
+          const url = isNew 
+            ? "/api/medication-schedules" 
+            : `/api/medication-schedules/${schedule.id}`;
+          
+          console.log(`API Request: ${method} ${url}`, schedule);
+          const response = await apiRequest(method, url, schedule);
+          console.log(`API Response: ${response.status} ${response.statusText}`);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error ${isNew ? 'creating' : 'updating'} schedule: ${errorText}`);
+          }
+          
+          results.push(await response.json());
+        } catch (err) {
+          console.error(`Error with schedule:`, schedule, err);
+          throw err;
         }
-        
-        results.push(await response.json());
       }
       
       return results;
@@ -198,11 +205,11 @@ export default function EditMedicationSchedulesModal({
       
       onClose();
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error("Error saving schedules:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to save medication schedules",
+        title: "Error Saving Schedules",
+        description: error.message || "Failed to save medication schedules. Please try again.",
         variant: "destructive",
       });
     }
