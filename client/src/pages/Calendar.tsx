@@ -533,7 +533,8 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                   <Pill className="h-4 w-4 text-blue-500" />
                                   <div>
                                     <p className="font-medium">
-                                      {log.medication?.name || "Unknown medication"}
+                                      {log.medication?.name || 
+                                        (log.medicationId ? `Loading medication #${log.medicationId}...` : "Unknown medication")}
                                     </p>
                                     <p className="text-sm text-gray-500">
                                       {formatTime(log.takenAt)}

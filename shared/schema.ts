@@ -346,6 +346,21 @@ export const medicationSchedulesRelations = relations(medicationSchedules, ({ on
   logs: many(medicationLogs)
 }));
 
+export const medicationLogsRelations = relations(medicationLogs, ({ one }) => ({
+  medication: one(medications, {
+    fields: [medicationLogs.medicationId],
+    references: [medications.id]
+  }),
+  schedule: one(medicationSchedules, {
+    fields: [medicationLogs.scheduleId],
+    references: [medicationSchedules.id]
+  }),
+  careRecipient: one(careRecipients, {
+    fields: [medicationLogs.careRecipientId],
+    references: [careRecipients.id]
+  })
+}));
+
 export const emergencyInfoRelations = relations(emergencyInfo, ({ one }) => ({
   careRecipient: one(careRecipients, {
     fields: [emergencyInfo.careRecipientId],
