@@ -272,12 +272,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.delete(`${apiPrefix}/medication-schedules/:id`, async (req, res) => {
     try {
-      const scheduleId = parseInt(req.params.id);
-      if (isNaN(scheduleId)) {
-        return res.status(400).json({ message: 'Invalid schedule ID' });
-      }
+      const scheduleId = req.params.id;
       
-      await storage.deleteMedicationSchedule(scheduleId);
+      // Try to parse as integer if possible
+      const numericId = parseInt(scheduleId);
+      
+      // Use the numeric ID if valid, otherwise use the original string ID
+      const idToUse = !isNaN(numericId) ? numericId : scheduleId;
+      
+      console.log(`Attempting to delete schedule with ID: ${idToUse} (${typeof idToUse})`);
+      await storage.deleteMedicationSchedule(idToUse);
+      
       res.status(200).json({ message: 'Medication schedule deleted successfully' });
     } catch (error) {
       console.error('Error deleting medication schedule:', error);
