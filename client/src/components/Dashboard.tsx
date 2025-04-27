@@ -168,7 +168,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
       </div>
 
       {/* Daily Inspiration */}
-      <div className="mb-6 bg-primary bg-opacity-5 p-4 rounded-xl border border-primary border-opacity-10">
+      <div className="mb-6 p-4 rounded-xl border border-gray-200">
         <div className="flex items-center mb-2">
           <Heart className="h-5 w-5 text-primary mr-2" />
           <h3 className="text-md font-medium">Daily Inspiration</h3>
@@ -178,7 +178,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
             <>
               "{inspirationMessage.message}"
               <br />
-              {inspirationMessage.author && `— ${inspirationMessage.author}`}
+              {inspirationMessage.author && <span className="text-gray-500 text-sm">— {inspirationMessage.author}</span>}
             </>
           ) : (
             "Caregiving often calls us to lean into love we didn't know possible."

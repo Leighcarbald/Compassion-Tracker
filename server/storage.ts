@@ -50,9 +50,10 @@ import { format, startOfDay, endOfDay, addHours, formatDistance, isToday } from 
 let lastResetDate = new Date();
 let midnightResetInitialized = false;
 
-// For daily inspiration
+// For daily inspiration - always start with null so we get a fresh one
 let todaysInspiration: { message: string; author: string } | null = null;
-let lastInspirationDate = new Date();
+// Set the last date to yesterday to force a new inspiration on first request
+let lastInspirationDate = new Date(new Date().setDate(new Date().getDate() - 1));
 
 // Helper function to check if a date is from today
 const isDateFromToday = (date: Date): boolean => {
