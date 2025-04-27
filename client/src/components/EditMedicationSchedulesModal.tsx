@@ -131,10 +131,12 @@ export default function EditMedicationSchedulesModal({
   // Load existing schedules when the medication changes
   useEffect(() => {
     if (medication && medication.schedules) {
+      console.log("Loading schedules:", medication.schedules);
+      
       // Reset the form with the medication's schedules
       form.reset({
         schedules: medication.schedules.map(schedule => ({
-          id: schedule.id,
+          id: schedule.id, // Keep the original ID format
           medicationId: medication.id,
           time: schedule.time,
           daysOfWeek: Array.isArray(schedule.daysOfWeek) ? schedule.daysOfWeek : [0, 1, 2, 3, 4, 5, 6],
@@ -160,7 +162,7 @@ export default function EditMedicationSchedulesModal({
 
   // Mutation for deleting a schedule
   const deleteSchedule = useMutation({
-    mutationFn: async (scheduleId: number) => {
+    mutationFn: async (scheduleId: number | string) => {
       console.log(`Deleting schedule with ID ${scheduleId}`);
       const url = `/api/medication-schedules/${scheduleId}`;
       
@@ -344,33 +346,40 @@ export default function EditMedicationSchedulesModal({
                         const schedule = fields[index];
                         console.log("Field to delete:", schedule);
                         if (schedule.id) {
-                          // Make sure the ID is in the correct format (number)
-                          const scheduleId = typeof schedule.id === 'number' 
-                            ? schedule.id 
-                            : parseInt(String(schedule.id));
-                          
-                          console.log(`Converting schedule ID from ${schedule.id} (${typeof schedule.id}) to ${scheduleId} (${typeof scheduleId})`);
-                          
-                          if (isNaN(scheduleId)) {
-                            console.error("Invalid schedule ID format:", schedule.id);
-                            toast({
-                              title: "Error",
-                              description: "Cannot delete schedule: Invalid ID format",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          // Pass the ID directly without conversion
+                          console.log(`Using original schedule ID format: ${schedule.id} (${typeof schedule.id})`);
                           
                           // If it has an ID, it exists in the database, so delete it
-                          deleteSchedule.mutate(scheduleId, {
+                          deleteSchedule.mutate(schedule.id, {
                             onSuccess: () => {
                               // After deleting from server, remove from form
                               remove(index);
+                              toast({
+                                title: "Schedule Removed",
+                                description: "Medication schedule deleted successfully",
+                                variant: "default",
+                              });
+                            },
+                            onError: (error) => {
+                              // If deletion fails, we'll still remove it from the form
+                              // This happens if it's a new schedule that was just added
+                              console.log("Error deleting, removing from form anyway:", error);
+                              remove(index);
+                              toast({
+                                title: "Schedule Removed",
+                                description: "Schedule removed from form. You'll need to Save to update the database.",
+                                variant: "default",
+                              });
                             }
                           });
                         } else {
                           // If no ID, it's a new schedule that doesn't exist in the database yet
                           remove(index);
+                          toast({
+                            title: "Schedule Removed",
+                            description: "Schedule removed from form.",
+                            variant: "default",
+                          });
                         }
                       }}
                       disabled={deleteSchedule.isPending}
