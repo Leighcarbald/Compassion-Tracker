@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import { type CareRecipient } from "@shared/schema";
+import { type CareRecipient, insertCareRecipientSchema } from "@shared/schema";
 import { Plus, MoreVertical, Trash2, Pencil } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -49,8 +49,11 @@ export default function CareRecipientTabs({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [recipientToEdit, setRecipientToEdit] = useState<CareRecipient | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newRecipientName, setNewRecipientName] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const newRecipientInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   // Focus input field when edit dialog opens
@@ -59,6 +62,13 @@ export default function CareRecipientTabs({
       nameInputRef.current.focus();
     }
   }, [showEditDialog]);
+  
+  // Focus input field when add dialog opens
+  useEffect(() => {
+    if (showAddDialog && newRecipientInputRef.current) {
+      newRecipientInputRef.current.focus();
+    }
+  }, [showAddDialog]);
   
   // Delete mutation
   const deleteMutation = useMutation({
