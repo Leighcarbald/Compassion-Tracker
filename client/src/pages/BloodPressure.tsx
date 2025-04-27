@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BloodPressure } from "@shared/schema";
 import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 
 interface BloodPressurePageProps {
   activeTab: TabType;
@@ -29,7 +30,9 @@ interface BloodPressurePageProps {
 }
 
 export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPressurePageProps) {
-  const [careRecipientId, setCareRecipientId] = useState<number | null>(null);
+  const { activeCareRecipientId } = useCareRecipient();
+  const careRecipientId = activeCareRecipientId ? parseInt(activeCareRecipientId) : null;
+  
   const [showAddForm, setShowAddForm] = useState(false);
   const [readingDate, setReadingDate] = useState<Date>(new Date());
   const [readingTime, setReadingTime] = useState(format(new Date(), "HH:mm"));
@@ -40,16 +43,6 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
   const [position, setPosition] = useState("sitting");
   const [notes, setNotes] = useState("");
   const { toast } = useToast();
-
-  const { data: careRecipients } = useQuery({
-    queryKey: ["/api/care-recipients"],
-  });
-
-  useEffect(() => {
-    if (careRecipients && careRecipients.length > 0) {
-      setCareRecipientId(careRecipients[0].id);
-    }
-  }, [careRecipients]);
 
   const { data: readings, isLoading } = useQuery({
     queryKey: ["/api/blood-pressure", careRecipientId],
@@ -183,26 +176,7 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
         </Button>
       </div>
 
-      {careRecipients && careRecipients.length > 0 && (
-        <div className="mb-6">
-          <Label htmlFor="careRecipient">Care Recipient</Label>
-          <Select
-            value={careRecipientId?.toString()}
-            onValueChange={(value) => setCareRecipientId(Number(value))}
-          >
-            <SelectTrigger className="w-full md:w-[300px]">
-              <SelectValue placeholder="Select a care recipient" />
-            </SelectTrigger>
-            <SelectContent>
-              {careRecipients.map((recipient) => (
-                <SelectItem key={recipient.id} value={recipient.id.toString()}>
-                  {recipient.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      {/* Care recipient selector removed since we're using global context */}
 
       {showAddForm && (
         <Card className="mb-8">

@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import CareRecipientTabs from "@/components/CareRecipientTabs";
 import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import type { Doctor } from "@shared/schema";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 
 interface DoctorsProps {
   activeTab: TabType;
@@ -22,8 +22,9 @@ interface DoctorsProps {
 }
 
 export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
-  // State
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
+  // Use global care recipient context
+  const { activeCareRecipientId } = useCareRecipient();
+  
   const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -36,16 +37,10 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
   
   const { toast } = useToast();
   
-  // Fetch care recipients
-  const { data: careRecipients = [], isLoading: isLoadingCareRecipients } = useQuery({
-    queryKey: ["/api/care-recipients"],
-    enabled: true,
-  });
-  
   // Fetch doctors
   const { data: doctors = [], isLoading: isLoadingDoctors } = useQuery({
-    queryKey: ["/api/doctors", activeCareRecipient],
-    enabled: !!activeCareRecipient,
+    queryKey: ["/api/doctors", activeCareRecipientId],
+    enabled: !!activeCareRecipientId,
   });
   
   // Handle care recipient change
@@ -106,16 +101,10 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
     <div className="container mx-auto p-4">
       <PageHeader title="Doctors" icon={<Stethoscope className="h-6 w-6" />} showHomeButton={false} />
       
-      {/* Care Recipient Tabs */}
-      <CareRecipientTabs
-        careRecipients={careRecipients}
-        activeCareRecipient={activeCareRecipient}
-        onChangeRecipient={handleCareRecipientChange}
-        isLoading={isLoadingCareRecipients}
-      />
+      {/* Care Recipient Tabs are no longer needed since we're using global context */}
       
       {/* Add Doctor Button */}
-      {activeCareRecipient && (
+      {activeCareRecipientId && (
         <div className="flex justify-end mb-4">
           <Dialog open={isAddDoctorOpen} onOpenChange={setIsAddDoctorOpen}>
             <DialogTrigger asChild>

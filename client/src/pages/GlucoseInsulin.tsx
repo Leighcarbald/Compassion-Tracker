@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Glucose, Insulin } from "@shared/schema";
 import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 
 interface GlucoseInsulinPageProps {
   activeTab: TabType;
@@ -31,7 +32,9 @@ interface GlucoseInsulinPageProps {
 }
 
 export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseInsulinPageProps) {
-  const [careRecipientId, setCareRecipientId] = useState<number | null>(null);
+  const { activeCareRecipientId } = useCareRecipient();
+  const careRecipientId = activeCareRecipientId ? parseInt(activeCareRecipientId) : null;
+  
   const [showAddForm, setShowAddForm] = useState(false);
   const [formType, setFormType] = useState<"glucose" | "insulin">("glucose");
   const [readingDate, setReadingDate] = useState<Date>(new Date());
@@ -49,16 +52,6 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
   const [insulinNotes, setInsulinNotes] = useState("");
   
   const { toast } = useToast();
-
-  const { data: careRecipients } = useQuery({
-    queryKey: ["/api/care-recipients"],
-  });
-
-  useEffect(() => {
-    if (careRecipients && careRecipients.length > 0) {
-      setCareRecipientId(careRecipients[0].id);
-    }
-  }, [careRecipients]);
 
   const { data: glucoseReadings, isLoading: isLoadingGlucose } = useQuery({
     queryKey: ["/api/glucose", careRecipientId],
@@ -307,26 +300,7 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
         </Button>
       </div>
 
-      {careRecipients && careRecipients.length > 0 && (
-        <div className="mb-6">
-          <Label htmlFor="careRecipient">Care Recipient</Label>
-          <Select
-            value={careRecipientId?.toString()}
-            onValueChange={(value) => setCareRecipientId(Number(value))}
-          >
-            <SelectTrigger className="w-full md:w-[300px]">
-              <SelectValue placeholder="Select a care recipient" />
-            </SelectTrigger>
-            <SelectContent>
-              {careRecipients.map((recipient) => (
-                <SelectItem key={recipient.id} value={recipient.id.toString()}>
-                  {recipient.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      {/* Care recipient selector removed since we're using global context */}
 
       {showAddForm && (
         <Card className="mb-8">
