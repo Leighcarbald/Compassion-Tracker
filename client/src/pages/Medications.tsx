@@ -304,6 +304,34 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                         {med.instructions || "Take as directed"}
                       </div>
                       
+                      {/* Schedules Section - Display medication schedules */}
+                      {med.schedules && med.schedules.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {med.schedules.map((schedule) => (
+                            <Button
+                              key={schedule.id}
+                              size="sm"
+                              variant={isDoseTaken(med.id, schedule.id) ? "default" : "outline"}
+                              className={`text-xs py-0.5 px-2 h-auto rounded-full ${
+                                isDoseTaken(med.id, schedule.id)
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "text-primary border border-primary"
+                              }`}
+                              onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
+                            >
+                              {schedule.time.slice(0, 5)}
+                              {isDoseTaken(med.id, schedule.id) && (
+                                <Check className="ml-1 h-3 w-3" />
+                              )}
+                            </Button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-xs text-gray-500 italic">
+                          No scheduled doses
+                        </div>
+                      )}
+                      
                       {/* Inventory Section */}
                       <div className="mt-2 p-2 bg-gray-50 rounded-md text-xs">
                         <div className="flex justify-between text-gray-600">
@@ -325,15 +353,15 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                     </Button>
                     <Button 
                       size="sm" 
-                      variant={takenMedicationIds.has(med.id) ? "default" : "outline"}
+                      variant={isDoseTaken(med.id, 0) ? "default" : "outline"}
                       className={`text-xs font-medium px-3 py-1 rounded-full ${
-                        takenMedicationIds.has(med.id) 
+                        isDoseTaken(med.id, 0) 
                           ? "bg-green-600 text-white border-green-600" 
                           : "text-primary border border-primary"
                       }`}
-                      onClick={() => handleMarkAsTaken(med.id)}
+                      onClick={() => handleMarkDoseAsTaken(med.id)}
                     >
-                      {takenMedicationIds.has(med.id) ? (
+                      {isDoseTaken(med.id, 0) ? (
                         <>
                           <Check className="mr-1 h-3 w-3" />
                           Taken
