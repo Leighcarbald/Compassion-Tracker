@@ -32,7 +32,8 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
-  const [takenMedicationIds, setTakenMedicationIds] = useState<Set<number>>(new Set());
+  // Track taken medication doses by schedule
+  const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
   const { toast } = useToast();
 
   // Fetch care recipients
@@ -57,23 +58,39 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     enabled: !!activeCareRecipient,
   });
   
-  // Update the taken medications set whenever logs change
+  // Update the taken medication doses map whenever logs change
   React.useEffect(() => {
     if (medicationLogs && medicationLogs.length > 0) {
-      // Check which medications were taken today
+      // Check which medication doses were taken today
       const today = new Date();
       const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      // Filter logs from today and create a Set of medication IDs
-      const takenToday = new Set<number>(
-        medicationLogs
-          .filter(log => new Date(log.takenAt) >= startOfToday)
-          .map(log => log.medicationId)
-      );
+      // Create a map of medication+schedule combinations that have been taken today
+      const takenDosesMap = new Map<string, boolean>();
       
-      setTakenMedicationIds(takenToday);
+      medicationLogs
+        .filter(log => new Date(log.takenAt) >= startOfToday)
+        .forEach(log => {
+          // If the log has a scheduleId, use that to create a unique key
+          if (log.scheduleId) {
+            takenDosesMap.set(`${log.medicationId}-${log.scheduleId}`, true);
+          } else {
+            // For logs without scheduleId (taken manually), mark all schedules as taken
+            const med = medications?.find(m => m.id === log.medicationId);
+            if (med && med.schedules && med.schedules.length > 0) {
+              med.schedules.forEach(schedule => {
+                takenDosesMap.set(`${log.medicationId}-${schedule.id}`, true);
+              });
+            } else {
+              // If medication has no schedules, just mark the medication as taken
+              takenDosesMap.set(`${log.medicationId}-0`, true);
+            }
+          }
+        });
+      
+      setTakenMedicationDoses(takenDosesMap);
     }
-  }, [medicationLogs]);
+  }, [medicationLogs, medications]);
 
   // Handle modal open/close
   const handleAddEvent = () => {
@@ -94,9 +111,9 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     }
   };
 
-  // Handle marking a medication as taken
+  // Handle marking a medication dose as taken
   const markAsTakenMutation = useMutation({
-    mutationFn: async (medicationId: number) => {
+    mutationFn: async ({ medicationId, scheduleId }: { medicationId: number, scheduleId?: number }) => {
       if (!activeCareRecipient) return null;
       
       const response = await apiRequest(
@@ -104,10 +121,11 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         `/api/medication-logs`,
         {
           medicationId,
+          scheduleId,
           careRecipientId: parseInt(activeCareRecipient),
           taken: true,
           takenAt: new Date(),
-          notes: "Taken manually"
+          notes: scheduleId ? `Taken at scheduled time` : "Taken manually"
         }
       );
       
@@ -134,16 +152,22 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
 
   // Add unmark medication mutation
   const unmarkAsTakenMutation = useMutation({
-    mutationFn: async (medicationId: number) => {
+    mutationFn: async ({ medicationId, scheduleId }: { medicationId: number, scheduleId?: number }) => {
       if (!activeCareRecipient) return null;
       
-      // Find today's log for this medication to delete
+      // Find today's log for this medication+schedule to delete
       const today = new Date();
       const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
       const todayLog = medicationLogs?.find(log => {
-        return log.medicationId === medicationId && 
-               new Date(log.takenAt) >= startOfToday;
+        // Match by medication ID
+        if (log.medicationId !== medicationId) return false;
+        
+        // Match by schedule ID if provided
+        if (scheduleId && log.scheduleId !== scheduleId) return false;
+        
+        // Match by date
+        return new Date(log.takenAt) >= startOfToday;
       });
       
       if (!todayLog) {
@@ -177,13 +201,22 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     }
   });
 
-  const handleMarkAsTaken = (medicationId: number) => {
-    // If the medication is already taken, unmark it
-    if (takenMedicationIds.has(medicationId)) {
-      unmarkAsTakenMutation.mutate(medicationId);
+  // Check if a specific medication dose has been taken
+  const isDoseTaken = (medicationId: number, scheduleId: number | null) => {
+    const key = `${medicationId}-${scheduleId || 0}`;
+    return takenMedicationDoses.has(key);
+  };
+
+  // Handle marking a medication dose as taken
+  const handleMarkDoseAsTaken = (medicationId: number, scheduleId?: number) => {
+    const key = `${medicationId}-${scheduleId || 0}`;
+    
+    // If the dose is already taken, unmark it
+    if (takenMedicationDoses.has(key)) {
+      unmarkAsTakenMutation.mutate({ medicationId, scheduleId });
     } else {
       // Otherwise, mark it as taken
-      markAsTakenMutation.mutate(medicationId);
+      markAsTakenMutation.mutate({ medicationId, scheduleId });
     }
   };
 
