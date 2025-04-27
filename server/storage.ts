@@ -316,21 +316,53 @@ export const storage = {
       }
     }
     
-    // Count how many doses have been taken for each medication
-    const takenDosesMap = new Map();
+    // Track taken doses by medication and schedule
+    // We need to track which specific schedules have been taken, not just count total doses
+    const takenDosesMap = new Map(); // Medication ID -> total count
+    const takenSchedulesMap = new Map(); // Medication ID -> Set of taken schedule IDs
+    
     for (const log of dateLogs) {
       const medId = log.medicationId;
+      
+      // Update total dose count
       takenDosesMap.set(medId, (takenDosesMap.get(medId) || 0) + 1);
+      
+      // Track which specific schedules have been taken
+      if (log.scheduleId) {
+        // If this log has a scheduleId, track it
+        if (!takenSchedulesMap.has(medId)) {
+          takenSchedulesMap.set(medId, new Set());
+        }
+        takenSchedulesMap.get(medId).add(log.scheduleId);
+      }
     }
     
-    // A medication is fully taken if the number of taken doses is at least equal to the required doses
+    // A medication is fully taken if all its scheduled doses are taken
     const takenMedicationIds = new Set();
     for (const med of meds) {
       const requiredDoses = requiredDosesMap.get(med.id) || 1;
       const takenDoses = takenDosesMap.get(med.id) || 0;
       
-      if (takenDoses >= requiredDoses) {
-        takenMedicationIds.add(med.id);
+      // Get schedules for this medication
+      const schedules = Array.isArray(medSchedules) ? medSchedules.filter(
+        schedule => schedule.medicationId === med.id
+      ) : [];
+      
+      if (schedules.length === 0) {
+        // If no schedules, medication is completed if at least one dose was taken
+        if (takenDoses > 0) {
+          takenMedicationIds.add(med.id);
+        }
+      } else {
+        // With schedules: check if all scheduled doses were taken
+        const takenScheduleIdsForMed = takenSchedulesMap.get(med.id) || new Set();
+        const allSchedulesTaken = schedules.every(schedule => 
+          takenScheduleIdsForMed.has(schedule.id)
+        );
+        
+        if (allSchedulesTaken) {
+          takenMedicationIds.add(med.id);
+        }
       }
     }
     
