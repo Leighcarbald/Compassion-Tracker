@@ -36,6 +36,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [isSchedulesModalOpen, setIsSchedulesModalOpen] = useState(false);
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
   // Track which medications are being edited
@@ -311,6 +312,15 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     setEditingMedicationId(null);
     setEditedMedication(null);
   };
+  
+  // Handle editing schedules
+  const handleEditSchedules = (medicationId: number) => {
+    const medication = medications?.find(med => med.id === medicationId) || null;
+    if (medication) {
+      setSelectedMedication(medication);
+      setIsSchedulesModalOpen(true);
+    }
+  };
 
   // Handle input change for editing
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -524,6 +534,14 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                           >
                             <Edit className="mr-1 h-3 w-3" /> Edit
                           </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs font-medium text-purple-500 px-2 py-1 rounded-full border border-purple-500"
+                            onClick={() => handleEditSchedules(med.id)}
+                          >
+                            Edit Schedules
+                          </Button>
                         </div>
                         {/* The Mark as Taken button is replaced with clickable times above */}
                       </>
@@ -585,6 +603,13 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         isOpen={isAddMedicationModalOpen}
         onClose={() => setIsAddMedicationModalOpen(false)}
         careRecipientId={activeCareRecipient}
+      />
+      
+      {/* Edit Medication Schedules Modal */}
+      <EditMedicationSchedulesModal
+        isOpen={isSchedulesModalOpen}
+        onClose={() => setIsSchedulesModalOpen(false)}
+        medication={selectedMedication}
       />
     </>
   );
