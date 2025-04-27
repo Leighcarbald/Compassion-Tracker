@@ -39,7 +39,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [activeTab, setActiveTab] = useState<string>("events");
+  const [activeTab, setActiveTab] = useState("events"); // Tab for the health data sections
 
   // Fetch care recipients
   const { data: careRecipients, isLoading: isLoadingRecipients } = useQuery<CareRecipient[]>({
@@ -340,7 +340,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.bowelMovements.map((movement: BowelMovement) => (
+                        {dateStats.bowelMovements.map((movement: any) => (
                           <Card key={movement.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
@@ -349,7 +349,8 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                     {format(new Date(movement.occuredAt), 'h:mm a')}
                                   </p>
                                   <p className="text-sm text-gray-500">
-                                    Type: {movement.type}, Color: {movement.color}
+                                    Type: {movement.type || 'Not specified'}
+                                    {movement.color && `, Color: ${movement.color}`}
                                   </p>
                                   {movement.consistency && (
                                     <p className="text-sm text-gray-500">
@@ -507,33 +508,38 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.medications.logs.map((log: MedicationLog) => (
-                          <Card key={log.id}>
-                            <CardContent className="p-3">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium">
-                                    {log.medicationName}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    Taken at {format(new Date(log.takenAt), 'h:mm a')}
-                                  </p>
-                                  {log.quantity && (
-                                    <p className="text-sm text-gray-500">
-                                      Quantity: {log.quantity}
+                        {dateStats.medications.logs.map((log: any) => {
+                          // The server enhances the log with the medication name
+                          const medicationName = log.medicationName || "Medication";
+                          
+                          return (
+                            <Card key={log.id}>
+                              <CardContent className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium">
+                                      {medicationName}
                                     </p>
-                                  )}
+                                    <p className="text-sm text-gray-500">
+                                      Taken at {format(new Date(log.takenAt), 'h:mm a')}
+                                    </p>
+                                    {log.quantity && (
+                                      <p className="text-sm text-gray-500">
+                                        Quantity: {log.quantity}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Pill className="h-5 w-5 text-blue-500" />
                                 </div>
-                                <Pill className="h-5 w-5 text-blue-500" />
-                              </div>
-                              {log.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {log.notes}
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        ))}
+                                {log.notes && (
+                                  <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                    {log.notes}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
                       </div>
                     )}
 
