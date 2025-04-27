@@ -12,9 +12,15 @@ import Pharmacies from "@/pages/Pharmacies";
 import EmergencyInfo from "@/pages/EmergencyInfo";
 import BloodPressure from "@/pages/BloodPressure";
 import GlucoseInsulin from "@/pages/GlucoseInsulin";
-import { useState } from "react";
+import BowelMovements from "@/pages/BowelMovements";
+import { useState, lazy, Suspense } from "react";
 import { TabType } from "./lib/types";
 import { PinAuthProvider } from "@/hooks/use-pin-auth";
+import { Loader2 } from "lucide-react";
+
+// Lazily load the Meals and Sleep components since they may not be implemented yet
+const Meals = lazy(() => import("@/pages/Meals"));
+const Sleep = lazy(() => import("@/pages/Sleep"));
 
 function Router() {
   const [activeTab, setActiveTab] = useState<TabType>("home");
@@ -48,6 +54,27 @@ function Router() {
         </Route>
         <Route path="/glucose-insulin">
           <GlucoseInsulin activeTab={activeTab} setActiveTab={setActiveTab} />
+        </Route>
+        <Route path="/bowel-movements">
+          <BowelMovements activeTab={activeTab} setActiveTab={setActiveTab} />
+        </Route>
+        <Route path="/meals">
+          <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          }>
+            <Meals activeTab={activeTab} setActiveTab={setActiveTab} />
+          </Suspense>
+        </Route>
+        <Route path="/sleep">
+          <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          }>
+            <Sleep activeTab={activeTab} setActiveTab={setActiveTab} />
+          </Suspense>
         </Route>
         <Route component={NotFound} />
       </Switch>
