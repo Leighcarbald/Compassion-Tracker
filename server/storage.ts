@@ -149,6 +149,23 @@ export const storage = {
     return newRecipient;
   },
   
+  async updateCareRecipient(id: number, data: { name: string }) {
+    try {
+      const [updated] = await db.update(careRecipients)
+        .set({ 
+          name: data.name,
+          updatedAt: new Date()
+        })
+        .where(eq(careRecipients.id, id))
+        .returning();
+        
+      return updated;
+    } catch (error) {
+      console.error('Error updating care recipient:', error);
+      throw new Error('Failed to update care recipient');
+    }
+  },
+  
   async deleteCareRecipient(id: number) {
     // Delete all related data first to maintain referential integrity
     // This is a cascading delete operation
