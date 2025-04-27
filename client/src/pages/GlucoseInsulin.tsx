@@ -297,7 +297,7 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
 
   return (
     <div className="p-4 md:p-6">
-      <PageHeader title="Glucose & Insulin Tracker" icon={<Droplets className="h-6 w-6" />} />
+      <PageHeader title="Glucose & Insulin Tracker" icon={<Droplets className="h-6 w-6" />} showHomeButton={false} />
       
       <div className="flex justify-between items-center mb-6">
         <div></div> {/* Empty div for flex spacing */}
