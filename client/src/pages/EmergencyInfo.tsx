@@ -48,7 +48,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const { isUnlocked, unlockPin, lockPin } = usePinAuth();
   
   // Use the global care recipient context
-  const { activeCareRecipientId, setActiveCareRecipientId, careRecipients, isLoading: isLoadingCareRecipients } = useCareRecipient();
+  const { activeCareRecipientId, setActiveCareRecipientId } = useCareRecipient();
   
   // Debug effect - run whenever the component mounts or re-renders
   useEffect(() => {
@@ -159,7 +159,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           });
       }
     }
-  }, [emergencyInfo, isLocked, isUnlocked]);
+  }, [emergencyInfo, isLocked, isUnlocked, unlockPin]);
 
   // Handle care recipient selection
   const handleCareRecipientChange = (id: string) => {

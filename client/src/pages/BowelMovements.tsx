@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -14,6 +14,7 @@ import AddBowelMovementModal from "@/components/AddBowelMovementModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import BottomNavigation from "@/components/BottomNavigation";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 
 interface BowelMovementsProps {
   activeTab: TabType;
@@ -24,36 +25,21 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
   const [selectedMovement, setSelectedMovement] = useState<BowelMovement | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Get care recipients
-  const { data: careRecipients = [], isLoading: isLoadingRecipients } = useQuery({
-    queryKey: ['/api/care-recipients'],
-    queryFn: async () => {
-      const res = await fetch('/api/care-recipients');
-      if (!res.ok) throw new Error('Failed to fetch care recipients');
-      return res.json();
-    }
-  });
-
-  // Set active care recipient if not set and data is available
-  useEffect(() => {
-    if (!activeCareRecipient && careRecipients.length > 0) {
-      setActiveCareRecipient(careRecipients[0].id.toString());
-    }
-  }, [careRecipients, activeCareRecipient]);
+  // Use the global care recipient context
+  const { activeCareRecipientId, careRecipients, isLoading: isLoadingCareRecipients } = useCareRecipient();
 
   // Get bowel movements for the active care recipient
   const { data: movements = [], isLoading: isLoadingMovements } = useQuery({
-    queryKey: ['/api/bowel-movements', activeCareRecipient],
+    queryKey: ['/api/bowel-movements', activeCareRecipientId],
     queryFn: async () => {
-      if (!activeCareRecipient) return [];
-      const res = await fetch(`/api/bowel-movements?careRecipientId=${activeCareRecipient}`);
+      if (!activeCareRecipientId) return [];
+      const res = await fetch(`/api/bowel-movements?careRecipientId=${activeCareRecipientId}`);
       if (!res.ok) throw new Error('Failed to fetch bowel movements');
       return res.json();
     },
-    enabled: !!activeCareRecipient
+    enabled: !!activeCareRecipientId
   });
 
   // Delete bowel movement
@@ -62,8 +48,8 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
       await apiRequest('DELETE', `/api/bowel-movements/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bowel-movements', activeCareRecipient] });
-      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', activeCareRecipient] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bowel-movements', activeCareRecipientId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', activeCareRecipientId] });
       setIsDetailsOpen(false);
       toast({
         title: "Deleted",
@@ -113,14 +99,7 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
 
   return (
     <div className="container p-4 max-w-4xl mx-auto">
-      <Header 
-        activeCareRecipient={activeCareRecipient} 
-        careRecipients={careRecipients} 
-        onChangeRecipient={(id) => setActiveCareRecipient(id)}
-        isLoading={isLoadingRecipients}
-      />
-      
-
+      <Header />
       
       <Card className="mb-6">
         <CardHeader className="pb-3">
@@ -247,7 +226,7 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
       <AddBowelMovementModal 
         isOpen={isAddEventOpen}
         onClose={() => setIsAddEventOpen(false)}
-        careRecipientId={activeCareRecipient}
+        careRecipientId={activeCareRecipientId}
       />
       
       {/* Bottom Navigation */}
