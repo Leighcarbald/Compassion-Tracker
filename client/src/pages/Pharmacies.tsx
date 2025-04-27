@@ -270,6 +270,12 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
           ))}
         </div>
       )}
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation 
+        activeTab={activeTab} 
+        onChangeTab={setActiveTab} 
+      />
     </div>
   );
 }
