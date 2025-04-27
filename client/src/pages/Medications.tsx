@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Header from "@/components/Header";
+import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import AddCareEventModal from "@/components/AddCareEventModal";
 import MedicationInventoryModal from "@/components/MedicationInventoryModal";
@@ -12,6 +12,7 @@ import { TabType } from "@/lib/types";
 import { formatTime, getTimeAgo } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 import { 
   Pill, 
   Check, 
@@ -33,7 +34,6 @@ interface MedicationsProps {
 export default function Medications({ activeTab, setActiveTab }: MedicationsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [isSchedulesModalOpen, setIsSchedulesModalOpen] = useState(false);
@@ -43,27 +43,20 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
   const [editedMedication, setEditedMedication] = useState<any>(null);
   const { toast } = useToast();
-
-  // Fetch care recipients
-  const { data: careRecipients, isLoading: isLoadingRecipients } = useQuery<CareRecipient[]>({
-    queryKey: ['/api/care-recipients'],
-  });
-
-  // Set default active recipient if none selected
-  if (!activeCareRecipient && careRecipients && careRecipients.length > 0) {
-    setActiveCareRecipient(String(careRecipients[0].id));
-  }
+  
+  // Use the global care recipient context
+  const { activeCareRecipientId, careRecipients, isLoading: isLoadingRecipients } = useCareRecipient();
 
   // Fetch medications
   const { data: medications, isLoading: isLoadingMedications } = useQuery<Medication[]>({
-    queryKey: ['/api/medications', activeCareRecipient, 'all'],
-    enabled: !!activeCareRecipient,
+    queryKey: ['/api/medications', activeCareRecipientId, 'all'],
+    enabled: !!activeCareRecipientId,
   });
 
   // Fetch medication logs (history)
   const { data: medicationLogs } = useQuery<MedicationLog[]>({
-    queryKey: ['/api/medication-logs', activeCareRecipient],
-    enabled: !!activeCareRecipient,
+    queryKey: ['/api/medication-logs', activeCareRecipientId],
+    enabled: !!activeCareRecipientId,
   });
   
   // Update the taken medication doses map whenever logs change
@@ -98,10 +91,8 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     setIsModalOpen(true);
   };
 
-  // Handle recipient change
-  const handleChangeRecipient = (id: string) => {
-    setActiveCareRecipient(id);
-  };
+  // We're now using global context for care recipient
+  const { setActiveCareRecipientId } = useCareRecipient();
 
   // Handle updating inventory
   const handleInventoryUpdate = (medicationId: number) => {
@@ -115,7 +106,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   // Handle marking a medication dose as taken
   const markAsTakenMutation = useMutation({
     mutationFn: async ({ medicationId, scheduleId }: { medicationId: number, scheduleId?: number }) => {
-      if (!activeCareRecipient) return null;
+      if (!activeCareRecipientId) return null;
       
       const response = await apiRequest(
         "POST", 
@@ -123,7 +114,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         {
           medicationId,
           scheduleId,
-          careRecipientId: parseInt(activeCareRecipient),
+          careRecipientId: parseInt(activeCareRecipientId),
           taken: true,
           takenAt: new Date(),
           notes: scheduleId ? `Taken at scheduled time` : "Taken manually"
@@ -159,7 +150,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   // Add unmark medication mutation
   const unmarkAsTakenMutation = useMutation({
     mutationFn: async ({ medicationId, scheduleId }: { medicationId: number, scheduleId?: number }) => {
-      if (!activeCareRecipient) return null;
+      if (!activeCareRecipientId) return null;
       
       // Find today's log for this medication+schedule to delete
       const today = new Date();
@@ -350,12 +341,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
 
   return (
     <>
-      <Header 
-        activeCareRecipient={activeCareRecipient} 
-        careRecipients={careRecipients || []} 
-        onChangeRecipient={handleChangeRecipient}
-        isLoading={isLoadingRecipients}
-      />
+      <PageHeader title="Medications" icon={<Pill />} />
       
       <main className="flex-1 overflow-auto pb-16">
         <section className="p-4">
@@ -588,7 +574,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       <AddCareEventModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        careRecipientId={activeCareRecipient}
+        careRecipientId={activeCareRecipientId}
         defaultEventType="medication"
       />
       
@@ -603,7 +589,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       <AddMedicationModal
         isOpen={isAddMedicationModalOpen}
         onClose={() => setIsAddMedicationModalOpen(false)}
-        careRecipientId={activeCareRecipient}
+        careRecipientId={activeCareRecipientId}
       />
       
       {/* Edit Medication Schedules Modal */}
