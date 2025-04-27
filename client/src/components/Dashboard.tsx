@@ -91,17 +91,21 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
             : ""}
         />
 
-        {/* Glucose Card */}
+        {/* Glucose/Insulin Card */}
         <StatusCard
-          title="Glucose"
+          title="Glucose/Insulin"
           value={todayStats?.glucose && todayStats.glucose.length > 0 
             ? `${todayStats.glucose[0].level} mg/dL`
-            : "No readings"}
+            : todayStats?.insulin && todayStats.insulin.length > 0 
+              ? `${todayStats.insulin[0].units} units`
+              : "No readings"}
           icon={<Droplets className="h-4 w-4" />}
           color="blue-500"
           secondaryText={todayStats?.glucose && todayStats.glucose.length > 0 
-            ? `${todayStats.glucose[0].whenTaken}` 
-            : ""}
+            ? `${todayStats.glucose[0].readingType || ""}` 
+            : todayStats?.insulin && todayStats.insulin.length > 0 
+              ? `${todayStats.insulin[0].insulinType || ""}`
+              : ""}
         />
 
         {/* Bowel Movements Card */}
