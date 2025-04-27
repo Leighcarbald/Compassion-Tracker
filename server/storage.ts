@@ -286,7 +286,7 @@ export const storage = {
     });
     
     // Get bowel movement stats for the specified date
-    const bowelMovements = await db.query.bowelMovements.findMany({
+    const bowelMovementRecords = await db.query.bowelMovements.findMany({
       where: and(
         eq(bowelMovements.careRecipientId, careRecipientId),
         gte(bowelMovements.occuredAt, start),
@@ -369,7 +369,7 @@ export const storage = {
         progress: Math.round((dateMeals.length / mealTypes.length) * 100),
         logs: dateMeals
       },
-      bowelMovements: bowelMovements,
+      bowelMovements: bowelMovementRecords,
       sleepRecords: sleepRecords,
       bloodPressure: bloodPressureReadings,
       glucose: glucoseReadings,
@@ -380,15 +380,15 @@ export const storage = {
       },
       // Keep the old format for backward compatibility with dashboard
       bowelMovement: {
-        lastTime: bowelMovements.length > 0
-          ? formatDistance(new Date(bowelMovements[0].occuredAt), new Date(), { addSuffix: true }) 
+        lastTime: Array.isArray(bowelMovementRecords) && bowelMovementRecords.length > 0 && bowelMovementRecords[0]?.occuredAt
+          ? formatDistance(new Date(bowelMovementRecords[0].occuredAt), new Date(), { addSuffix: true }) 
           : "None recorded"
       },
       sleep: {
-        duration: sleepRecords.length > 0 && sleepRecords[0].endTime 
+        duration: Array.isArray(sleepRecords) && sleepRecords.length > 0 && sleepRecords[0]?.endTime 
           ? this.calculateSleepDuration(sleepRecords[0].startTime, sleepRecords[0].endTime) 
           : "No data",
-        quality: sleepRecords.length > 0 ? sleepRecords[0].quality || "" : ""
+        quality: Array.isArray(sleepRecords) && sleepRecords.length > 0 ? sleepRecords[0]?.quality || "" : ""
       }
     };
   },
