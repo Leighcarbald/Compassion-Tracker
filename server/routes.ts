@@ -193,6 +193,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Medication Schedules
+  app.get(`${apiPrefix}/medication-schedules`, async (req, res) => {
+    try {
+      const medicationId = req.query.medicationId as string;
+      
+      if (!medicationId) {
+        return res.status(400).json({ message: 'Medication ID is required' });
+      }
+      
+      const schedules = await storage.getMedicationSchedules(parseInt(medicationId));
+      res.json(schedules);
+    } catch (error) {
+      console.error('Error fetching medication schedules:', error);
+      res.status(500).json({ message: 'Error fetching medication schedules' });
+    }
+  });
+  
+  app.post(`${apiPrefix}/medication-schedules`, async (req, res) => {
+    try {
+      const newSchedule = await storage.createMedicationSchedule(req.body);
+      res.status(201).json(newSchedule);
+    } catch (error) {
+      console.error('Error creating medication schedule:', error);
+      res.status(500).json({ message: 'Error creating medication schedule' });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/medication-schedules/:id`, async (req, res) => {
+    try {
+      const scheduleId = parseInt(req.params.id);
+      if (isNaN(scheduleId)) {
+        return res.status(400).json({ message: 'Invalid schedule ID' });
+      }
+      
+      await storage.deleteMedicationSchedule(scheduleId);
+      res.status(200).json({ message: 'Medication schedule deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting medication schedule:', error);
+      res.status(500).json({ message: 'Error deleting medication schedule' });
+    }
+  });
+  
   // Get medications that need to be reordered
   app.get(`${apiPrefix}/medications/reorder-alerts`, async (req, res) => {
     try {

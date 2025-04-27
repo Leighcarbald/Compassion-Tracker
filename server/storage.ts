@@ -655,6 +655,51 @@ export const storage = {
     const [newMedication] = await db.insert(medications).values(validatedData).returning();
     return newMedication;
   },
+  
+  // Medication Schedules
+  async getMedicationSchedules(medicationId: number) {
+    return db.query.medicationSchedules.findMany({
+      where: eq(medicationSchedules.medicationId, medicationId),
+      orderBy: medicationSchedules.time
+    });
+  },
+  
+  async createMedicationSchedule(scheduleData: any) {
+    // Process days of week - accept an array and store as JSON
+    if (Array.isArray(scheduleData.daysOfWeek)) {
+      scheduleData.daysOfWeek = JSON.stringify(scheduleData.daysOfWeek);
+    } else if (typeof scheduleData.daysOfWeek === 'string') {
+      try {
+        // If it's a string, ensure it's valid JSON
+        JSON.parse(scheduleData.daysOfWeek);
+      } catch (e) {
+        // If not valid JSON, assume it's a comma-separated list
+        scheduleData.daysOfWeek = JSON.stringify(
+          scheduleData.daysOfWeek.split(',').map(d => parseInt(d.trim()))
+        );
+      }
+    }
+    
+    const validatedData = insertMedicationScheduleSchema.parse(scheduleData);
+    const [newSchedule] = await db.insert(medicationSchedules).values(validatedData).returning();
+    return newSchedule;
+  },
+  
+  async deleteMedicationSchedule(scheduleId: number) {
+    // First, check if the schedule exists
+    const schedule = await db.query.medicationSchedules.findFirst({
+      where: eq(medicationSchedules.id, scheduleId)
+    });
+    
+    if (!schedule) {
+      throw new Error('Medication schedule not found');
+    }
+    
+    // Delete the schedule
+    await db.delete(medicationSchedules).where(eq(medicationSchedules.id, scheduleId));
+    
+    return { success: true };
+  },
 
   // Medication Logs
   async getMedicationLogs(careRecipientId: number) {
