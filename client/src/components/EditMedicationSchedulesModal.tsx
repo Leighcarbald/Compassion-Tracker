@@ -49,6 +49,7 @@ const scheduleItemSchema = z.object({
   quantity: z.string().min(1, "Quantity is required"),
   withFood: z.boolean().default(false),
   active: z.boolean().default(true),
+  // Still include reminderEnabled in the schema to match database, but we'll hide it in the UI
   reminderEnabled: z.boolean().default(true),
 });
 
