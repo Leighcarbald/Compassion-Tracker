@@ -6,20 +6,19 @@ import PageHeader from "@/components/PageHeader";
 import StatusCard from "@/components/StatusCard";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format, isSameDay } from "date-fns";
-import { CareRecipient, Appointment, BloodPressure, Glucose, Insulin, MedicationLog, BowelMovement, Sleep } from "@shared/schema";
+import { CareRecipient, Appointment } from "@shared/schema";
 import { TabType } from "@/lib/types";
-import { formatTime } from "@/lib/utils";
+import { formatTime, formatDate } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
   MapPin,
   X,
-  Plus,
   Pill,
   Utensils,
   Activity,
@@ -28,7 +27,6 @@ import {
   Moon,
   FileText
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 
 interface CalendarProps {
   activeTab: TabType;
@@ -139,9 +137,6 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
       appointment.date === dateString
     );
   };
-
-  // Create showTodayMessage state based on if today is selected
-  const showTodayMessage = isToday;
 
   return (
     <>
@@ -316,7 +311,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.sleepRecords.map((record: Sleep) => (
+                        {dateStats.sleepRecords.map((record) => (
                           <Card key={record.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
@@ -324,8 +319,8 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                   <Moon className="h-4 w-4 text-indigo-400" />
                                   <div>
                                     <p className="font-medium">
-                                      {format(new Date(record.startTime), 'h:mm a')} - 
-                                      {record.endTime ? format(new Date(record.endTime), ' h:mm a') : ' In Progress'}
+                                      {formatTime(record.startTime)} - 
+                                      {record.endTime ? formatTime(record.endTime) : ' In Progress'}
                                     </p>
                                     <p className="text-sm text-gray-500">
                                       Quality: {record.quality || 'Not rated'}
@@ -334,9 +329,9 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                 </div>
                                 <div className="text-right">
                                   <span className="text-sm font-medium">
-                                    {record.endTime ? 
-                                      `${((new Date(record.endTime).getTime() - new Date(record.startTime).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs` : 
-                                      'In progress'}
+                                    {record.endTime 
+                                      ? `${((new Date(record.endTime).getTime() - new Date(record.startTime).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs` 
+                                      : 'In progress'}
                                   </span>
                                 </div>
                               </div>
@@ -361,13 +356,13 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.bowelMovements.map((movement: any) => (
+                        {dateStats.bowelMovements.map((movement) => (
                           <Card key={movement.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="font-medium">
-                                    {format(new Date(movement.occuredAt), 'h:mm a')}
+                                    {formatTime(movement.occuredAt)}
                                   </p>
                                   <p className="text-sm text-gray-500">
                                     Type: {movement.type || 'Not specified'}
@@ -404,7 +399,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.bloodPressure.map((reading: BloodPressure) => (
+                        {dateStats.bloodPressure.map((reading) => (
                           <Card key={reading.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
@@ -415,7 +410,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                       {reading.systolic}/{reading.diastolic} mmHg
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      {format(new Date(reading.timestamp), 'h:mm a')}
+                                      {formatTime(reading.timeOfReading || reading.createdAt)}
                                       {reading.pulse && `, Pulse: ${reading.pulse} bpm`}
                                     </p>
                                     {reading.oxygenLevel && (
@@ -447,7 +442,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.glucose.map((reading: Glucose) => (
+                        {dateStats.glucose.map((reading) => (
                           <Card key={reading.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
@@ -458,8 +453,8 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                       {reading.level} mg/dL
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      {format(new Date(reading.timestamp), 'h:mm a')}
-                                      {reading.mealContext && `, ${reading.mealContext}`}
+                                      {formatTime(reading.timeOfReading || reading.createdAt)}
+                                      {reading.readingType && `, ${reading.readingType}`}
                                     </p>
                                   </div>
                                 </div>
@@ -485,7 +480,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.insulin.map((record: Insulin) => (
+                        {dateStats.insulin.map((record) => (
                           <Card key={record.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
@@ -496,7 +491,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                       {record.units} units
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      {format(new Date(record.timestamp), 'h:mm a')}
+                                      {formatTime(record.timeAdministered || record.createdAt)}
                                       {record.insulinType && `, ${record.insulinType}`}
                                     </p>
                                     {record.site && (
@@ -530,7 +525,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2 mt-2">
-                        {dateStats.medicationLogs.map((log: any) => (
+                        {dateStats.medicationLogs.map((log) => (
                           <Card key={log.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
@@ -541,7 +536,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                       {log.medication?.name || "Unknown medication"}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      {format(new Date(log.takenAt), 'h:mm a')}
+                                      {formatTime(log.takenAt)}
                                       {log.medication?.dosage && `, ${log.medication.dosage}`}
                                     </p>
                                   </div>
@@ -577,14 +572,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2 mt-2">
-                        {dateStats.notes.map((note: any) => (
+                        {dateStats.notes.map((note) => (
                           <Card key={note.id}>
                             <CardContent className="p-3">
                               <div className="flex items-start gap-2">
                                 <FileText className="h-4 w-4 text-gray-500 mt-1" />
                                 <div className="flex-1">
                                   <p className="text-sm text-gray-500">
-                                    {format(new Date(note.createdAt), 'h:mm a')}
+                                    {formatTime(note.createdAt)}
                                   </p>
                                   <p className="mt-1">{note.content}</p>
                                 </div>
