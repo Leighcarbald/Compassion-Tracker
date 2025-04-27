@@ -4,6 +4,7 @@ import { TabType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pill, Calendar, Building, Phone, Plus, Store } from "lucide-react";
+import BottomNavigation from "@/components/BottomNavigation";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -100,7 +101,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
   
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="Pharmacies" icon={<Store className="h-6 w-6" />} />
+      <PageHeader title="Pharmacies" icon={<Store className="h-6 w-6" />} showHomeButton={false} />
       
       {/* Care Recipient Tabs */}
       <CareRecipientTabs

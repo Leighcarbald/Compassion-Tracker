@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import CareRecipientTabs from "@/components/CareRecipientTabs";
 import PageHeader from "@/components/PageHeader";
+import BottomNavigation from "@/components/BottomNavigation";
 import type { Doctor } from "@shared/schema";
 
 interface DoctorsProps {
@@ -103,7 +104,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
   
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="Doctors" icon={<Stethoscope className="h-6 w-6" />} />
+      <PageHeader title="Doctors" icon={<Stethoscope className="h-6 w-6" />} showHomeButton={false} />
       
       {/* Care Recipient Tabs */}
       <CareRecipientTabs
@@ -280,6 +281,12 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
           ))}
         </div>
       )}
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation 
+        activeTab={activeTab} 
+        onChangeTab={setActiveTab} 
+      />
     </div>
   );
 }
