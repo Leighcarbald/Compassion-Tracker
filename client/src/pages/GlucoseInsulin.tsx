@@ -641,6 +641,12 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
           )}
         </div>
       </div>
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation 
+        activeTab={activeTab} 
+        onChangeTab={setActiveTab} 
+      />
     </div>
   );
 }
