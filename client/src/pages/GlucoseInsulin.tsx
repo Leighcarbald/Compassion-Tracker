@@ -116,6 +116,8 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
         description: "Glucose reading added successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/glucose", careRecipientId] });
+      // Also invalidate today's stats for dashboard updates
+      queryClient.invalidateQueries({ queryKey: ["/api/care-stats/today", careRecipientId] });
     },
     onError: (error: Error) => {
       toast({
@@ -161,6 +163,8 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
         description: "Insulin record added successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/insulin", careRecipientId] });
+      // Also invalidate today's stats for dashboard updates
+      queryClient.invalidateQueries({ queryKey: ["/api/care-stats/today", careRecipientId] });
     },
     onError: (error: Error) => {
       toast({

@@ -101,6 +101,8 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
         description: "Blood pressure reading added successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/blood-pressure", careRecipientId] });
+      // Also invalidate today's stats for dashboard updates
+      queryClient.invalidateQueries({ queryKey: ["/api/care-stats/today", careRecipientId] });
     },
     onError: (error: Error) => {
       toast({
