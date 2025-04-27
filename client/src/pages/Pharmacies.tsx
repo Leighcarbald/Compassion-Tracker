@@ -12,10 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import CareRecipientTabs from "@/components/CareRecipientTabs";
 import PageHeader from "@/components/PageHeader";
 import type { Pharmacy } from "@shared/schema";
 import { format } from "date-fns";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
 
 interface PharmaciesProps {
   activeTab: TabType;
@@ -23,8 +23,9 @@ interface PharmaciesProps {
 }
 
 export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps) {
-  // State
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
+  // Use global care recipient context
+  const { activeCareRecipientId } = useCareRecipient();
+  
   const [isAddPharmacyOpen, setIsAddPharmacyOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -35,22 +36,11 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
   
   const { toast } = useToast();
   
-  // Fetch care recipients
-  const { data: careRecipients = [], isLoading: isLoadingCareRecipients } = useQuery({
-    queryKey: ["/api/care-recipients"],
-    enabled: true,
-  });
-  
   // Fetch pharmacies
   const { data: pharmacies = [], isLoading: isLoadingPharmacies } = useQuery({
-    queryKey: ["/api/pharmacies", activeCareRecipient],
-    enabled: !!activeCareRecipient,
+    queryKey: ["/api/pharmacies", activeCareRecipientId],
+    enabled: !!activeCareRecipientId,
   });
-  
-  // Handle care recipient change
-  const handleCareRecipientChange = (id: string) => {
-    setActiveCareRecipient(id);
-  };
   
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -60,7 +50,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
   
   // Handle add pharmacy
   const handleAddPharmacy = async () => {
-    if (!activeCareRecipient) return;
+    if (!activeCareRecipientId) return;
     
     try {
       await apiRequest(
@@ -68,7 +58,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
         "/api/pharmacies", 
         {
           ...formData,
-          careRecipientId: Number(activeCareRecipient)
+          careRecipientId: Number(activeCareRecipientId)
         }
       );
       
@@ -82,7 +72,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
       setIsAddPharmacyOpen(false);
       
       // Invalidate pharmacies query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["/api/pharmacies", activeCareRecipient] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pharmacies", activeCareRecipientId] });
       
       toast({
         title: "Pharmacy added successfully",
@@ -103,16 +93,10 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
     <div className="container mx-auto p-4">
       <PageHeader title="Pharmacies" icon={<Store className="h-6 w-6" />} showHomeButton={false} />
       
-      {/* Care Recipient Tabs */}
-      <CareRecipientTabs
-        careRecipients={careRecipients}
-        activeCareRecipient={activeCareRecipient}
-        onChangeRecipient={handleCareRecipientChange}
-        isLoading={isLoadingCareRecipients}
-      />
+      {/* Care Recipient Tabs are no longer needed since we're using global context */}
       
       {/* Add Pharmacy Button */}
-      {activeCareRecipient && (
+      {activeCareRecipientId && (
         <div className="flex justify-end mb-4">
           <Dialog open={isAddPharmacyOpen} onOpenChange={setIsAddPharmacyOpen}>
             <DialogTrigger asChild>
@@ -196,7 +180,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
         <div className="flex justify-center p-8">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
         </div>
-      ) : !activeCareRecipient ? (
+      ) : !activeCareRecipientId ? (
         <div className="text-center p-8 text-gray-500">
           Please select a care recipient to view their pharmacies
         </div>

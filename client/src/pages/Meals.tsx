@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Utensils, Plus, Loader2, Info, Calendar, Clock, Home } from "lucide-react";
 import { format } from "date-fns";
@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -14,6 +13,8 @@ import { TabType } from "@/lib/types";
 import { type Meal } from "@shared/schema";
 import AddMealModal from "@/components/AddMealModal";
 import { useLocation } from "wouter";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
+import PageHeader from "@/components/PageHeader";
 
 interface MealsProps {
   activeTab: TabType;
@@ -24,30 +25,15 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const { toast } = useToast();
   const [_, navigate] = useLocation();
   
-  // Get care recipients
-  const { data: careRecipients = [], isLoading: isLoadingRecipients } = useQuery({
-    queryKey: ['/api/care-recipients'],
-    queryFn: async () => {
-      const res = await fetch('/api/care-recipients');
-      if (!res.ok) throw new Error('Failed to fetch care recipients');
-      return res.json();
-    }
-  });
-
-  // Set active care recipient if not set and data is available
-  useEffect(() => {
-    if (!activeCareRecipient && careRecipients.length > 0) {
-      setActiveCareRecipient(careRecipients[0].id.toString());
-    }
-  }, [careRecipients, activeCareRecipient]);
+  // Use global care recipient context
+  const { activeCareRecipientId } = useCareRecipient();
 
   // Get meals for the active care recipient
   const { data: meals = [], isLoading: isLoadingMeals } = useQuery({
-    queryKey: ['/api/meals', activeCareRecipient],
+    queryKey: ['/api/meals', activeCareRecipientId],
     queryFn: async () => {
       if (!activeCareRecipient) return [];
       const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipient}`);

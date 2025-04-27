@@ -43,11 +43,6 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
     enabled: !!activeCareRecipientId,
   });
   
-  // Handle care recipient change
-  const handleCareRecipientChange = (id: string) => {
-    setActiveCareRecipient(id);
-  };
-  
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -56,7 +51,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
   
   // Handle add doctor
   const handleAddDoctor = async () => {
-    if (!activeCareRecipient) return;
+    if (!activeCareRecipientId) return;
     
     try {
       await apiRequest(
@@ -64,7 +59,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
         "/api/doctors", 
         {
           ...formData,
-          careRecipientId: Number(activeCareRecipient)
+          careRecipientId: Number(activeCareRecipientId)
         }
       );
       
@@ -80,7 +75,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
       setIsAddDoctorOpen(false);
       
       // Invalidate doctors query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["/api/doctors", activeCareRecipient] });
+      queryClient.invalidateQueries({ queryKey: ["/api/doctors", activeCareRecipientId] });
       
       toast({
         title: "Doctor added successfully",
@@ -212,7 +207,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
         <div className="flex justify-center p-8">
           <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
         </div>
-      ) : !activeCareRecipient ? (
+      ) : !activeCareRecipientId ? (
         <div className="text-center p-8 text-gray-500">
           Please select a care recipient to view their doctors
         </div>
@@ -254,16 +249,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
                       <span className="font-medium">Notes:</span> {doctor.notes}
                     </div>
                   )}
-                  {doctor.prescriptions && doctor.prescriptions.length > 0 && (
-                    <div className="mt-4 border-t pt-2">
-                      <span className="font-medium text-sm">Prescriptions:</span>
-                      <ul className="list-disc list-inside text-sm mt-1">
-                        {doctor.prescriptions.map(medication => (
-                          <li key={medication.id}>{medication.name} - {medication.dosage}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {/* Prescription display is handled elsewhere */}
                 </div>
               </CardContent>
             </Card>
