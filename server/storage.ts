@@ -468,7 +468,14 @@ export const storage = {
           : 0,
         logs: dateLogs
       },
-      meals: dateMeals, // Return meals array directly instead of nested object
+      meals: {
+        completed: dateMeals.length,
+        total: mealTypes.length,
+        progress: mealTypes.length > 0 
+          ? Math.round((Math.min(dateMeals.length, mealTypes.length) / mealTypes.length) * 100) 
+          : 0,
+        logs: dateMeals
+      },
       bowelMovements: bowelMovementRecords,
       sleepRecords: sleepRecords,
       bloodPressure: bloodPressureReadings,
