@@ -424,9 +424,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const careRecipientId = req.query.careRecipientId as string;
       const date = req.query.date as string;
+      const all = req.query.all === 'true';
       
       if (!careRecipientId) {
         return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      console.log(`Fetching meals for care recipient ${careRecipientId}, date: ${date || 'not specified'}, all: ${all}`);
+      
+      // If 'all' is specified, get all meals regardless of date
+      if (all) {
+        const meals = await storage.getMeals(parseInt(careRecipientId), null);
+        return res.json(meals);
       }
       
       // If date is provided, get meals for that specific date range
@@ -434,6 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get date range for the specified date
         const { start, end } = storage.getDateRange(date);
         const meals = await storage.getMeals(parseInt(careRecipientId), { start, end });
+        console.log(`Found ${meals.length} meals for date ${date}`);
         return res.json(meals);
       }
       

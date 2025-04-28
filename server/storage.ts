@@ -915,8 +915,16 @@ export const storage = {
   },
 
   // Meals
-  async getMeals(careRecipientId: number, dateRange?: { start: Date, end: Date }) {
-    // By default, get today's meals
+  async getMeals(careRecipientId: number, dateRange?: { start: Date, end: Date } | null) {
+    // If dateRange is explicitly passed as null, get all meals
+    if (dateRange === null) {
+      return db.query.meals.findMany({
+        where: eq(meals.careRecipientId, careRecipientId),
+        orderBy: desc(meals.consumedAt)
+      });
+    }
+    
+    // By default, get today's meals if no date range provided
     const { start, end } = dateRange || getTodayDateRange();
     
     return db.query.meals.findMany({

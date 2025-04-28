@@ -67,9 +67,29 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
   const { data: meals, isLoading: isLoadingMeals } = useQuery({
     queryKey: ['/api/meals', activeCareRecipient, formattedDate],
     queryFn: async () => {
-      const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipient}&date=${formattedDate}`);
+      console.log(`Fetching meals for date: ${formattedDate}`);
+      // Get all meals for this care recipient and filter on the client side by date
+      const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipient}&all=true`);
       if (!res.ok) throw new Error('Failed to fetch meals');
-      return res.json();
+      
+      const allMeals = await res.json();
+      console.log(`Got ${allMeals.length} total meals, filtering for ${formattedDate}`);
+      
+      // Client-side filter for meals on this date
+      if (selectedDate) {
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        return allMeals.filter((meal: any) => {
+          const mealDate = new Date(meal.consumedAt);
+          return mealDate >= startOfDay && mealDate <= endOfDay;
+        });
+      }
+      
+      return allMeals;
     },
     enabled: !!activeCareRecipient && !!selectedDate && !isToday, // Don't fetch for today
   });
