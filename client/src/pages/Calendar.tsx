@@ -67,13 +67,13 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
   const { data: meals, isLoading: isLoadingMeals } = useQuery({
     queryKey: ['/api/meals', activeCareRecipient, formattedDate],
     queryFn: async () => {
-      console.log(`Fetching meals for date: ${formattedDate}`);
+      console.log(`Fetching meals for date: ${formattedDate}, care recipient ID: ${activeCareRecipient}`);
       // Get all meals for this care recipient and filter on the client side by date
       const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipient}&all=true`);
       if (!res.ok) throw new Error('Failed to fetch meals');
       
       const allMeals = await res.json();
-      console.log(`Got ${allMeals.length} total meals, filtering for ${formattedDate}`);
+      console.log(`Got ${allMeals.length} total meals for recipient ${activeCareRecipient}, data:`, allMeals);
       
       // Client-side filter for meals on this date
       if (selectedDate) {
@@ -83,10 +83,16 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
         const endOfDay = new Date(selectedDate);
         endOfDay.setHours(23, 59, 59, 999);
         
-        return allMeals.filter((meal: any) => {
+        console.log(`Filtering meals between ${startOfDay.toISOString()} and ${endOfDay.toISOString()}`);
+        
+        const filteredMeals = allMeals.filter((meal: any) => {
           const mealDate = new Date(meal.consumedAt);
+          console.log(`Checking meal ${meal.id}, date: ${mealDate.toISOString()}, result: ${mealDate >= startOfDay && mealDate <= endOfDay}`);
           return mealDate >= startOfDay && mealDate <= endOfDay;
         });
+        
+        console.log(`Filtered to ${filteredMeals.length} meals for date ${formattedDate}`);
+        return filteredMeals;
       }
       
       return allMeals;
