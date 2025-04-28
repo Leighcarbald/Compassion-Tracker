@@ -423,11 +423,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(`${apiPrefix}/meals`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
+      const date = req.query.date as string;
       
       if (!careRecipientId) {
         return res.status(400).json({ message: 'Care recipient ID is required' });
       }
       
+      // If date is provided, get meals for that specific date range
+      if (date && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Get date range for the specified date
+        const { start, end } = storage.getDateRange(date);
+        const meals = await storage.getMeals(parseInt(careRecipientId), { start, end });
+        return res.json(meals);
+      }
+      
+      // Otherwise, get today's meals (default behavior)
       const meals = await storage.getMeals(parseInt(careRecipientId));
       res.json(meals);
     } catch (error) {

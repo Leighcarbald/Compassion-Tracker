@@ -416,14 +416,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                   <Utensils className="h-4 w-4 text-green-500" />
                                   <div>
                                     <p className="font-medium">
-                                      {meal.name || meal.type || 'Meal'}
+                                      {meal.type || 'Meal'}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      {formatTime(meal.time)}
+                                      {formatTime(meal.consumedAt)}
                                     </p>
-                                    {meal.foods && (
+                                    {meal.food && (
                                       <p className="text-sm text-gray-500">
-                                        Foods: {meal.foods}
+                                        Foods: {meal.food}
                                       </p>
                                     )}
                                   </div>
