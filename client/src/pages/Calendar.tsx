@@ -62,6 +62,17 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
     },
     enabled: !!activeCareRecipient && !!selectedDate && !isToday, // Don't fetch for today
   });
+  
+  // Fetch meals for the selected date
+  const { data: meals, isLoading: isLoadingMeals } = useQuery({
+    queryKey: ['/api/meals', activeCareRecipient, formattedDate],
+    queryFn: async () => {
+      const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipient}&date=${formattedDate}`);
+      if (!res.ok) throw new Error('Failed to fetch meals');
+      return res.json();
+    },
+    enabled: !!activeCareRecipient && !!selectedDate && !isToday, // Don't fetch for today
+  });
 
   // Fetch appointments for the selected date
   const { data: appointments, isLoading: isLoadingAppointments, refetch: refetchAppointments } = useQuery<Appointment[]>({
@@ -400,7 +411,9 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                   {/* Meals Tab */}
                   <TabsContent value="meals" className="space-y-4">
                     <h4 className="text-sm font-medium text-gray-700">Meals</h4>
-                    {!dateStats.meals || !Array.isArray(dateStats.meals) || dateStats.meals.length === 0 ? (
+                    {isLoadingMeals ? (
+                      <div className="p-4 text-center text-gray-500">Loading meals...</div>
+                    ) : !meals || !Array.isArray(meals) || meals.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center">
                           <p className="text-gray-500">No meals recorded</p>
@@ -408,7 +421,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                       </Card>
                     ) : (
                       <div className="space-y-2">
-                        {dateStats.meals.map((meal) => (
+                        {meals.map((meal) => (
                           <Card key={meal.id}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
