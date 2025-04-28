@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Moon, Plus, Loader2, Info, Calendar, Clock, Sun } from "lucide-react";
 import { format, differenceInHours, differenceInMinutes } from "date-fns";
@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { TabType } from "@/lib/types";
 import { type Sleep as SleepType } from "@shared/schema";
 import AddSleepModal from "@/components/AddSleepModal";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
+import PageHeader from "@/components/PageHeader";
 
 interface SleepProps {
   activeTab: TabType;
@@ -23,37 +24,22 @@ export default function Sleep({ activeTab, setActiveTab }: SleepProps) {
   const [selectedSleep, setSelectedSleep] = useState<SleepType | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddSleepOpen, setIsAddSleepOpen] = useState(false);
-  const [activeCareRecipient, setActiveCareRecipient] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Get care recipients
-  const { data: careRecipients = [], isLoading: isLoadingRecipients } = useQuery({
-    queryKey: ['/api/care-recipients'],
-    queryFn: async () => {
-      const res = await fetch('/api/care-recipients');
-      if (!res.ok) throw new Error('Failed to fetch care recipients');
-      return res.json();
-    }
-  });
-
-  // Set active care recipient if not set and data is available
-  useEffect(() => {
-    if (!activeCareRecipient && careRecipients.length > 0) {
-      setActiveCareRecipient(careRecipients[0].id.toString());
-    }
-  }, [careRecipients, activeCareRecipient]);
+  // Use global care recipient context
+  const { activeCareRecipientId } = useCareRecipient();
 
   // Get sleep records for the active care recipient
   const { data: sleepRecords = [], isLoading: isLoadingSleep } = useQuery({
-    queryKey: ['/api/sleep', activeCareRecipient],
+    queryKey: ['/api/sleep', activeCareRecipientId],
     queryFn: async () => {
-      if (!activeCareRecipient) return [];
+      if (!activeCareRecipientId) return [];
       // Use all=true to get all historical sleep records
-      const res = await fetch(`/api/sleep?careRecipientId=${activeCareRecipient}&all=true`);
+      const res = await fetch(`/api/sleep?careRecipientId=${activeCareRecipientId}&all=true`);
       if (!res.ok) throw new Error('Failed to fetch sleep records');
       return res.json();
     },
-    enabled: !!activeCareRecipient
+    enabled: !!activeCareRecipientId
   });
 
   // Delete sleep record
@@ -62,8 +48,8 @@ export default function Sleep({ activeTab, setActiveTab }: SleepProps) {
       await apiRequest('DELETE', `/api/sleep/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sleep', activeCareRecipient] });
-      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', activeCareRecipient] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sleep', activeCareRecipientId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', activeCareRecipientId] });
       setIsDetailsOpen(false);
       toast({
         title: "Deleted",
@@ -136,11 +122,10 @@ export default function Sleep({ activeTab, setActiveTab }: SleepProps) {
 
   return (
     <div className="container p-4 max-w-4xl mx-auto">
-      <Header 
-        activeCareRecipient={activeCareRecipient} 
-        careRecipients={careRecipients} 
-        onChangeRecipient={(id) => setActiveCareRecipient(id)}
-        isLoading={isLoadingRecipients}
+      <PageHeader 
+        title="Sleep Tracking" 
+        icon={<Moon className="h-6 w-6" />}
+        showHomeButton={false}
       />
       
       <Card className="mb-6">
@@ -324,7 +309,7 @@ export default function Sleep({ activeTab, setActiveTab }: SleepProps) {
       <AddSleepModal
         isOpen={isAddSleepOpen}
         onClose={() => setIsAddSleepOpen(false)}
-        careRecipientId={activeCareRecipient}
+        careRecipientId={activeCareRecipientId}
       />
       
       <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
