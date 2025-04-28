@@ -48,7 +48,8 @@ export default function Sleep({ activeTab, setActiveTab }: SleepProps) {
     queryKey: ['/api/sleep', activeCareRecipient],
     queryFn: async () => {
       if (!activeCareRecipient) return [];
-      const res = await fetch(`/api/sleep?careRecipientId=${activeCareRecipient}`);
+      // Use all=true to get all historical sleep records
+      const res = await fetch(`/api/sleep?careRecipientId=${activeCareRecipient}&all=true`);
       if (!res.ok) throw new Error('Failed to fetch sleep records');
       return res.json();
     },

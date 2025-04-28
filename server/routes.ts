@@ -604,11 +604,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(`${apiPrefix}/sleep`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
+      const all = req.query.all === 'true';
       
       if (!careRecipientId) {
         return res.status(400).json({ message: 'Care recipient ID is required' });
       }
       
+      console.log(`Fetching sleep records for care recipient ${careRecipientId}, all: ${all}`);
+      
+      // For now, we don't have a date filter for sleep, but we log the all parameter for consistency
       const sleepRecords = await storage.getSleepRecords(parseInt(careRecipientId));
       res.json(sleepRecords);
     } catch (error) {

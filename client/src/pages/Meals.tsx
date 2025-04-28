@@ -36,7 +36,8 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
     queryKey: ['/api/meals', activeCareRecipientId],
     queryFn: async () => {
       if (!activeCareRecipientId) return [];
-      const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipientId}`);
+      // Use all=true parameter to get all historical meals
+      const res = await fetch(`/api/meals?careRecipientId=${activeCareRecipientId}&all=true`);
       if (!res.ok) throw new Error('Failed to fetch meals');
       return res.json();
     },
