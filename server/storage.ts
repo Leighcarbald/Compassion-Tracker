@@ -920,8 +920,9 @@ export const storage = {
   },
 
   // Meals
-  async getMeals(careRecipientId: number) {
-    const { start, end } = getTodayDateRange();
+  async getMeals(careRecipientId: number, dateRange?: { start: Date, end: Date }) {
+    // By default, get today's meals
+    const { start, end } = dateRange || getTodayDateRange();
     
     return db.query.meals.findMany({
       where: and(
