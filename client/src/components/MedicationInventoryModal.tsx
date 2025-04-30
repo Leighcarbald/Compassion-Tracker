@@ -75,6 +75,7 @@ export default function MedicationInventoryModal({
       });
       queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/medications/reorder-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', medication?.careRecipientId?.toString()] });
       onClose();
     },
     onError: (error) => {
@@ -104,6 +105,7 @@ export default function MedicationInventoryModal({
       });
       queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/medications/reorder-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', medication?.careRecipientId?.toString()] });
       onClose();
     },
     onError: (error) => {
@@ -150,7 +152,7 @@ export default function MedicationInventoryModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {medication.name} - Inventory Management

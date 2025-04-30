@@ -122,7 +122,9 @@ export default function AddMedicationModal({
     },
     onSuccess: (data) => {
       console.log("Medication added successfully:", data);
+      // Invalidate both medication list and care stats (for dashboard)
       queryClient.invalidateQueries({ queryKey: ['/api/medications', careRecipientId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', careRecipientId] });
       toast({
         title: "Success",
         description: "Medication added successfully",
