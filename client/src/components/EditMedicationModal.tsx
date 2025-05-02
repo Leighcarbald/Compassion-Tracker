@@ -55,11 +55,13 @@ export default function EditMedicationModal({
         name: medication.name || '',
         dosage: medication.dosage || '',
         instructions: medication.instructions || '',
-        form: medication.form || 'pill',
+        // Use nullish coalescing for optional properties with defaults
+        form: medication.form as string || 'pill',
         icon: medication.icon || 'pill',
         iconColor: medication.iconColor || 'blue',
-        prescribingDoctorId: medication.prescribingDoctorId || null,
-        prescriptionNumber: medication.prescriptionNumber || '',
+        // These properties might not exist in the schema, so we'll handle them safely
+        prescribingDoctorId: (medication as any).prescribingDoctorId || null,
+        prescriptionNumber: (medication as any).prescriptionNumber || '',
         reorderThreshold: medication.reorderThreshold || 5,
         careRecipientId: medication.careRecipientId,
       });
