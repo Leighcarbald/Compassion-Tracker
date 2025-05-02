@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { TabType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Plus, User, Stethoscope } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Phone, Plus, User, Stethoscope, Pencil } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,8 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
   const { activeCareRecipientId } = useCareRecipient();
   
   const [isAddDoctorOpen, setIsAddDoctorOpen] = useState(false);
+  const [isEditDoctorOpen, setIsEditDoctorOpen] = useState(false);
+  const [editingDoctorId, setEditingDoctorId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     specialty: "",
@@ -56,6 +58,43 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
     }
   };
   
+  // Find a doctor by ID
+  const findDoctorById = (id: number) => {
+    if (!doctors) return null;
+    return doctors.find((doctor: Doctor) => doctor.id === id);
+  };
+
+  // Open edit doctor dialog
+  const openEditDoctorDialog = (doctorId: number) => {
+    const doctor = findDoctorById(doctorId);
+    if (!doctor) return;
+    
+    setFormData({
+      name: doctor.name,
+      specialty: doctor.specialty,
+      phoneNumber: doctor.phoneNumber,
+      address: doctor.address || "",
+      email: doctor.email || "",
+      notes: doctor.notes || "",
+    });
+    
+    setEditingDoctorId(doctorId);
+    setIsEditDoctorOpen(true);
+  };
+  
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      specialty: "",
+      phoneNumber: "",
+      address: "",
+      email: "",
+      notes: ""
+    });
+    setEditingDoctorId(null);
+  };
+  
   // Handle add doctor
   const handleAddDoctor = async () => {
     if (!activeCareRecipientId) return;
@@ -71,14 +110,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
       );
       
       // Reset form and close dialog
-      setFormData({
-        name: "",
-        specialty: "",
-        phoneNumber: "",
-        address: "",
-        email: "",
-        notes: ""
-      });
+      resetForm();
       setIsAddDoctorOpen(false);
       
       // Invalidate doctors query to refresh the list
@@ -94,6 +126,42 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
       toast({
         title: "Failed to add doctor",
         description: "There was an error adding the doctor. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Handle edit doctor
+  const handleEditDoctor = async () => {
+    if (!activeCareRecipientId || !editingDoctorId) return;
+    
+    try {
+      await apiRequest(
+        "PUT", 
+        `/api/doctors/${editingDoctorId}`, 
+        {
+          ...formData,
+          careRecipientId: Number(activeCareRecipientId)
+        }
+      );
+      
+      // Reset form and close dialog
+      resetForm();
+      setIsEditDoctorOpen(false);
+      
+      // Invalidate doctors query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/doctors", activeCareRecipientId] });
+      
+      toast({
+        title: "Doctor updated successfully",
+        description: `${formData.name}'s information has been updated.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error updating doctor:", error);
+      toast({
+        title: "Failed to update doctor",
+        description: "There was an error updating the doctor. Please try again.",
         variant: "destructive",
       });
     }
@@ -259,10 +327,121 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
                   {/* Prescription display is handled elsewhere */}
                 </div>
               </CardContent>
+              <CardFooter className="flex justify-end pt-0">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => openEditDoctorDialog(doctor.id)}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+              </CardFooter>
             </Card>
           ))}
         </div>
       )}
+      
+      {/* Edit Doctor Dialog */}
+      <Dialog open={isEditDoctorOpen} onOpenChange={setIsEditDoctorOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Doctor</DialogTitle>
+            <DialogDescription>
+              Update the doctor's information below. All fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-name" className="text-right">
+                Name *
+              </Label>
+              <Input
+                id="edit-name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-specialty" className="text-right">
+                Specialty *
+              </Label>
+              <Input
+                id="edit-specialty"
+                name="specialty"
+                value={formData.specialty}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-phoneNumber" className="text-right">
+                Phone Number *
+              </Label>
+              <Input
+                id="edit-phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-address" className="text-right">
+                Address
+              </Label>
+              <Input
+                id="edit-address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="edit-email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-notes" className="text-right">
+                Notes
+              </Label>
+              <Textarea
+                id="edit-notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDoctorOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={handleEditDoctor} 
+              disabled={!formData.name || !formData.specialty || !formData.phoneNumber}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {/* Bottom Navigation */}
       <BottomNavigation 
