@@ -41,6 +41,9 @@ interface UpcomingEvent {
 }
 
 export function UpcomingMedicationDoses({ careRecipientId }: { careRecipientId: number | null }) {
+  // Get wouter's navigator - always declare hooks at the top level
+  const [_, navigate] = useLocation();
+  
   const { data: upcomingEvents, isLoading } = useQuery<UpcomingEvent[]>({
     queryKey: ['/api/events/upcoming', careRecipientId],
     queryFn: async () => {
@@ -63,9 +66,6 @@ export function UpcomingMedicationDoses({ careRecipientId }: { careRecipientId: 
       </div>
     );
   }
-  
-  // Get wouter's navigator
-  const [_, navigate] = useLocation();
   
   if (!medicationEvents.length) {
     return (
