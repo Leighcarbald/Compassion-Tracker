@@ -47,6 +47,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [isEditMedicationModalOpen, setIsEditMedicationModalOpen] = useState(false);
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
+  const [logDoseMode, setLogDoseMode] = useState(false);
   const { toast } = useToast();
   
   // Use the global care recipient context
@@ -93,6 +94,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
 
   // Handle modal open/close
   const handleAddEvent = () => {
+    setLogDoseMode(false); // Regular event, not log dose
     setIsModalOpen(true);
   };
 
@@ -309,7 +311,10 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                 size="sm" 
                 variant="outline" 
                 className="text-primary" 
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                  setLogDoseMode(true);
+                  setIsModalOpen(true);
+                }}
               >
                 Log Dose <Plus className="ml-1 h-4 w-4" />
               </Button>
@@ -465,9 +470,13 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
 
       <AddCareEventModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setLogDoseMode(false);
+        }} 
         careRecipientId={activeCareRecipientId}
         defaultEventType="medication"
+        hideCategorySelector={logDoseMode}
       />
       
       {/* Inventory Management Modal */}
