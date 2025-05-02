@@ -15,8 +15,7 @@ import {
   Droplets,
   Toilet,
   Utensils,
-  Moon,
-  Heart
+  Moon
 } from "lucide-react";
 import { TabType } from "@/lib/types";
 import { useState } from "react";
@@ -46,8 +45,7 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
   // Check if the active tab is in the "more" section
   const isMoreActive = activeTab === "doctors" || activeTab === "pharmacies" || activeTab === "notes" || 
                       activeTab === "emergency" || activeTab === "blood-pressure" || activeTab === "glucose-insulin" || 
-                      activeTab === "meals" || activeTab === "bowel-movements" || activeTab === "sleep" ||
-                      activeTab === "health-platforms";
+                      activeTab === "meals" || activeTab === "bowel-movements" || activeTab === "sleep";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md bg-white border-t border-gray-200 flex justify-around py-2 px-4 z-10">
@@ -119,10 +117,6 @@ export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }:
           <DropdownMenuItem onClick={() => handleTabChange("glucose-insulin", "/glucose-insulin")} className="cursor-pointer">
             <Droplets className="h-4 w-4 mr-2 text-blue-500" />
             <span>Glucose & Insulin</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleTabChange("health-platforms", "/health-platforms")} className="cursor-pointer">
-            <Heart className="h-4 w-4 mr-2 text-blue-500" />
-            <span>Health Platforms</span>
           </DropdownMenuItem>
           
           {/* Third group: Contacts */}
