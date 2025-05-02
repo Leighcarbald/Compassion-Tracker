@@ -438,8 +438,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                 </div>
                               </div>
                               {reading.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {reading.notes}
+                                <div className="mt-2 text-sm">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    <AlignLeft className="h-3 w-3 text-gray-500" />
+                                    <p className="text-xs font-medium text-gray-500">Notes:</p>
+                                  </div>
+                                  <div className="text-gray-600 bg-gray-50 p-2 rounded whitespace-pre-wrap break-words">
+                                    {reading.notes}
+                                  </div>
                                 </div>
                               )}
                             </CardContent>
@@ -478,8 +484,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                 </div>
                               </div>
                               {reading.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {reading.notes}
+                                <div className="mt-2 text-sm">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    <AlignLeft className="h-3 w-3 text-gray-500" />
+                                    <p className="text-xs font-medium text-gray-500">Notes:</p>
+                                  </div>
+                                  <div className="text-gray-600 bg-gray-50 p-2 rounded whitespace-pre-wrap break-words">
+                                    {reading.notes}
+                                  </div>
                                 </div>
                               )}
                             </CardContent>

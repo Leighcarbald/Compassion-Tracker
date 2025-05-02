@@ -340,6 +340,21 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
                         {reading.systolic}/{reading.diastolic}
                       </span> 
                       <span className="text-base font-normal ml-1">mmHg</span>
+                      {(reading.systolic >= 130 || reading.diastolic >= 80) && (
+                        <span className={`text-xs font-medium ml-2 py-0.5 px-1.5 rounded ${
+                          reading.systolic >= 180 || reading.diastolic >= 120 
+                            ? "bg-red-100 text-red-800" 
+                            : reading.systolic >= 140 || reading.diastolic >= 90
+                              ? "bg-red-50 text-red-700"
+                              : "bg-amber-50 text-amber-700"
+                        }`}>
+                          {reading.systolic >= 180 || reading.diastolic >= 120 
+                            ? "Crisis" 
+                            : reading.systolic >= 140 || reading.diastolic >= 90
+                              ? "High"
+                              : "Elevated"}
+                        </span>
+                      )}
                     </CardTitle>
                     <Heart className={`h-5 w-5 ${getStatusColor(reading)}`} />
                   </div>
@@ -368,9 +383,14 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
                       <span className="capitalize">{reading.position || "Not recorded"}</span>
                     </div>
                     {reading.notes && (
-                      <div className="pt-2">
-                        <p className="text-sm text-muted-foreground">Notes:</p>
-                        <p className="text-sm">{reading.notes}</p>
+                      <div className="pt-2 mt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                          <p className="text-sm font-medium text-muted-foreground">Notes:</p>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {reading.notes}
+                        </p>
                       </div>
                     )}
                   </div>
