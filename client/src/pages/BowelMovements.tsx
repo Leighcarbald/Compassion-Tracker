@@ -9,7 +9,7 @@ import { formatDate, formatTime } from "@/lib/utils";
 import { TabType } from "@/lib/types";
 import { BowelMovement } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Header from "@/components/Header";
+import PageHeader from "@/components/PageHeader";
 import AddBowelMovementModal from "@/components/AddBowelMovementModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +99,7 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
 
   return (
     <div className="container p-4 max-w-4xl mx-auto">
-      <Header />
+      <PageHeader title="Bowel Movement Tracking" icon={<Toilet className="h-6 w-6" />} />
       
       <Card className="mb-6">
         <CardHeader className="pb-3">

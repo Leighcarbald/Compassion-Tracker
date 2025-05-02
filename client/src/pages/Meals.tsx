@@ -102,7 +102,6 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
       <PageHeader 
         title="Meal Tracking" 
         icon={<Utensils className="h-6 w-6" />}
-        showHomeButton={false}
       />
       
       <Card className="mb-6">
