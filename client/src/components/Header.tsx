@@ -6,13 +6,18 @@ import { formatDate } from "@/lib/utils";
 import { ChevronDown, Check } from "lucide-react";
 import CareRecipientTabs from "./CareRecipientTabs";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { ReactNode } from "react";
 
 interface HeaderProps {
   isLoading?: boolean;
+  title?: string;
+  children?: ReactNode;
 }
 
 export default function Header({ 
-  isLoading = false 
+  isLoading = false,
+  title,
+  children
 }: HeaderProps) {
   const { 
     activeCareRecipientId: activeCareRecipient, 
@@ -28,7 +33,12 @@ export default function Header({
     <header className="bg-white shadow-sm px-4 py-3 sticky top-0 z-10">
       <div className="flex justify-between items-center">
         <div className="flex items-center">
-          <h1 className="text-xl font-semibold text-primary">CareCompanion</h1>
+          {title ? (
+            <h1 className="text-xl font-semibold text-primary">{title}</h1>
+          ) : (
+            <h1 className="text-xl font-semibold text-primary">CareCompanion</h1>
+          )}
+          {children && <div className="ml-2">{children}</div>}
         </div>
         
         {isLoading ? (

@@ -6,6 +6,7 @@ type CareRecipientContextType = {
   activeCareRecipientId: string | null;
   setActiveCareRecipientId: (id: string | null) => void;
   careRecipients: CareRecipient[] | undefined;
+  selectedCareRecipient: CareRecipient | undefined;
   isLoading: boolean;
 };
 
@@ -20,6 +21,11 @@ export function CareRecipientProvider({ children }: { children: ReactNode }) {
   const { data: careRecipients, isLoading } = useQuery<CareRecipient[]>({
     queryKey: ['/api/care-recipients'],
   });
+
+  // Find the selected care recipient object based on activeCareRecipientId
+  const selectedCareRecipient = careRecipients?.find(
+    recipient => recipient.id.toString() === activeCareRecipientId
+  );
 
   // Set default active recipient if none selected
   useEffect(() => {
@@ -42,6 +48,7 @@ export function CareRecipientProvider({ children }: { children: ReactNode }) {
         activeCareRecipientId,
         setActiveCareRecipientId,
         careRecipients,
+        selectedCareRecipient,
         isLoading
       }}
     >
