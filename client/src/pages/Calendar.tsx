@@ -15,6 +15,7 @@ import { TabType } from "@/lib/types";
 import { formatTime, formatDate } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { useLocation } from "wouter";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -63,10 +64,25 @@ export function UpcomingMedicationDoses({ careRecipientId }: { careRecipientId: 
     );
   }
   
+  // Get wouter's navigator
+  const [_, navigate] = useLocation();
+  
   if (!medicationEvents.length) {
     return (
       <div className="text-center py-2">
         <p className="text-gray-500">No upcoming medication doses for today</p>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="mt-3" 
+          onClick={() => {
+            // Navigate to Medications page using wouter
+            navigate('/medications');
+          }}
+        >
+          <Pill className="h-4 w-4 mr-2" />
+          Manage Medications
+        </Button>
       </div>
     );
   }
