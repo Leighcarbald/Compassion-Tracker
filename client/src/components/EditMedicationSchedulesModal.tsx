@@ -597,52 +597,88 @@ export default function EditMedicationSchedulesModal({
                         
                         {/* Hide Days of Week if "As Needed" is checked */}
                         {!form.watch(`schedules.${index}.asNeeded`) && (
-                          <FormField
-                            control={form.control}
-                            name={`schedules.${index}.daysOfWeek`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Days of Week</FormLabel>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {daysOfWeekOptions.map((day) => (
-                                    <div 
-                                      key={day.value}
-                                      className="flex items-center space-x-2"
-                                    >
-                                      <Checkbox
-                                        id={`day-${index}-${day.value}`}
-                                        checked={field.value?.includes(day.value)}
-                                        onCheckedChange={(checked) => {
-                                          const currentValues = Array.isArray(field.value) ? [...field.value] : [];
-                                          if (checked) {
-                                            // Add the value if it's not already there
-                                            if (!currentValues.includes(day.value)) {
-                                              field.onChange([...currentValues, day.value].sort());
-                                            }
-                                          } else {
-                                            // Remove the value
-                                            field.onChange(currentValues.filter(v => v !== day.value));
-                                          }
-                                        }}
-                                      />
-                                      <label 
-                                        htmlFor={`day-${index}-${day.value}`}
-                                        className="text-xs whitespace-nowrap cursor-pointer"
-                                      >
-                                        {day.label.substring(0, 3)}
-                                      </label>
+                          <div className="mb-4">
+                            <div className="flex flex-row items-start justify-between space-y-0 mb-2">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">Schedule Type</FormLabel>
+                                <p className="text-xs text-muted-foreground">
+                                  Choose how this medication should be scheduled
+                                </p>
+                              </div>
+                              <Select 
+                                value={form.watch(`schedules.${index}.specificDays`).length > 0 ? "specific" : "weekly"}
+                                onValueChange={(value) => {
+                                  if (value === "weekly") {
+                                    // Clear any specific dates if switching to weekly
+                                    form.setValue(`schedules.${index}.specificDays`, []);
+                                  } else {
+                                    // Add today's date if switching to specific dates
+                                    const today = new Date();
+                                    const dateString = today.toISOString().split('T')[0];
+                                    form.setValue(`schedules.${index}.specificDays`, [dateString]);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-auto min-w-[160px]">
+                                  <SelectValue placeholder="Select schedule type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="weekly">Days of Week</SelectItem>
+                                  <SelectItem value="specific">Specific Dates</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Show Days of Week selection if no specific days are selected */}
+                            {form.watch(`schedules.${index}.specificDays`).length === 0 && (
+                              <FormField
+                                control={form.control}
+                                name={`schedules.${index}.daysOfWeek`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Days of Week</FormLabel>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {daysOfWeekOptions.map((day) => (
+                                        <div 
+                                          key={day.value}
+                                          className="flex items-center space-x-2"
+                                        >
+                                          <Checkbox
+                                            id={`day-${index}-${day.value}`}
+                                            checked={field.value?.includes(day.value)}
+                                            onCheckedChange={(checked) => {
+                                              const currentValues = Array.isArray(field.value) ? [...field.value] : [];
+                                              if (checked) {
+                                                // Add the value if it's not already there
+                                                if (!currentValues.includes(day.value)) {
+                                                  field.onChange([...currentValues, day.value].sort());
+                                                }
+                                              } else {
+                                                // Remove the value
+                                                field.onChange(currentValues.filter(v => v !== day.value));
+                                              }
+                                            }}
+                                          />
+                                          <label 
+                                            htmlFor={`day-${index}-${day.value}`}
+                                            className="text-xs whitespace-nowrap cursor-pointer"
+                                          >
+                                            {day.label.substring(0, 3)}
+                                          </label>
+                                        </div>
+                                      ))}
                                     </div>
-                                  ))}
-                                </div>
-                                <FormMessage />
-                              </FormItem>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                             )}
-                          />
+                          </div>
                         )}
 
                         {/* Scheduling options group */}
                         <div className="border p-4 rounded-md space-y-4">
-                          <h4 className="text-sm font-medium">Schedule Type</h4>
+                          <h4 className="text-sm font-medium">Scheduling Options</h4>
                           
                           {/* As Needed option */}
                           <FormField
@@ -676,7 +712,7 @@ export default function EditMedicationSchedulesModal({
                           {/* Only show if not "As Needed" */}
                           {!form.watch(`schedules.${index}.asNeeded`) && (
                             <>
-                              {/* Specific Days option */}
+                              {/* Specific Calendar Dates toggle */}
                               <FormField
                                 control={form.control}
                                 name={`schedules.${index}.specificDays`}
@@ -684,52 +720,94 @@ export default function EditMedicationSchedulesModal({
                                   <FormItem className="space-y-2">
                                     <div className="flex flex-row items-start justify-between space-y-0">
                                       <div className="space-y-0.5">
-                                        <FormLabel>Specific Calendar Dates</FormLabel>
+                                        <FormLabel className="text-base">Specific Calendar Dates</FormLabel>
                                         <p className="text-xs text-muted-foreground">
-                                          Choose specific dates rather than days of week
+                                          Select exact dates when this medication should be taken
                                         </p>
                                       </div>
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          // Add today's date in YYYY-MM-DD format
-                                          const today = new Date();
-                                          const dateString = today.toISOString().split('T')[0];
-                                          const currentDates = field.value || [];
-                                          
-                                          // Only add if not already present
-                                          if (!currentDates.includes(dateString)) {
-                                            field.onChange([...currentDates, dateString].sort());
-                                          }
-                                        }}
-                                      >
-                                        Add Date
-                                      </Button>
                                     </div>
                                     
-                                    {field.value && field.value.length > 0 && (
-                                      <div className="space-y-2 mt-2">
-                                        {field.value.map((date, dateIndex) => (
-                                          <div key={date} className="flex items-center justify-between border p-2 rounded">
-                                            <span>{new Date(date).toLocaleDateString()}</span>
-                                            <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => {
-                                                const newDates = [...field.value];
-                                                newDates.splice(dateIndex, 1);
-                                                field.onChange(newDates);
-                                              }}
-                                            >
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        ))}
+                                    <div className="flex flex-col space-y-3 mt-2">
+                                      <div className="flex gap-2">
+                                        <Input 
+                                          type="date" 
+                                          id={`new-date-${index}`}
+                                          className="w-full max-w-xs"
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          onClick={() => {
+                                            // Get the date from the input
+                                            const dateInput = document.getElementById(`new-date-${index}`) as HTMLInputElement;
+                                            if (dateInput && dateInput.value) {
+                                              const dateString = dateInput.value;
+                                              const currentDates = field.value || [];
+                                              
+                                              // Only add if not already present
+                                              if (!currentDates.includes(dateString)) {
+                                                field.onChange([...currentDates, dateString].sort());
+                                                // Clear the input
+                                                dateInput.value = '';
+                                              }
+                                            } else {
+                                              // If no date selected, use today
+                                              const today = new Date();
+                                              const dateString = today.toISOString().split('T')[0];
+                                              const currentDates = field.value || [];
+                                              
+                                              // Only add if not already present
+                                              if (!currentDates.includes(dateString)) {
+                                                field.onChange([...currentDates, dateString].sort());
+                                              }
+                                            }
+                                          }}
+                                        >
+                                          Add Date
+                                        </Button>
                                       </div>
-                                    )}
+                                      
+                                      {/* Show message if no dates selected */}
+                                      {(!field.value || field.value.length === 0) && (
+                                        <p className="text-sm text-muted-foreground italic">
+                                          No specific dates selected. Add dates above.
+                                        </p>
+                                      )}
+                                      
+                                      {/* Show selected dates */}
+                                      {field.value && field.value.length > 0 && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                          {field.value.map((date, dateIndex) => (
+                                            <div key={date} className="flex items-center justify-between border p-2 rounded bg-slate-50">
+                                              <span className="font-medium">{new Date(date).toLocaleDateString(undefined, { 
+                                                weekday: 'short', 
+                                                year: 'numeric', 
+                                                month: 'short', 
+                                                day: 'numeric' 
+                                              })}</span>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                  const newDates = [...field.value];
+                                                  newDates.splice(dateIndex, 1);
+                                                  field.onChange(newDates);
+                                                  
+                                                  // If removing the last date, switch to days of week
+                                                  if (newDates.length === 0) {
+                                                    // Clear any existing days
+                                                    form.setValue(`schedules.${index}.daysOfWeek`, [0, 1, 2, 3, 4, 5, 6]);
+                                                  }
+                                                }}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                     <FormMessage />
                                   </FormItem>
                                 )}
@@ -740,11 +818,11 @@ export default function EditMedicationSchedulesModal({
                                 control={form.control}
                                 name={`schedules.${index}.isTapering`}
                                 render={({ field }) => (
-                                  <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3">
+                                  <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3 mt-4">
                                     <div className="space-y-0.5">
-                                      <FormLabel>Tapering Schedule</FormLabel>
+                                      <FormLabel className="text-base">Tapering Dose Schedule</FormLabel>
                                       <p className="text-xs text-muted-foreground">
-                                        Gradually change dose amount over time
+                                        Create a schedule to gradually change dose amounts over time (for medications like steroids or pain medications)
                                       </p>
                                     </div>
                                     <FormControl>
@@ -763,49 +841,57 @@ export default function EditMedicationSchedulesModal({
                                   control={form.control}
                                   name={`schedules.${index}.taperingSchedule`}
                                   render={({ field }) => (
-                                    <FormItem className="space-y-2">
-                                      <div className="flex justify-between items-center">
-                                        <FormLabel>Tapering Schedule</FormLabel>
-                                        <Button
-                                          type="button"
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => {
-                                            // Get start date 3 days from now
-                                            const startDate = new Date();
-                                            startDate.setDate(startDate.getDate() + 3);
-                                            
-                                            // Get end date 10 days from now
-                                            const endDate = new Date();
-                                            endDate.setDate(endDate.getDate() + 10);
-                                            
-                                            // Create a new tapering item
-                                            const newSchedule = [
-                                              ...(field.value || []),
-                                              {
-                                                startDate: startDate.toISOString().split('T')[0],
-                                                endDate: endDate.toISOString().split('T')[0],
-                                                quantity: form.watch(`schedules.${index}.quantity`),
-                                              }
-                                            ];
-                                            
-                                            field.onChange(newSchedule);
-                                          }}
-                                        >
-                                          Add Tapering Step
-                                        </Button>
+                                    <FormItem className="space-y-2 border p-4 rounded-md bg-slate-50">
+                                      <div className="space-y-2 mb-3">
+                                        <h4 className="text-sm font-medium">Tapering Dose Schedule</h4>
+                                        <p className="text-xs text-muted-foreground">
+                                          Create different dose amounts for specific date ranges. This is useful for medications 
+                                          that need to be gradually increased or decreased over time.
+                                        </p>
                                       </div>
+                                     
+                                      {(!field.value || field.value.length === 0) && (
+                                        <div className="text-center py-4">
+                                          <p className="text-sm text-muted-foreground mb-3">No tapering steps defined yet.</p>
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => {
+                                              // Get start date (today)
+                                              const startDate = new Date();
+                                              
+                                              // Get end date 7 days from now
+                                              const endDate = new Date();
+                                              endDate.setDate(endDate.getDate() + 7);
+                                              
+                                              // Create a new tapering item
+                                              const newSchedule = [
+                                                {
+                                                  startDate: startDate.toISOString().split('T')[0],
+                                                  endDate: endDate.toISOString().split('T')[0],
+                                                  quantity: form.watch(`schedules.${index}.quantity`),
+                                                }
+                                              ];
+                                              
+                                              field.onChange(newSchedule);
+                                            }}
+                                          >
+                                            Add First Tapering Step
+                                          </Button>
+                                        </div>
+                                      )}
                                       
                                       {field.value && field.value.length > 0 && (
-                                        <div className="space-y-3 mt-2">
+                                        <div className="space-y-4 mt-3">
                                           {field.value.map((step, stepIndex) => (
-                                            <div key={stepIndex} className="border p-3 rounded">
-                                              <div className="flex justify-between mb-2">
-                                                <h5 className="text-sm font-medium">Step {stepIndex + 1}</h5>
+                                            <div key={stepIndex} className="border p-4 rounded-md bg-white">
+                                              <div className="flex justify-between mb-3">
+                                                <h5 className="text-base font-medium">Tapering Step {stepIndex + 1}</h5>
                                                 <Button
                                                   type="button"
                                                   variant="ghost"
                                                   size="sm"
+                                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                                   onClick={() => {
                                                     const newSchedule = [...field.value];
                                                     newSchedule.splice(stepIndex, 1);
@@ -816,9 +902,9 @@ export default function EditMedicationSchedulesModal({
                                                 </Button>
                                               </div>
                                               
-                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
-                                                  <label className="text-xs font-medium">Start Date</label>
+                                                  <label className="text-sm font-medium mb-1 block">Start Date</label>
                                                   <Input 
                                                     type="date" 
                                                     value={step.startDate}
@@ -831,7 +917,7 @@ export default function EditMedicationSchedulesModal({
                                                 </div>
                                                 
                                                 <div>
-                                                  <label className="text-xs font-medium">End Date</label>
+                                                  <label className="text-sm font-medium mb-1 block">End Date</label>
                                                   <Input 
                                                     type="date" 
                                                     value={step.endDate}
@@ -844,20 +930,77 @@ export default function EditMedicationSchedulesModal({
                                                 </div>
                                                 
                                                 <div className="sm:col-span-2">
-                                                  <label className="text-xs font-medium">Quantity</label>
-                                                  <Input 
-                                                    value={step.quantity}
-                                                    onChange={(e) => {
-                                                      const newSchedule = [...field.value];
-                                                      newSchedule[stepIndex].quantity = e.target.value;
-                                                      field.onChange(newSchedule);
-                                                    }}
-                                                    placeholder="e.g., 1/2 tablet"
-                                                  />
+                                                  <label className="text-sm font-medium mb-1 block">Dose Amount</label>
+                                                  <div className="flex gap-2">
+                                                    <Input 
+                                                      value={step.quantity}
+                                                      onChange={(e) => {
+                                                        const newSchedule = [...field.value];
+                                                        newSchedule[stepIndex].quantity = e.target.value;
+                                                        field.onChange(newSchedule);
+                                                      }}
+                                                      placeholder="e.g., 1/2 tablet, 20mg, etc."
+                                                      className="flex-1"
+                                                    />
+                                                  </div>
+                                                  <p className="text-xs text-muted-foreground mt-1">
+                                                    Specify the exact dose amount for this date range
+                                                  </p>
                                                 </div>
                                               </div>
                                             </div>
                                           ))}
+                                          
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full mt-2"
+                                            onClick={() => {
+                                              // Get the end date of the last step
+                                              const lastStep = field.value[field.value.length - 1];
+                                              const lastEndDate = new Date(lastStep.endDate);
+                                              
+                                              // New start date is the day after the last end date
+                                              const startDate = new Date(lastEndDate);
+                                              startDate.setDate(startDate.getDate() + 1);
+                                              
+                                              // End date is 7 days after start
+                                              const endDate = new Date(startDate);
+                                              endDate.setDate(endDate.getDate() + 7);
+                                              
+                                              // Determine next quantity (decrease by 25% if possible)
+                                              let nextQuantity = lastStep.quantity;
+                                              if (lastStep.quantity.includes("tablet")) {
+                                                // For tablets, try to reduce by 1/2 or 1 tablet
+                                                const match = lastStep.quantity.match(/^(\d+(?:\/\d+)?)(.*)$/);
+                                                if (match) {
+                                                  const amount = match[1];
+                                                  const unit = match[2];
+                                                  if (amount === "1") {
+                                                    nextQuantity = "1/2" + unit;
+                                                  } else if (amount === "2") {
+                                                    nextQuantity = "1" + unit;
+                                                  } else if (amount === "3") {
+                                                    nextQuantity = "2" + unit;
+                                                  }
+                                                }
+                                              }
+                                              
+                                              // Create a new tapering item
+                                              const newSchedule = [
+                                                ...field.value,
+                                                {
+                                                  startDate: startDate.toISOString().split('T')[0],
+                                                  endDate: endDate.toISOString().split('T')[0],
+                                                  quantity: nextQuantity,
+                                                }
+                                              ];
+                                              
+                                              field.onChange(newSchedule);
+                                            }}
+                                          >
+                                            Add Another Tapering Step
+                                          </Button>
                                         </div>
                                       )}
                                       <FormMessage />
