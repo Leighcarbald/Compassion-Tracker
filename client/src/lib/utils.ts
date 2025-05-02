@@ -193,9 +193,9 @@ export function normalizePhoneNumber(phoneNumberString: string): string {
 }
 
 /**
- * Masks a Social Security Number to only show the last 4 digits
- * @param ssn - The SSN to mask
- * @returns Masked SSN in xxx-xx-1234 format
+ * Formats a Social Security Number without masking
+ * @param ssn - The SSN to format
+ * @returns Formatted SSN showing all digits
  */
 export function maskSSN(ssn: string): string {
   if (!ssn) return "";
@@ -203,20 +203,17 @@ export function maskSSN(ssn: string): string {
   // Remove all non-digit and non-hyphen characters
   const cleaned = ssn.replace(/[^\d-]/g, "");
   
-  // If it already has hyphens, extract the last 4 digits
+  // If it already has hyphens, keep it as is
   if (cleaned.includes("-")) {
-    const parts = cleaned.split("-");
-    if (parts.length === 3 && parts[2].length === 4) {
-      return `xxx-xx-${parts[2]}`;
-    }
+    return cleaned;
   }
   
-  // Handle SSN without hyphens
+  // Format SSN without hyphens (add hyphens)
   const digits = cleaned.replace(/-/g, "");
-  if (digits.length >= 4) {
-    return `xxx-xx-${digits.slice(-4)}`;
+  if (digits.length === 9) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
   }
   
-  // If the SSN doesn't match expected format, return a generic mask
-  return "xxx-xx-xxxx";
+  // If the SSN doesn't match expected format, return as is
+  return cleaned;
 }
