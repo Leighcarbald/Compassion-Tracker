@@ -44,7 +44,7 @@ import {
   insertGlucoseSchema,
   insertInsulinSchema
 } from "@shared/schema";
-import { format, startOfDay, endOfDay, addHours, formatDistance, isToday } from "date-fns";
+import { format, startOfDay, endOfDay, addHours, formatDistance, isToday, addDays } from "date-fns";
 
 // Store the last date reset was performed to track day changes
 let lastResetDate = new Date();
@@ -630,14 +630,15 @@ export const storage = {
       }
     }
     
-    // Get upcoming appointments
+    // Get upcoming appointments for the next 7 days
     const appointmentEvents = await db.query.appointments.findMany({
       where: and(
         eq(appointments.careRecipientId, careRecipientId),
-        gte(appointments.date, format(now, 'yyyy-MM-dd'))
+        gte(appointments.date, format(now, 'yyyy-MM-dd')),
+        lte(appointments.date, format(addDays(now, 7), 'yyyy-MM-dd')) // Include next 7 days
       ),
-      orderBy: appointments.date,
-      limit: 3
+      orderBy: [appointments.date, appointments.time],
+      limit: 5 // Increased to show more upcoming appointments
     });
     
     // Get recent sleep records
@@ -650,14 +651,24 @@ export const storage = {
     // Combine and format events
     const events = [
       // Include medication events for today
-      ...medicationEvents,
+      ...medicationEvents.map(event => ({
+        ...event,
+        source: 'schedule', // Add source field to indicate this came from a schedule
+        date: format(now, 'yyyy-MM-dd') // Add today's date
+      })),
+      
       // Include appointment events
       ...appointmentEvents.map(appointment => ({
         id: `apt_${appointment.id}`,
         type: 'appointment',
         title: appointment.title,
         time: appointment.time,
-        details: appointment.location
+        date: appointment.date,
+        details: appointment.location || '',
+        notes: appointment.notes || '',
+        reminder: appointment.reminderEnabled,
+        source: 'manual', // Add source field to indicate this was manually created
+        canEdit: true // Appointments can be edited
       }))
       // Sleep events removed from "Next Up" section as previously requested
     ];
