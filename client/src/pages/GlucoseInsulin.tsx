@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { TabType } from "@/lib/types";
 import { format } from "date-fns";
-import { Droplets, PlusCircle, Syringe, ArrowDown, ArrowUp } from "lucide-react";
+import { Droplets, PlusCircle, Syringe, ArrowDown, ArrowUp, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -25,6 +25,7 @@ import { Glucose, Insulin } from "@shared/schema";
 import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import EditGlucoseInsulinModal from "@/components/EditGlucoseInsulinModal";
 
 interface GlucoseInsulinPageProps {
   activeTab: TabType;
@@ -50,6 +51,11 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
   const [insulinType, setInsulinType] = useState("rapid-acting");
   const [injectionSite, setInjectionSite] = useState("");
   const [insulinNotes, setInsulinNotes] = useState("");
+  
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editModalType, setEditModalType] = useState<"glucose" | "insulin">("glucose");
+  const [selectedRecord, setSelectedRecord] = useState<Glucose | Insulin | null>(null);
   
   const { toast } = useToast();
 
@@ -286,6 +292,19 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
       default:
         return <Badge>{type}</Badge>;
     }
+  };
+  
+  // Handler for opening the edit modal
+  const handleEdit = (recordType: "glucose" | "insulin", record: Glucose | Insulin) => {
+    setEditModalType(recordType);
+    setSelectedRecord(record);
+    setEditModalOpen(true);
+  };
+  
+  // Handler for closing the edit modal
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setSelectedRecord(null);
   };
 
   return (

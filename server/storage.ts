@@ -1491,10 +1491,57 @@ export const storage = {
     });
   },
 
+  async getGlucoseReadingById(id: number) {
+    return db.query.glucose.findFirst({
+      where: eq(glucose.id, id)
+    });
+  },
+
   async createGlucoseReading(readingData: any) {
     const validatedData = insertGlucoseSchema.parse(readingData);
     const [newReading] = await db.insert(glucose).values(validatedData).returning();
     return newReading;
+  },
+
+  async updateGlucoseReading(id: number, readingData: any) {
+    // Get the current record to ensure it exists
+    const currentReading = await this.getGlucoseReadingById(id);
+    if (!currentReading) {
+      throw new Error('Glucose reading not found');
+    }
+
+    // Validate and prepare data for update
+    const updatedValues = {
+      ...readingData,
+      // Ensure date is converted from string if needed
+      timeOfReading: readingData.timeOfReading ? new Date(readingData.timeOfReading) : currentReading.timeOfReading,
+      updatedAt: new Date()
+    };
+
+    // Validate the updated data
+    const validatedData = insertGlucoseSchema.parse({
+      ...currentReading,
+      ...updatedValues
+    });
+
+    // Perform the update
+    const [updatedReading] = await db.update(glucose)
+      .set(validatedData)
+      .where(eq(glucose.id, id))
+      .returning();
+
+    return updatedReading;
+  },
+
+  async deleteGlucoseReading(id: number) {
+    // Check if the reading exists first
+    const reading = await this.getGlucoseReadingById(id);
+    if (!reading) {
+      throw new Error('Glucose reading not found');
+    }
+    
+    await db.delete(glucose).where(eq(glucose.id, id));
+    return { success: true, message: 'Glucose reading deleted successfully' };
   },
 
   // Insulin Tracking
@@ -1505,9 +1552,56 @@ export const storage = {
     });
   },
 
+  async getInsulinRecordById(id: number) {
+    return db.query.insulin.findFirst({
+      where: eq(insulin.id, id)
+    });
+  },
+
   async createInsulinRecord(recordData: any) {
     const validatedData = insertInsulinSchema.parse(recordData);
     const [newRecord] = await db.insert(insulin).values(validatedData).returning();
     return newRecord;
+  },
+  
+  async updateInsulinRecord(id: number, recordData: any) {
+    // Get the current record to ensure it exists
+    const currentRecord = await this.getInsulinRecordById(id);
+    if (!currentRecord) {
+      throw new Error('Insulin record not found');
+    }
+
+    // Validate and prepare data for update
+    const updatedValues = {
+      ...recordData,
+      // Ensure date is converted from string if needed
+      timeAdministered: recordData.timeAdministered ? new Date(recordData.timeAdministered) : currentRecord.timeAdministered,
+      updatedAt: new Date()
+    };
+
+    // Validate the updated data
+    const validatedData = insertInsulinSchema.parse({
+      ...currentRecord,
+      ...updatedValues
+    });
+
+    // Perform the update
+    const [updatedRecord] = await db.update(insulin)
+      .set(validatedData)
+      .where(eq(insulin.id, id))
+      .returning();
+
+    return updatedRecord;
+  },
+
+  async deleteInsulinRecord(id: number) {
+    // Check if the record exists first
+    const record = await this.getInsulinRecordById(id);
+    if (!record) {
+      throw new Error('Insulin record not found');
+    }
+    
+    await db.delete(insulin).where(eq(insulin.id, id));
+    return { success: true, message: 'Insulin record deleted successfully' };
   }
 };

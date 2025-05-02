@@ -1316,6 +1316,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get(`${apiPrefix}/glucose/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const reading = await storage.getGlucoseReadingById(id);
+      if (!reading) {
+        return res.status(404).json({ message: 'Glucose reading not found' });
+      }
+      
+      res.json(reading);
+    } catch (error) {
+      console.error('Error fetching glucose reading:', error);
+      res.status(500).json({ message: 'Error fetching glucose reading' });
+    }
+  });
+
   app.post(`${apiPrefix}/glucose`, async (req, res) => {
     try {
       // Handle date conversion for timeOfReading if it's provided as a string
@@ -1330,6 +1349,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating glucose reading:', error);
       res.status(500).json({ message: 'Error creating glucose reading' });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/glucose/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const updatedReading = await storage.updateGlucoseReading(id, req.body);
+      res.json(updatedReading);
+    } catch (error) {
+      console.error('Error updating glucose reading:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error updating glucose reading' 
+      });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/glucose/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const result = await storage.deleteGlucoseReading(id);
+      res.json(result);
+    } catch (error) {
+      console.error('Error deleting glucose reading:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error deleting glucose reading' 
+      });
     }
   });
 
@@ -1350,6 +1403,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get(`${apiPrefix}/insulin/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const record = await storage.getInsulinRecordById(id);
+      if (!record) {
+        return res.status(404).json({ message: 'Insulin record not found' });
+      }
+      
+      res.json(record);
+    } catch (error) {
+      console.error('Error fetching insulin record:', error);
+      res.status(500).json({ message: 'Error fetching insulin record' });
+    }
+  });
+
   app.post(`${apiPrefix}/insulin`, async (req, res) => {
     try {
       // Handle date conversion for timeAdministered if it's provided as a string
@@ -1364,6 +1436,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating insulin record:', error);
       res.status(500).json({ message: 'Error creating insulin record' });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/insulin/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const updatedRecord = await storage.updateInsulinRecord(id, req.body);
+      res.json(updatedRecord);
+    } catch (error) {
+      console.error('Error updating insulin record:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error updating insulin record' 
+      });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/insulin/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const result = await storage.deleteInsulinRecord(id);
+      res.json(result);
+    } catch (error) {
+      console.error('Error deleting insulin record:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error deleting insulin record' 
+      });
     }
   });
 
