@@ -330,18 +330,18 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
             <p className="text-muted-foreground">No blood pressure readings recorded yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {readings.map((reading: BloodPressure) => (
               <Card key={reading.id} className="overflow-hidden w-full">
-                <CardHeader className="pb-1 px-2 py-1.5">
+                <CardHeader className="pb-2 px-4 py-3">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-sm flex flex-wrap items-center">
+                    <CardTitle className="text-lg flex flex-wrap items-center">
                       <span className={getStatusColor(reading)}>
                         {reading.systolic}/{reading.diastolic}
                       </span> 
-                      <span className="text-xs font-normal ml-0.5">mmHg</span>
+                      <span className="text-base font-normal ml-1">mmHg</span>
                       {(reading.systolic >= 130 || reading.diastolic >= 80) && (
-                        <span className={`text-[10px] font-medium ml-1 py-0.5 px-0.5 rounded ${
+                        <span className={`text-xs font-medium ml-2 py-0.5 px-1.5 rounded ${
                           reading.systolic >= 180 || reading.diastolic >= 120 
                             ? "bg-red-100 text-red-800" 
                             : reading.systolic >= 140 || reading.diastolic >= 90
@@ -356,39 +356,39 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
                         </span>
                       )}
                     </CardTitle>
-                    <Heart className={`h-3.5 w-3.5 ${getStatusColor(reading)} flex-shrink-0`} />
+                    <Heart className={`h-5 w-5 ${getStatusColor(reading)} flex-shrink-0`} />
                   </div>
-                  <CardDescription className="text-[10px] whitespace-nowrap text-ellipsis overflow-hidden">
-                    {format(new Date(reading.timeOfReading), "MM/dd/yy h:mm a")}
+                  <CardDescription className="text-sm">
+                    {format(new Date(reading.timeOfReading), "MMM d, yyyy 'at' h:mm a")}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="px-2 py-1">
-                  <div className="space-y-0.5">
+                <CardContent className="px-4 py-2">
+                  <div className="space-y-2">
                     {reading.pulse && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground text-[10px]">Pulse:</span>
-                        <span className="text-[10px]">{reading.pulse} bpm</span>
+                        <span className="text-muted-foreground">Pulse:</span>
+                        <span>{reading.pulse} bpm</span>
                       </div>
                     )}
                     {reading.oxygenLevel && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground text-[10px]">O₂:</span>
-                        <span className={`text-[10px] ${reading.oxygenLevel >= 95 ? "text-green-500" : reading.oxygenLevel >= 90 ? "text-amber-500" : "text-red-500"}`}>
+                        <span className="text-muted-foreground">O₂:</span>
+                        <span className={`${reading.oxygenLevel >= 95 ? "text-green-500" : reading.oxygenLevel >= 90 ? "text-amber-500" : "text-red-500"}`}>
                           {reading.oxygenLevel}%
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground text-[10px]">Position:</span>
-                      <span className="capitalize text-[10px] truncate max-w-[70%] text-right">{reading.position || "Not recorded"}</span>
+                      <span className="text-muted-foreground">Position:</span>
+                      <span className="capitalize">{reading.position || "Not recorded"}</span>
                     </div>
                     {reading.notes && (
-                      <div className="pt-0.5 mt-0.5 border-t border-gray-100">
-                        <div className="flex items-center gap-0.5 mb-0.5">
-                          <AlignLeft className="h-2.5 w-2.5 text-muted-foreground" />
-                          <p className="text-[10px] font-medium text-muted-foreground">Notes:</p>
+                      <div className="pt-2 mt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          <AlignLeft className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm font-medium text-muted-foreground">Notes:</p>
                         </div>
-                        <p className="text-[10px] line-clamp-1">
+                        <p className="text-sm line-clamp-2">
                           {reading.notes}
                         </p>
                       </div>

@@ -553,51 +553,51 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
               <p className="text-muted-foreground">No glucose readings recorded yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {glucoseReadings.map((reading: Glucose) => (
                 <Card key={reading.id} className="overflow-hidden w-full">
-                  <CardHeader className="pb-1 px-2 py-1.5">
+                  <CardHeader className="pb-2 px-4 py-3">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-sm">
+                      <CardTitle className="text-lg">
                         <span className={getGlucoseStatusColor(reading.level, reading.readingType)}>
                           {reading.level} mg/dL
                         </span>
                       </CardTitle>
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-1">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-6 w-6"
+                          className="h-8 w-8"
                           onClick={() => handleEdit("glucose", reading)}
                           title="Edit reading"
                         >
-                          <Pencil className="h-3 w-3" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         {reading.level > 130 ? (
-                          <ArrowUp className="h-3.5 w-3.5 text-red-500" />
+                          <ArrowUp className="h-5 w-5 text-red-500" />
                         ) : reading.level < 70 ? (
-                          <ArrowDown className="h-3.5 w-3.5 text-red-500" />
+                          <ArrowDown className="h-5 w-5 text-red-500" />
                         ) : (
-                          <Droplets className="h-3.5 w-3.5 text-green-500" />
+                          <Droplets className="h-5 w-5 text-green-500" />
                         )}
                       </div>
                     </div>
-                    <CardDescription className="text-[10px] whitespace-nowrap text-ellipsis overflow-hidden">
-                      {format(new Date(reading.timeOfReading), "MM/dd/yy h:mm a")}
+                    <CardDescription className="text-sm">
+                      {format(new Date(reading.timeOfReading), "MMM d, yyyy 'at' h:mm a")}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0 px-2 py-1">
-                    <div className="space-y-0.5">
+                  <CardContent className="px-4 py-2">
+                    <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-[10px]">Type:</span>
-                        <div className="scale-[0.85] origin-right -mr-1">
+                        <span className="text-muted-foreground">Type:</span>
+                        <div>
                           {getReadingTypeBadge(reading.readingType)}
                         </div>
                       </div>
                       {reading.notes && (
-                        <div className="pt-0.5 mt-0.5 border-t border-gray-100">
-                          <p className="text-[10px] text-muted-foreground mb-0.5">Notes:</p>
-                          <p className="text-[10px] line-clamp-1">{reading.notes}</p>
+                        <div className="pt-2 mt-2 border-t border-gray-100">
+                          <p className="text-sm text-muted-foreground mb-1">Notes:</p>
+                          <p className="text-sm line-clamp-2">{reading.notes}</p>
                         </div>
                       )}
                     </div>
@@ -622,49 +622,49 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
               <p className="text-muted-foreground">No insulin records recorded yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {insulinRecords.map((record: Insulin) => (
                 <Card key={record.id} className="overflow-hidden w-full">
-                  <CardHeader className="pb-1 px-2 py-1.5">
+                  <CardHeader className="pb-2 px-4 py-3">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-sm">
+                      <CardTitle className="text-lg">
                         {record.units} units
                       </CardTitle>
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-1">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-6 w-6"
+                          className="h-8 w-8"
                           onClick={() => handleEdit("insulin", record)}
                           title="Edit record"
                         >
-                          <Pencil className="h-3 w-3" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                        <Syringe className="h-3.5 w-3.5" />
+                        <Syringe className="h-5 w-5" />
                       </div>
                     </div>
-                    <CardDescription className="text-[10px] whitespace-nowrap text-ellipsis overflow-hidden">
-                      {format(new Date(record.timeAdministered), "MM/dd/yy h:mm a")}
+                    <CardDescription className="text-sm">
+                      {format(new Date(record.timeAdministered), "MMM d, yyyy 'at' h:mm a")}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0 px-2 py-1">
-                    <div className="space-y-0.5">
+                  <CardContent className="px-4 py-2">
+                    <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-[10px]">Type:</span>
-                        <div className="scale-[0.85] origin-right -mr-1">
+                        <span className="text-muted-foreground">Type:</span>
+                        <div>
                           {getInsulinTypeBadge(record.insulinType)}
                         </div>
                       </div>
                       {record.site && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground text-[10px]">Site:</span>
-                          <span className="capitalize text-[10px] truncate max-w-[70%] text-right">{record.site}</span>
+                          <span className="text-muted-foreground">Site:</span>
+                          <span className="capitalize">{record.site}</span>
                         </div>
                       )}
                       {record.notes && (
-                        <div className="pt-0.5 mt-0.5 border-t border-gray-100">
-                          <p className="text-[10px] text-muted-foreground mb-0.5">Notes:</p>
-                          <p className="text-[10px] line-clamp-1">{record.notes}</p>
+                        <div className="pt-2 mt-2 border-t border-gray-100">
+                          <p className="text-sm text-muted-foreground mb-1">Notes:</p>
+                          <p className="text-sm line-clamp-2">{record.notes}</p>
                         </div>
                       )}
                     </div>
