@@ -85,18 +85,51 @@ const timeOptions = [
   { value: "23:00:00", label: "11:00 PM" },
 ];
 
-// Common quantity options
-const quantityOptions = [
-  { value: "1 tablet", label: "1 tablet" },
-  { value: "2 tablets", label: "2 tablets" },
-  { value: "1 capsule", label: "1 capsule" },
-  { value: "2 capsules", label: "2 capsules" },
-  { value: "5ml", label: "5ml" },
-  { value: "10ml", label: "10ml" },
-  { value: "1 tsp", label: "1 teaspoon" },
-  { value: "1 tbsp", label: "1 tablespoon" },
-  { value: "1 injection", label: "1 injection" },
-];
+// Form-specific quantity options
+const quantityOptionsByForm = {
+  // Pills/tablets form
+  "pills": [
+    { value: "1 tablet", label: "1 tablet" },
+    { value: "2 tablets", label: "2 tablets" },
+    { value: "1/2 tablet", label: "1/2 tablet" },
+  ],
+  // Capsules form
+  "capsule": [
+    { value: "1 capsule", label: "1 capsule" },
+    { value: "2 capsules", label: "2 capsules" },
+  ],
+  // Liquid form
+  "droplet": [
+    { value: "5ml", label: "5ml" },
+    { value: "10ml", label: "10ml" },
+    { value: "15ml", label: "15ml" },
+    { value: "1 tsp", label: "1 teaspoon" },
+    { value: "1 tbsp", label: "1 tablespoon" },
+  ],
+  // Injection form
+  "syringe": [
+    { value: "1 injection", label: "1 injection" },
+    { value: "0.5ml", label: "0.5ml injection" },
+    { value: "1ml", label: "1ml injection" },
+  ],
+  // Default options for other forms
+  "default": [
+    { value: "1 dose", label: "1 dose" },
+    { value: "2 doses", label: "2 doses" },
+  ]
+};
+
+// Helper function to get quantity options based on medication form
+const getQuantityOptionsForMedication = (medication: Medication | null) => {
+  if (!medication) return quantityOptionsByForm.default;
+  
+  // Map medication icon to form type
+  const formType = medication.icon || 'pills';
+  
+  // Return the appropriate options or default if not found
+  return quantityOptionsByForm[formType as keyof typeof quantityOptionsByForm] 
+    || quantityOptionsByForm.default;
+};
 
 // Days of the week options
 const daysOfWeekOptions = [
@@ -277,11 +310,15 @@ export default function EditMedicationSchedulesModal({
   const addSchedule = () => {
     if (!medication) return;
     
+    // Get the default quantity based on medication form type
+    const medOptions = getQuantityOptionsForMedication(medication);
+    const defaultQuantity = medOptions.length > 0 ? medOptions[0].value : "1 dose";
+    
     append({
       medicationId: medication.id,
       time: "08:00:00", // Default to 8 AM
       daysOfWeek: [0, 1, 2, 3, 4, 5, 6], // Default to every day
-      quantity: "1 tablet", // Default quantity
+      quantity: defaultQuantity, // Use appropriate default quantity for this medication type
       withFood: false,
       active: true,
       reminderEnabled: true, // Keep this true even though UI option is removed
@@ -447,45 +484,63 @@ export default function EditMedicationSchedulesModal({
                     <FormField
                       control={form.control}
                       name={`schedules.${index}.quantity`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Dose Quantity</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={
-                              quantityOptions.some(opt => opt.value === field.value)
-                                ? field.value
-                                : "custom"
-                            }
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select quantity" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {quantityOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="custom">Custom Quantity</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          
-                          {field.value !== undefined && 
-                           !quantityOptions.some(opt => opt.value === field.value) && (
-                            <FormControl>
-                              <Input 
-                                className="mt-2"
-                                placeholder="Enter custom quantity" 
-                                {...field} 
-                              />
-                            </FormControl>
-                          )}
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        // Get medication-specific quantity options
+                        const medicationQuantityOptions = getQuantityOptionsForMedication(medication);
+                        
+                        return (
+                          <FormItem>
+                            <FormLabel>Dose Quantity</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={
+                                medicationQuantityOptions.some(opt => opt.value === field.value)
+                                  ? field.value
+                                  : "custom"
+                              }
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select quantity" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {medicationQuantityOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="custom">Custom Quantity</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            
+                            {field.value === "custom" && (
+                              <FormControl>
+                                <Input 
+                                  className="mt-2"
+                                  placeholder="Enter custom quantity" 
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                  // Don't use the field's value if it's "custom"
+                                  value=""
+                                />
+                              </FormControl>
+                            )}
+                            
+                            {field.value !== undefined && 
+                             !medicationQuantityOptions.some(opt => opt.value === field.value) && 
+                             field.value !== "custom" && (
+                              <FormControl>
+                                <Input 
+                                  className="mt-2"
+                                  placeholder="Enter custom quantity" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                     
                     <FormField
