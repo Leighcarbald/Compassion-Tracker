@@ -551,6 +551,14 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                       >
                         Edit Schedules
                       </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs font-medium text-red-500 px-2 py-1 rounded-full border border-red-500"
+                        onClick={() => handleDeleteMedication(med)}
+                      >
+                        <Trash2 className="mr-1 h-3 w-3" /> Delete
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -642,7 +650,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         medication={selectedMedication}
       />
       
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Log Confirmation Dialog */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -655,6 +663,27 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteLog}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Delete Medication Confirmation Dialog */}
+      <AlertDialog open={isDeleteMedicationConfirmOpen} onOpenChange={setIsDeleteMedicationConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Medication</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {medicationToDelete?.name}? This will also delete all schedules and history for this medication. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteMedication}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
