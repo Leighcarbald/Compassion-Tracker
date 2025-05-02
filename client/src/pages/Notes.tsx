@@ -202,8 +202,13 @@ export default function Notes({ activeTab, setActiveTab }: NotesProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Input placeholder="Title" {...field} />
+                      <Input 
+                        placeholder="Title" 
+                        maxLength={100} 
+                        {...field} 
+                      />
                     </FormControl>
+                    <CharacterCount value={titleValue} maxLength={100} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -218,9 +223,11 @@ export default function Notes({ activeTab, setActiveTab }: NotesProps) {
                       <Textarea 
                         placeholder="Write your observations here..." 
                         className="min-h-[150px]" 
+                        maxLength={1000} 
                         {...field} 
                       />
                     </FormControl>
+                    <CharacterCount value={contentValue} maxLength={1000} />
                     <FormMessage />
                   </FormItem>
                 )}

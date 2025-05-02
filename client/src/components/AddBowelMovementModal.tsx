@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CharacterCount } from "@/components/ui/character-count";
 import { useLocation } from "wouter";
 
 interface AddBowelMovementModalProps {
@@ -69,6 +70,13 @@ export default function AddBowelMovementModal({
       notes: "",
       careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
     },
+  });
+  
+  // Watch the notes field for character count
+  const notesValue = useWatch({
+    control: form.control,
+    name: "notes",
+    defaultValue: ""
   });
 
   // Update the careRecipientId when it changes
@@ -227,9 +235,11 @@ export default function AddBowelMovementModal({
                     <Textarea
                       placeholder="Add any additional notes here..."
                       className="resize-none"
+                      maxLength={500}
                       {...field}
                     />
                   </FormControl>
+                  <CharacterCount value={notesValue} maxLength={500} />
                   <FormMessage />
                 </FormItem>
               )}
