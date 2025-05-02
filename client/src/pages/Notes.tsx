@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { CharacterCount } from "@/components/ui/character-count";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { CareRecipient, Note, insertNoteSchema } from "@shared/schema";
 import { TabType } from "@/lib/types";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { Search, Plus, StickyNote } from "lucide-react";
 
@@ -61,6 +62,19 @@ export default function Notes({ activeTab, setActiveTab }: NotesProps) {
       content: "",
       careRecipientId: 0
     }
+  });
+  
+  // Watch form values for character count
+  const titleValue = useWatch({
+    control: form.control,
+    name: "title",
+    defaultValue: ""
+  });
+  
+  const contentValue = useWatch({
+    control: form.control,
+    name: "content",
+    defaultValue: ""
   });
 
   // Create note mutation
