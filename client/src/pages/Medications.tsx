@@ -5,6 +5,7 @@ import AddCareEventModal from "@/components/AddCareEventModal";
 import MedicationInventoryModal from "@/components/MedicationInventoryModal";
 import AddMedicationModal from "@/components/AddMedicationModal";
 import EditMedicationSchedulesModal from "@/components/EditMedicationSchedulesModal";
+import EditMedicationModal from "@/components/EditMedicationModal";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -43,6 +44,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [selectedMedication, setSelectedMedication] = useState<MedicationWithSchedules | null>(null);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [isSchedulesModalOpen, setIsSchedulesModalOpen] = useState(false);
+  const [isEditMedicationModalOpen, setIsEditMedicationModalOpen] = useState(false);
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
   // Track which medications are being edited
@@ -289,13 +291,8 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
 
   // Function to start editing a medication
   const handleEditMedication = (medication: MedicationWithSchedules) => {
-    setEditingMedicationId(medication.id);
-    setEditedMedication({
-      ...medication,
-      name: medication.name,
-      dosage: medication.dosage,
-      instructions: medication.instructions || ""
-    });
+    setSelectedMedication(medication);
+    setIsEditMedicationModalOpen(true);
   };
 
   // Function to save edited medication
