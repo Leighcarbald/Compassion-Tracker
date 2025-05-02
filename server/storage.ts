@@ -1331,6 +1331,24 @@ export const storage = {
     const [newDoctor] = await db.insert(doctors).values(validatedData).returning();
     return newDoctor;
   },
+  
+  async updateDoctor(id: number, doctorData: any) {
+    try {
+      // Validate input data but exclude id
+      const { id: _, ...dataToUpdate } = doctorData;
+      const validatedData = insertDoctorSchema.partial().parse(dataToUpdate);
+      
+      const [updatedDoctor] = await db.update(doctors)
+        .set(validatedData)
+        .where(eq(doctors.id, id))
+        .returning();
+      
+      return updatedDoctor;
+    } catch (error) {
+      console.error('Storage: Error updating doctor:', error);
+      throw error;
+    }
+  },
 
   // Pharmacies
   async getPharmacies(careRecipientId: number) {
