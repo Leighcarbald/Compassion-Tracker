@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Utensils, Plus, Loader2, Info, Calendar, Clock, Home } from "lucide-react";
+import { Utensils, Plus, Loader2, Info, Calendar, Clock, Home, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { TabType } from "@/lib/types";
 import { type Meal } from "@shared/schema";
 import AddMealModal from "@/components/AddMealModal";
+import EditMealModal from "@/components/EditMealModal";
 import { useLocation } from "wouter";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
 import PageHeader from "@/components/PageHeader";
@@ -25,6 +26,7 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
+  const [isEditMealOpen, setIsEditMealOpen] = useState(false);
   const { toast } = useToast();
   const [_, navigate] = useLocation();
   
@@ -77,6 +79,11 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
   const handleMealClick = (meal: Meal) => {
     setSelectedMeal(meal);
     setIsDetailsOpen(true);
+  };
+  
+  const handleEditMeal = () => {
+    setIsDetailsOpen(false);
+    setIsEditMealOpen(true);
   };
 
   const formatDate = (dateStr: string) => {
@@ -233,19 +240,31 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
                 </div>
               )}
               
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-between items-center pt-4">
                 <Button 
                   variant="outline" 
                   onClick={() => setIsDetailsOpen(false)}
                 >
                   Close
                 </Button>
-                <Button 
-                  variant="destructive"
-                  onClick={() => handleDeleteMeal(selectedMeal.id)}
-                >
-                  Delete
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline"
+                    onClick={handleEditMeal}
+                    className="flex items-center"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => handleDeleteMeal(selectedMeal.id)}
+                    className="flex items-center"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
               </div>
             </div>
           </DialogContent>
@@ -257,6 +276,13 @@ export default function Meals({ activeTab, setActiveTab }: MealsProps) {
         isOpen={isAddMealOpen}
         onClose={() => setIsAddMealOpen(false)}
         careRecipientId={activeCareRecipientId}
+      />
+      
+      {/* Edit Meal Modal */}
+      <EditMealModal
+        isOpen={isEditMealOpen}
+        onClose={() => setIsEditMealOpen(false)}
+        meal={selectedMeal}
       />
       
       <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
