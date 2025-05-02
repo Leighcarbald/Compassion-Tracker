@@ -113,6 +113,12 @@ export default function AddBowelMovementModal({
         careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
       });
       
+      // Call the onSuccess callback if provided
+      if (onSuccess) {
+        console.log("Calling onSuccess callback to refresh data");
+        onSuccess();
+      }
+      
       // Close the modal after all operations are complete
       onClose();
     },
