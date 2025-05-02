@@ -311,8 +311,12 @@ export const storage = {
       if (schedules.length === 0) {
         requiredDosesMap.set(med.id, 1);
       } else {
-        // Otherwise, count the number of schedules
-        requiredDosesMap.set(med.id, schedules.length);
+        // Count the number of required schedules (excluding "as needed" medications)
+        const requiredSchedulesCount = schedules.filter(schedule => !schedule.asNeeded).length;
+        
+        // If there are only "as needed" schedules, set required to 0 (they're optional)
+        // Otherwise, set to the count of required schedules
+        requiredDosesMap.set(med.id, requiredSchedulesCount);
       }
     }
     
@@ -354,14 +358,25 @@ export const storage = {
           takenMedicationIds.add(med.id);
         }
       } else {
-        // With schedules: check if all scheduled doses were taken
+        // Check if all required (non-as-needed) schedules were taken
         const takenScheduleIdsForMed = takenSchedulesMap.get(med.id) || new Set();
-        const allSchedulesTaken = schedules.every(schedule => 
-          takenScheduleIdsForMed.has(schedule.id)
-        );
         
-        if (allSchedulesTaken) {
+        // Filter out "as needed" schedules when checking completion
+        const requiredSchedules = schedules.filter(schedule => !schedule.asNeeded);
+        
+        // If there are no required schedules (all are as-needed), 
+        // the medication is considered complete regardless of whether doses were taken
+        if (requiredSchedules.length === 0) {
           takenMedicationIds.add(med.id);
+        } else {
+          // Otherwise, check if all required schedules were taken
+          const allRequiredSchedulesTaken = requiredSchedules.every(schedule => 
+            takenScheduleIdsForMed.has(schedule.id)
+          );
+          
+          if (allRequiredSchedulesTaken) {
+            takenMedicationIds.add(med.id);
+          }
         }
       }
     }
@@ -524,9 +539,12 @@ export const storage = {
       where: eq(medications.careRecipientId, careRecipientId)
     });
     
-    // Get upcoming medication schedules using the medication IDs
+    // Get upcoming medication schedules using the medication IDs (excluding "as needed" medications)
     const medicationEvents = await db.query.medicationSchedules.findMany({
-      where: meds.length > 0 ? inArray(medicationSchedules.medicationId, meds.map(med => med.id)) : undefined,
+      where: and(
+        meds.length > 0 ? inArray(medicationSchedules.medicationId, meds.map(med => med.id)) : undefined,
+        eq(medicationSchedules.asNeeded, false)
+      ),
       with: {
         medication: true
       },
@@ -622,6 +640,9 @@ export const storage = {
       let estimatedDailyUsage = 0;
       
       schedules.forEach(schedule => {
+        // Skip "as needed" medications when calculating daily usage
+        if (schedule.asNeeded) return;
+        
         // Extract quantity number from string (e.g., "2 tablets" -> 2)
         const quantityMatch = (schedule.quantity || "1").match(/^(\d+)/);
         const qty = quantityMatch ? parseInt(quantityMatch[1]) : 1;
