@@ -533,6 +533,9 @@ export const storage = {
   async getUpcomingEvents(careRecipientId: number) {
     const now = new Date();
     const endOfToday = endOfDay(now);
+    const currentDayOfWeek = format(now, 'EEEE').toLowerCase();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
     
     // First get all medications for this care recipient
     const meds = await db.query.medications.findMany({
@@ -540,16 +543,42 @@ export const storage = {
     });
     
     // Get upcoming medication schedules using the medication IDs (excluding "as needed" medications)
-    const medicationEvents = await db.query.medicationSchedules.findMany({
+    const medicationSchedules = await db.query.medicationSchedules.findMany({
       where: and(
         meds.length > 0 ? inArray(medicationSchedules.medicationId, meds.map(med => med.id)) : undefined,
         eq(medicationSchedules.asNeeded, false)
       ),
       with: {
         medication: true
-      },
-      limit: 3
+      }
     });
+    
+    // Process medication schedules to get upcoming doses for today
+    const medicationEvents = [];
+    
+    for (const schedule of medicationSchedules) {
+      // Skip if medication is not found or schedule doesn't match today's day of week
+      if (!schedule.medication || !schedule[currentDayOfWeek]) continue;
+      
+      // Parse time to check if it's upcoming (later today)
+      if (schedule.time) {
+        const [hourStr, minuteStr] = schedule.time.split(':');
+        const hour = parseInt(hourStr);
+        const minute = parseInt(minuteStr);
+        
+        // Only include upcoming doses (later today)
+        if (hour > currentHour || (hour === currentHour && minute > currentMinute)) {
+          medicationEvents.push({
+            id: `med_${schedule.id}`,
+            type: 'medication',
+            title: schedule.medication.name,
+            time: schedule.time,
+            details: schedule.medication.dosage || 'Take as directed',
+            scheduledFor: `${hour}:${minute.toString().padStart(2, '0')}`
+          });
+        }
+      }
+    }
     
     // Get upcoming appointments
     const appointmentEvents = await db.query.appointments.findMany({
@@ -569,9 +598,10 @@ export const storage = {
     });
     
     // Combine and format events
-    // Medication events removed from "Next Up" section as requested
     const events = [
-      // No longer including medication events in the upcoming events list
+      // Include medication events for today
+      ...medicationEvents,
+      // Include appointment events
       ...appointmentEvents.map(appointment => ({
         id: `apt_${appointment.id}`,
         type: 'appointment',
@@ -579,14 +609,14 @@ export const storage = {
         time: appointment.time,
         details: appointment.location
       }))
-      // Sleep events also removed from "Next Up" section as previously requested
+      // Sleep events removed from "Next Up" section as previously requested
     ];
     
     // Sort by time
     return events.sort((a, b) => {
       return new Date(`${format(now, 'yyyy-MM-dd')}T${a.time}`).getTime() - 
              new Date(`${format(now, 'yyyy-MM-dd')}T${b.time}`).getTime();
-    }).slice(0, 3);
+    });
   },
 
   // Medications
