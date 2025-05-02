@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage, scheduleMidnightReset } from "./storage";
 import { setupAuth } from "./auth";
 import { setupWebAuthn } from "./webauthn";
+import * as medicationService from "./services/medicationService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -308,6 +309,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching medications needing reorder:', error);
       res.status(500).json({ message: 'Error fetching medications needing reorder' });
+    }
+  });
+  
+  // Drug Database - Get medication name suggestions
+  app.get(`${apiPrefix}/medications/suggestions`, async (req, res) => {
+    try {
+      const partialName = req.query.name as string;
+      
+      if (!partialName || partialName.length < 2) {
+        return res.status(400).json({ message: 'Medication name must be at least 2 characters' });
+      }
+      
+      const suggestions = await medicationService.getMedicationNameSuggestions(partialName);
+      res.json(suggestions);
+    } catch (error) {
+      console.error('Error getting medication name suggestions:', error);
+      res.status(500).json({ message: 'Error getting medication name suggestions' });
+    }
+  });
+  
+  // Drug Database - Check for drug interactions
+  app.post(`${apiPrefix}/medications/interactions`, async (req, res) => {
+    try {
+      const { medicationNames } = req.body;
+      
+      if (!medicationNames || !Array.isArray(medicationNames) || medicationNames.length === 0) {
+        return res.status(400).json({ message: 'Medication names array is required' });
+      }
+      
+      // Get RxCUI for each medication name
+      const rxcuiPromises = medicationNames.map(name => medicationService.getRxCuiByName(name));
+      const rxcuiResults = await Promise.all(rxcuiPromises);
+      
+      // Filter out medications that don't have RxCUIs
+      const validRxcuis = rxcuiResults
+        .filter(result => result.success && result.rxcui)
+        .map(result => result.rxcui as string);
+      
+      if (validRxcuis.length === 0) {
+        return res.json({ 
+          success: true,
+          interactions: [],
+          message: 'No valid medication identifiers found'
+        });
+      }
+      
+      // Check for interactions
+      const interactions = await medicationService.checkDrugInteractions(validRxcuis);
+      res.json(interactions);
+    } catch (error) {
+      console.error('Error checking drug interactions:', error);
+      res.status(500).json({ message: 'Error checking drug interactions' });
+    }
+  });
+  
+  // Drug Database - Get medication information
+  app.get(`${apiPrefix}/medications/info/:name`, async (req, res) => {
+    try {
+      const medicationName = req.params.name;
+      
+      if (!medicationName) {
+        return res.status(400).json({ message: 'Medication name is required' });
+      }
+      
+      // First get the RxCUI
+      const rxcuiResult = await medicationService.getRxCuiByName(medicationName);
+      
+      if (!rxcuiResult.success || !rxcuiResult.rxcui) {
+        return res.status(404).json({ message: 'Medication not found in database' });
+      }
+      
+      // Then get the medication information
+      const medicationInfo = await medicationService.getMedicationInfoByRxCui(rxcuiResult.rxcui);
+      res.json(medicationInfo);
+    } catch (error) {
+      console.error('Error getting medication information:', error);
+      res.status(500).json({ message: 'Error getting medication information' });
     }
   });
 
