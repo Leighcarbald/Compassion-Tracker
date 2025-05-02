@@ -218,11 +218,25 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
                   variant="destructive" 
                   onClick={() => handleDeleteMovement(selectedMovement.id)}
                   disabled={deleteMutation.isPending}
+                  className="flex items-center"
                 >
-                  {deleteMutation.isPending && (
+                  {deleteMutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash className="mr-2 h-4 w-4" />
                   )}
                   Delete
+                </Button>
+                <Button 
+                  variant="secondary"
+                  onClick={() => {
+                    setIsDetailsOpen(false);
+                    setIsEditModalOpen(true);
+                  }}
+                  className="flex items-center"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
                 </Button>
                 <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
                   Close
@@ -244,6 +258,19 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
         careRecipientId={activeCareRecipientId}
         onSuccess={refreshBowelMovements}
       />
+      
+      {/* Edit Modal */}
+      {selectedMovement && (
+        <EditBowelMovementModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            refreshBowelMovements();
+          }}
+          movement={selectedMovement}
+          onSuccess={refreshBowelMovements}
+        />
+      )}
       
       {/* Bottom Navigation */}
       <BottomNavigation 
