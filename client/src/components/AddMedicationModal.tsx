@@ -188,18 +188,36 @@ export default function AddMedicationModal({
   
   // Function to check for drug interactions
   const checkDrugInteractions = useCallback(async (medName: string) => {
-    if (!medications || !medName) return;
+    if (!medications || !medName || medName.length < 2) return;
     
-    const medicationNames = medications.map((med: any) => med.name);
-    medicationNames.push(medName);
+    console.log('Checking drug interactions for:', medName);
+    setShowInteractions(false);
+    
+    // Get existing medication names from the medications array
+    const existingMedNames = medications.map((med: any) => med.name);
+    
+    // Only include non-empty medication names
+    const filteredMedNames = existingMedNames.filter(name => name && name.trim().length > 0);
+    
+    // Add the new medication name the user is entering
+    filteredMedNames.push(medName);
+    
+    console.log('Checking interactions between:', filteredMedNames);
     
     try {
       const response = await apiRequest(
         'POST',
         '/api/medications/interactions',
-        { medicationNames }
+        { medicationNames: filteredMedNames }
       );
+      
+      if (!response.ok) {
+        console.error('Interaction check API returned error:', response.status);
+        return;
+      }
+      
       const data = await response.json();
+      console.log('Interaction check response:', data);
       
       if (data.success && data.interactions && data.interactions.length > 0) {
         setInteractions(data.interactions);

@@ -185,9 +185,10 @@ export async function checkDrugInteractions(
     // Create a map from RxCUI back to the original medication name if provided
     const rxcuiToName = new Map<string, string>();
     if (nameToRxcui) {
-      for (const [name, rxcui] of nameToRxcui.entries()) {
+      // Convert entries to array before iteration to avoid TypeScript error
+      Array.from(nameToRxcui.entries()).forEach(([name, rxcui]) => {
         rxcuiToName.set(rxcui, name);
-      }
+      });
     }
 
     if (response.data.fullInteractionTypeGroup) {

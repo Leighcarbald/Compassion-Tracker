@@ -335,32 +335,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { medicationNames } = req.body;
       
       if (!medicationNames || !Array.isArray(medicationNames) || medicationNames.length === 0) {
-        return res.status(400).json({ message: 'Medication names array is required' });
-      }
-      
-      // Get RxCUI for each medication name
-      const rxcuiPromises = medicationNames.map(name => medicationService.getRxCuiByName(name));
-      const rxcuiResults = await Promise.all(rxcuiPromises);
-      
-      // Filter out medications that don't have RxCUIs
-      const validRxcuis = rxcuiResults
-        .filter(result => result.success && result.rxcui)
-        .map(result => result.rxcui as string);
-      
-      if (validRxcuis.length === 0) {
-        return res.json({ 
+        return res.status(400).json({ 
           success: true,
           interactions: [],
-          message: 'No valid medication identifiers found'
+          message: 'Medication names array is required'
         });
       }
       
-      // Check for interactions
-      const interactions = await medicationService.checkDrugInteractions(validRxcuis);
-      res.json(interactions);
+      console.log(`Checking interactions for medications: ${medicationNames.join(', ')}`);
+      
+      // Use our new function that handles the RxCUI lookup internally
+      const result = await medicationService.checkDrugInteractionsByNames(medicationNames);
+      res.json(result);
     } catch (error) {
       console.error('Error checking drug interactions:', error);
-      res.status(500).json({ message: 'Error checking drug interactions' });
+      res.status(500).json({ 
+        success: false,
+        message: 'Error checking drug interactions'
+      });
     }
   });
   
