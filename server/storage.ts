@@ -677,7 +677,8 @@ export const storage = {
       where: eq(medications.careRecipientId, careRecipientId),
       with: {
         schedules: true
-      }
+      },
+      orderBy: medications.name // Order by name for better display
     });
   },
   
@@ -685,12 +686,13 @@ export const storage = {
     const today = new Date();
     // Calculate date thresholds for each medication based on their daysToReorder
     
-    // Get all medications for this care recipient
+    // Get all medications for this care recipient (ordered by name for consistency)
     const allMeds = await db.query.medications.findMany({
       where: eq(medications.careRecipientId, careRecipientId),
       with: {
         schedules: true
-      }
+      },
+      orderBy: medications.name
     });
     
     // Filter medications that need reordering based on:
