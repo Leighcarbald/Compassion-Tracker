@@ -47,9 +47,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [isEditMedicationModalOpen, setIsEditMedicationModalOpen] = useState(false);
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
-  // Track which medications are being edited
-  const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
-  const [editedMedication, setEditedMedication] = useState<any>(null);
   const { toast } = useToast();
   
   // Use the global care recipient context
@@ -260,52 +257,10 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     }
   };
 
-  // Update medication
-  const updateMedicationMutation = useMutation({
-    mutationFn: async (medicationData: any) => {
-      const response = await apiRequest(
-        "PATCH",
-        `/api/medications/${medicationData.id}`,
-        medicationData
-      );
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Medication Updated",
-        description: "Successfully updated the medication information"
-      });
-      setEditingMedicationId(null);
-      setEditedMedication(null);
-      // Refresh medication data
-      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update medication: ${error.message}`,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Function to start editing a medication
+  // Function to edit a medication via modal
   const handleEditMedication = (medication: MedicationWithSchedules) => {
     setSelectedMedication(medication);
     setIsEditMedicationModalOpen(true);
-  };
-
-  // Function to save edited medication
-  const handleSaveMedication = () => {
-    if (!editedMedication) return;
-    
-    updateMedicationMutation.mutate(editedMedication);
-  };
-
-  // Function to cancel editing
-  const handleCancelEdit = () => {
-    setEditingMedicationId(null);
-    setEditedMedication(null);
   };
   
   // Handle editing schedules
@@ -315,15 +270,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       setSelectedMedication(medication);
       setIsSchedulesModalOpen(true);
     }
-  };
-
-  // Handle input change for editing
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEditedMedication((prev: any) => ({
-      ...prev,
-      [name]: value
-    }));
   };
 
   // Render medication icon based on the type
@@ -393,63 +339,25 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                       </TooltipContent>
                     </Tooltip>
                     <div className="flex-1">
-                      {editingMedicationId === med.id ? (
-                        // Editing mode for the medication
+                      {/* Display mode for the medication */}
+                      <div className="flex justify-between items-start">
                         <div>
-                          <div className="flex justify-between mb-2">
-                            <input
-                              type="text"
-                              name="name"
-                              value={editedMedication?.name || ''}
-                              onChange={handleEditInputChange}
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-1"
-                              placeholder="Medication name"
-                            />
-                          </div>
-                          <div className="flex justify-between mb-2">
-                            <input
-                              type="text"
-                              name="dosage"
-                              value={editedMedication?.dosage || ''}
-                              onChange={handleEditInputChange}
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-1"
-                              placeholder="Dosage (e.g. 10mg)"
-                            />
-                          </div>
-                          <div className="mb-2">
-                            <input
-                              type="text"
-                              name="instructions"
-                              value={editedMedication?.instructions || ''}
-                              onChange={handleEditInputChange}
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                              placeholder="Instructions"
-                            />
-                          </div>
+                          <div className="text-sm font-medium">{med.name}</div>
+                          <div className="text-xs text-gray-500">{med.dosage}</div>
                         </div>
-                      ) : (
-                        // Display mode for the medication
-                        <>
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="text-sm font-medium">{med.name}</div>
-                              <div className="text-xs text-gray-500">{med.dosage}</div>
-                            </div>
-                            {med.currentQuantity !== undefined && med.currentQuantity !== null && med.currentQuantity <= (med.reorderThreshold || 5) ? (
-                              <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                                Reorder Soon
-                              </div>
-                            ) : (
-                              <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                                In Stock
-                              </div>
-                            )}
+                        {med.currentQuantity !== undefined && med.currentQuantity !== null && med.currentQuantity <= (med.reorderThreshold || 5) ? (
+                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                            Reorder Soon
                           </div>
-                          <div className="mt-1 text-xs text-gray-500">
-                            {med.instructions || "Take as directed"}
+                        ) : (
+                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                            In Stock
                           </div>
-                        </>
-                      )}
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        {med.instructions || "Take as directed"}
+                      </div>
                       
                       {/* Schedules Section - Display medication schedules */}
                       {med.schedules && Array.isArray(med.schedules) && med.schedules.length > 0 ? (
@@ -491,58 +399,32 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                   
                   {/* Action buttons */}
                   <div className="flex justify-between mt-2">
-                    {editingMedicationId === med.id ? (
-                      // Editing controls
-                      <div className="flex w-full gap-2">
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 text-xs font-medium px-2 py-1 rounded-full border border-red-500 text-red-500"
-                          onClick={handleCancelEdit}
-                        >
-                          <X className="mr-1 h-3 w-3" /> Cancel
-                        </Button>
-                        <Button 
-                          size="sm"
-                          variant="default"
-                          className="flex-1 text-xs font-medium px-2 py-1 rounded-full bg-green-600 text-white"
-                          onClick={handleSaveMedication}
-                        >
-                          <Save className="mr-1 h-3 w-3" /> Save
-                        </Button>
-                      </div>
-                    ) : (
-                      // Normal controls
-                      <>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-xs font-medium text-blue-500 px-2 py-1 rounded-full border border-blue-500"
-                            onClick={() => handleInventoryUpdate(med.id)}
-                          >
-                            Update Inventory
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-xs font-medium text-green-500 px-2 py-1 rounded-full border border-green-500"
-                            onClick={() => handleEditMedication(med)}
-                          >
-                            <Edit className="mr-1 h-3 w-3" /> Edit
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-xs font-medium text-purple-500 px-2 py-1 rounded-full border border-purple-500"
-                            onClick={() => handleEditSchedules(med.id)}
-                          >
-                            Edit Schedules
-                          </Button>
-                        </div>
-                        {/* The Mark as Taken button is replaced with clickable times above */}
-                      </>
-                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs font-medium text-blue-500 px-2 py-1 rounded-full border border-blue-500"
+                        onClick={() => handleInventoryUpdate(med.id)}
+                      >
+                        Update Inventory
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs font-medium text-green-500 px-2 py-1 rounded-full border border-green-500"
+                        onClick={() => handleEditMedication(med)}
+                      >
+                        <Edit className="mr-1 h-3 w-3" /> Edit
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs font-medium text-purple-500 px-2 py-1 rounded-full border border-purple-500"
+                        onClick={() => handleEditSchedules(med.id)}
+                      >
+                        Edit Schedules
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -606,6 +488,13 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       <EditMedicationSchedulesModal
         isOpen={isSchedulesModalOpen}
         onClose={() => setIsSchedulesModalOpen(false)}
+        medication={selectedMedication}
+      />
+      
+      {/* Edit Medication Modal */}
+      <EditMedicationModal
+        isOpen={isEditMedicationModalOpen}
+        onClose={() => setIsEditMedicationModalOpen(false)}
         medication={selectedMedication}
       />
     </TooltipProvider>
