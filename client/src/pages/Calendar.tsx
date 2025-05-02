@@ -26,8 +26,74 @@ import {
   Droplets,
   Syringe,
   Moon,
-  FileText
+  FileText,
+  AlertCircle
 } from "lucide-react";
+
+interface UpcomingEvent {
+  id: string;
+  type: string;
+  title: string;
+  time: string;
+  details: string;
+  scheduledFor?: string;
+}
+
+export function UpcomingMedicationDoses({ careRecipientId }: { careRecipientId: number | null }) {
+  const { data: upcomingEvents, isLoading } = useQuery<UpcomingEvent[]>({
+    queryKey: ['/api/events/upcoming', careRecipientId],
+    queryFn: async () => {
+      const res = await fetch(`/api/events/upcoming?careRecipientId=${careRecipientId}`);
+      if (!res.ok) throw new Error('Failed to fetch upcoming events');
+      return res.json();
+    },
+    enabled: !!careRecipientId,
+  });
+  
+  // Filter to only show medication events
+  const medicationEvents = upcomingEvents?.filter(event => event.type === 'medication') || [];
+  
+  if (isLoading) {
+    return (
+      <div className="text-center p-4">
+        <div className="animate-pulse h-4 bg-gray-200 rounded mb-2 w-3/4 mx-auto"></div>
+        <div className="animate-pulse h-4 bg-gray-200 rounded mb-2 w-1/2 mx-auto"></div>
+        <div className="animate-pulse h-4 bg-gray-200 rounded w-2/3 mx-auto"></div>
+      </div>
+    );
+  }
+  
+  if (!medicationEvents.length) {
+    return (
+      <div className="text-center py-2">
+        <p className="text-gray-500">No upcoming medication doses for today</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-2">
+      {medicationEvents.map((event) => (
+        <Card key={event.id} className="overflow-hidden border-l-4 border-l-primary">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Pill className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">{event.title}</p>
+                  <p className="text-sm text-gray-500 flex items-center">
+                    <Clock className="h-3 w-3 mr-1" /> {formatTime(event.time)}
+                  </p>
+                  <p className="text-sm text-gray-600">{event.details}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 interface CalendarProps {
   activeTab: TabType;
@@ -214,19 +280,35 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
             </h3>
 
             {isToday ? (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <p className="text-gray-500">Today's data will be available tomorrow</p>
-                  <p className="text-sm text-gray-400 mt-2">Data for today is still being collected</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4 text-primary" 
-                    onClick={handleAddEvent}
-                  >
-                    Add an Event
-                  </Button>
-                </CardContent>
-              </Card>
+              <>
+                {/* Upcoming Medication Doses */}
+                <Card className="mb-4">
+                  <CardContent className="p-4">
+                    <h3 className="text-md font-medium mb-3 text-primary flex items-center">
+                      <Pill className="h-4 w-4 mr-2" />
+                      Upcoming Medication Doses
+                    </h3>
+                    {/* Convert activeCareRecipient to number for component */}
+                    <UpcomingMedicationDoses careRecipientId={typeof activeCareRecipient === 'string' 
+                      ? parseInt(activeCareRecipient) 
+                      : activeCareRecipient} />
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <p className="text-gray-500">Today's summary will be available tomorrow</p>
+                    <p className="text-sm text-gray-400 mt-2">Data for today is still being collected</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4 text-primary" 
+                      onClick={handleAddEvent}
+                    >
+                      Add an Event
+                    </Button>
+                  </CardContent>
+                </Card>
+              </>
             ) : isLoadingStats ? (
               <div className="p-4 text-center text-gray-500">Loading health data...</div>
             ) : !dateStats ? (

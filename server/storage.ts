@@ -543,22 +543,72 @@ export const storage = {
     });
     
     // Get upcoming medication schedules using the medication IDs (excluding "as needed" medications)
-    const medicationSchedules = await db.query.medicationSchedules.findMany({
-      where: and(
-        meds.length > 0 ? inArray(medicationSchedules.medicationId, meds.map(med => med.id)) : undefined,
-        eq(medicationSchedules.asNeeded, false)
-      ),
-      with: {
-        medication: true
-      }
-    });
+    let medSchedules = [];
+    if (meds.length > 0) {
+      medSchedules = await db.query.medicationSchedules.findMany({
+        where: and(
+          inArray(medicationSchedules.medicationId, meds.map(med => med.id)),
+          eq(medicationSchedules.asNeeded, false)
+        ),
+        with: {
+          medication: true
+        }
+      });
+    }
     
     // Process medication schedules to get upcoming doses for today
     const medicationEvents = [];
     
-    for (const schedule of medicationSchedules) {
+    // Debug log
+    console.log(`Processing ${medSchedules.length} medication schedules for upcoming doses`);
+    
+    for (const schedule of medSchedules) {
       // Skip if medication is not found or schedule doesn't match today's day of week
-      if (!schedule.medication || !schedule[currentDayOfWeek]) continue;
+      if (!schedule.medication) continue;
+      
+      // Check if the schedule is for today
+      // We need to handle both string day properties (monday, tuesday, etc.) and array daysOfWeek
+      let isScheduledForToday = false;
+      
+      // Try the direct day property first (e.g., schedule.monday for Monday)
+      if (schedule[currentDayOfWeek] === true) {
+        isScheduledForToday = true;
+      } 
+      // Otherwise check daysOfWeek array
+      else if (schedule.daysOfWeek) {
+        // Handle string JSON or array
+        let daysArray;
+        if (typeof schedule.daysOfWeek === 'string') {
+          try {
+            daysArray = JSON.parse(schedule.daysOfWeek);
+          } catch (e) {
+            daysArray = [];
+          }
+        } else if (Array.isArray(schedule.daysOfWeek)) {
+          daysArray = schedule.daysOfWeek;
+        }
+        
+        // Convert day name to number (0 = Sunday, 1 = Monday, etc.)
+        const dayToNumber = {
+          'sunday': 0,
+          'monday': 1,
+          'tuesday': 2,
+          'wednesday': 3,
+          'thursday': 4,
+          'friday': 5,
+          'saturday': 6
+        };
+        
+        const currentDayNumber = dayToNumber[currentDayOfWeek];
+        
+        // Check if current day is in the days array
+        if (daysArray && daysArray.includes(currentDayNumber)) {
+          isScheduledForToday = true;
+        }
+      }
+      
+      // Skip if not scheduled for today
+      if (!isScheduledForToday) continue;
       
       // Parse time to check if it's upcoming (later today)
       if (schedule.time) {
