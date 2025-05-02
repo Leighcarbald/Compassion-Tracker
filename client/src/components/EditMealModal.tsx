@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CharacterCount } from "@/components/ui/character-count";
 import { type Meal } from "@shared/schema";
 
 interface EditMealModalProps {
@@ -78,6 +79,12 @@ export default function EditMealModal({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: meal ? getDefaultValues(meal) : undefined,
+  });
+  
+  const notesValue = useWatch({
+    control: form.control,
+    name: "notes",
+    defaultValue: meal?.notes || "",
   });
   
   // Update form values when meal changes
@@ -238,10 +245,12 @@ export default function EditMealModal({
                   <FormControl>
                     <Textarea
                       placeholder="Add any additional notes here..."
-                      className="resize-none"
+                      className="resize-none overflow-y-auto"
+                      maxLength={500}
                       {...field}
                     />
                   </FormControl>
+                  <CharacterCount value={notesValue} maxLength={500} />
                   <FormMessage />
                 </FormItem>
               )}
