@@ -556,76 +556,93 @@ export const storage = {
       });
     }
     
-    // Process medication schedules to get upcoming doses for today
+    // Process medication schedules to get upcoming doses for today and future days
     const medicationEvents = [];
     
     // Debug log
     console.log(`Processing ${medSchedules.length} medication schedules for upcoming doses`);
     
+    // Convert day name to number (0 = Sunday, 1 = Monday, etc.)
+    const dayToNumber = {
+      'sunday': 0,
+      'monday': 1,
+      'tuesday': 2,
+      'wednesday': 3,
+      'thursday': 4,
+      'friday': 5,
+      'saturday': 6
+    };
+    
+    // Get upcoming days to check for scheduled medications (today + next 3 days)
+    const daysToCheck = [
+      { date: now, dayNumber: dayToNumber[format(now, 'EEEE').toLowerCase()] },
+      { date: addDays(now, 1), dayNumber: dayToNumber[format(addDays(now, 1), 'EEEE').toLowerCase()] },
+      { date: addDays(now, 2), dayNumber: dayToNumber[format(addDays(now, 2), 'EEEE').toLowerCase()] },
+      { date: addDays(now, 3), dayNumber: dayToNumber[format(addDays(now, 3), 'EEEE').toLowerCase()] }
+    ];
+    
     for (const schedule of medSchedules) {
-      // Skip if medication is not found or schedule doesn't match today's day of week
+      // Skip if medication is not found
       if (!schedule.medication) continue;
       
-      // Check if the schedule is for today
-      // We need to handle both string day properties (monday, tuesday, etc.) and array daysOfWeek
-      let isScheduledForToday = false;
-      
-      // Try the direct day property first (e.g., schedule.monday for Monday)
-      if (schedule[currentDayOfWeek] === true) {
-        isScheduledForToday = true;
-      } 
-      // Otherwise check daysOfWeek array
-      else if (schedule.daysOfWeek) {
-        // Handle string JSON or array
-        let daysArray;
-        if (typeof schedule.daysOfWeek === 'string') {
-          try {
-            daysArray = JSON.parse(schedule.daysOfWeek);
-          } catch (e) {
-            daysArray = [];
+      // Check each upcoming day to see if this medication is scheduled
+      for (const checkDay of daysToCheck) {
+        let isScheduledForDay = false;
+        const dayOfWeek = format(checkDay.date, 'EEEE').toLowerCase();
+        
+        // Try the direct day property first (e.g., schedule.monday for Monday)
+        if (schedule[dayOfWeek] === true) {
+          isScheduledForDay = true;
+        }
+        // Otherwise check daysOfWeek array
+        else if (schedule.daysOfWeek) {
+          // Handle string JSON or array
+          let daysArray = [];
+          
+          if (typeof schedule.daysOfWeek === 'string') {
+            try {
+              daysArray = JSON.parse(schedule.daysOfWeek);
+            } catch (e) {
+              daysArray = [];
+            }
+          } else if (Array.isArray(schedule.daysOfWeek)) {
+            daysArray = schedule.daysOfWeek;
           }
-        } else if (Array.isArray(schedule.daysOfWeek)) {
-          daysArray = schedule.daysOfWeek;
+          
+          // Check if day is in the days array
+          if (daysArray && daysArray.includes(checkDay.dayNumber)) {
+            isScheduledForDay = true;
+          }
         }
         
-        // Convert day name to number (0 = Sunday, 1 = Monday, etc.)
-        const dayToNumber = {
-          'sunday': 0,
-          'monday': 1,
-          'tuesday': 2,
-          'wednesday': 3,
-          'thursday': 4,
-          'friday': 5,
-          'saturday': 6
-        };
+        // Skip if not scheduled for this day
+        if (!isScheduledForDay) continue;
         
-        const currentDayNumber = dayToNumber[currentDayOfWeek];
-        
-        // Check if current day is in the days array
-        if (daysArray && daysArray.includes(currentDayNumber)) {
-          isScheduledForToday = true;
-        }
-      }
-      
-      // Skip if not scheduled for today
-      if (!isScheduledForToday) continue;
-      
-      // Parse time to check if it's upcoming (later today)
-      if (schedule.time) {
-        const [hourStr, minuteStr] = schedule.time.split(':');
-        const hour = parseInt(hourStr);
-        const minute = parseInt(minuteStr);
-        
-        // Only include upcoming doses (later today)
-        if (hour > currentHour || (hour === currentHour && minute > currentMinute)) {
-          medicationEvents.push({
-            id: `med_${schedule.id}`,
-            type: 'medication',
-            title: schedule.medication.name,
-            time: schedule.time,
-            details: schedule.medication.dosage || 'Take as directed',
-            scheduledFor: `${hour}:${minute.toString().padStart(2, '0')}`
-          });
+        // Parse time to check if it's upcoming
+        if (schedule.time) {
+          const [hourStr, minuteStr] = schedule.time.split(':');
+          const hour = parseInt(hourStr);
+          const minute = parseInt(minuteStr);
+          
+          // For today, only include upcoming doses (later today)
+          // For future days, include all doses
+          const isToday = format(checkDay.date, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd');
+          
+          if (!isToday || (hour > currentHour || (hour === currentHour && minute > currentMinute))) {
+            medicationEvents.push({
+              id: `med_${schedule.id}_${format(checkDay.date, 'yyyy-MM-dd')}`,
+              type: 'medication',
+              title: schedule.medication.name,
+              time: schedule.time,
+              date: format(checkDay.date, 'yyyy-MM-dd'),
+              details: schedule.medication.dosage || 'Take as directed',
+              notes: schedule.medication.instructions || '',
+              source: 'schedule',
+              scheduledFor: `${hour}:${minute.toString().padStart(2, '0')}`,
+              reminder: true, // Scheduled medications have reminders by default
+              canEdit: false   // Schedule-based events can't be edited directly
+            });
+          }
         }
       }
     }
@@ -650,12 +667,8 @@ export const storage = {
     
     // Combine and format events
     const events = [
-      // Include medication events for today
-      ...medicationEvents.map(event => ({
-        ...event,
-        source: 'schedule', // Add source field to indicate this came from a schedule
-        date: format(now, 'yyyy-MM-dd') // Add today's date
-      })),
+      // Include medication events (already contains source and date fields)
+      ...medicationEvents,
       
       // Include appointment events
       ...appointmentEvents.map(appointment => ({
@@ -673,10 +686,16 @@ export const storage = {
       // Sleep events removed from "Next Up" section as previously requested
     ];
     
-    // Sort by time
+    // Sort by date, then time
     return events.sort((a, b) => {
-      return new Date(`${format(now, 'yyyy-MM-dd')}T${a.time}`).getTime() - 
-             new Date(`${format(now, 'yyyy-MM-dd')}T${b.time}`).getTime();
+      // If dates are different, sort by date
+      if (a.date !== b.date) {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      }
+      
+      // If dates are the same, sort by time
+      return new Date(`${a.date}T${a.time}`).getTime() - 
+             new Date(`${b.date}T${b.time}`).getTime();
     });
   },
 

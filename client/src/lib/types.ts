@@ -13,8 +13,14 @@ export interface EventData {
   type: "medication" | "meal" | "appointment" | "bowel" | "sleep";
   title: string;
   time: string;
+  date: string;
   details?: string;
+  notes?: string;
+  source: "schedule" | "manual";
+  canEdit?: boolean;
+  reminder?: boolean;
   completed?: boolean;
+  scheduledFor?: string;
 }
 
 export interface DailyStats {
