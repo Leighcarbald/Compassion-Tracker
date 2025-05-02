@@ -53,6 +53,8 @@ const scheduleItemSchema = z.object({
   active: z.boolean().default(true),
   // Still include reminderEnabled in the schema to match database, but we'll hide it in the UI
   reminderEnabled: z.boolean().default(true),
+  // Add asNeeded flag for "as needed" medications
+  asNeeded: z.boolean().default(false),
 });
 
 const scheduleSchema = z.object({
@@ -180,6 +182,7 @@ export default function EditMedicationSchedulesModal({
           withFood: schedule.withFood || false,
           active: schedule.active || true,
           reminderEnabled: schedule.reminderEnabled || true,
+          asNeeded: schedule.asNeeded || false, // Add the asNeeded property
         })),
       });
       
@@ -324,6 +327,7 @@ export default function EditMedicationSchedulesModal({
       withFood: false,
       active: true,
       reminderEnabled: true, // Keep this true even though UI option is removed
+      asNeeded: false, // Default to regular schedule (not as-needed)
     });
   };
 
@@ -573,44 +577,69 @@ export default function EditMedicationSchedulesModal({
                           }}
                         />
                         
+                        {/* Hide Days of Week if "As Needed" is checked */}
+                        {!form.watch(`schedules.${index}.asNeeded`) && (
+                          <FormField
+                            control={form.control}
+                            name={`schedules.${index}.daysOfWeek`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Days of Week</FormLabel>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {daysOfWeekOptions.map((day) => (
+                                    <div 
+                                      key={day.value}
+                                      className="flex items-center space-x-2"
+                                    >
+                                      <Checkbox
+                                        id={`day-${index}-${day.value}`}
+                                        checked={field.value?.includes(day.value)}
+                                        onCheckedChange={(checked) => {
+                                          const currentValues = Array.isArray(field.value) ? [...field.value] : [];
+                                          if (checked) {
+                                            // Add the value if it's not already there
+                                            if (!currentValues.includes(day.value)) {
+                                              field.onChange([...currentValues, day.value].sort());
+                                            }
+                                          } else {
+                                            // Remove the value
+                                            field.onChange(currentValues.filter(v => v !== day.value));
+                                          }
+                                        }}
+                                      />
+                                      <label 
+                                        htmlFor={`day-${index}-${day.value}`}
+                                        className="text-xs whitespace-nowrap cursor-pointer"
+                                      >
+                                        {day.label.substring(0, 3)}
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+
+                        {/* As Needed option */}
                         <FormField
                           control={form.control}
-                          name={`schedules.${index}.daysOfWeek`}
+                          name={`schedules.${index}.asNeeded`}
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Days of Week</FormLabel>
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                {daysOfWeekOptions.map((day) => (
-                                  <div 
-                                    key={day.value}
-                                    className="flex items-center space-x-2"
-                                  >
-                                    <Checkbox
-                                      id={`day-${index}-${day.value}`}
-                                      checked={field.value?.includes(day.value)}
-                                      onCheckedChange={(checked) => {
-                                        const currentValues = Array.isArray(field.value) ? [...field.value] : [];
-                                        if (checked) {
-                                          // Add the value if it's not already there
-                                          if (!currentValues.includes(day.value)) {
-                                            field.onChange([...currentValues, day.value].sort());
-                                          }
-                                        } else {
-                                          // Remove the value
-                                          field.onChange(currentValues.filter(v => v !== day.value));
-                                        }
-                                      }}
-                                    />
-                                    <label 
-                                      htmlFor={`day-${index}-${day.value}`}
-                                      className="text-xs whitespace-nowrap cursor-pointer"
-                                    >
-                                      {day.label.substring(0, 3)}
-                                    </label>
-                                  </div>
-                                ))}
+                            <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>Take As Needed</FormLabel>
+                                <p className="text-xs text-muted-foreground">
+                                  Instead of a regular schedule, take only when needed
+                                </p>
                               </div>
-                              <FormMessage />
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
                             </FormItem>
                           )}
                         />
