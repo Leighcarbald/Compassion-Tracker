@@ -650,6 +650,9 @@ export async function importBloodPressureData(
       case 'google':
         bpRecords = await fetchGoogleFitBloodPressureData(connection, dateRange);
         break;
+      case 'fitbit':
+        bpRecords = await fetchFitbitBloodPressureData(connection, dateRange);
+        break;
       // Handle other providers
       default:
         throw new Error(`Provider ${connection.provider} not yet implemented`);
@@ -864,6 +867,120 @@ async function processFitbitSleepData(
     .where(eq(healthDeviceConnections.id, connection.id));
   
   return sleepSessions;
+}
+
+/**
+ * Fetch blood pressure data from Fitbit
+ */
+export async function fetchFitbitBloodPressureData(
+  connection: HealthDeviceConnection,
+  dateRange: { startTime: Date, endTime: Date }
+): Promise<Partial<BloodPressure>[]> {
+  // Check if token needs refresh
+  const now = new Date();
+  let accessToken = connection.accessToken;
+  
+  if (connection.tokenExpiry && connection.tokenExpiry < now && connection.refreshToken) {
+    const refreshResult = await refreshAccessToken(connection);
+    accessToken = refreshResult.accessToken;
+  }
+  
+  // Format dates for Fitbit API (yyyy-MM-dd)
+  const startDate = dateRange.startTime.toISOString().split('T')[0];
+  const endDate = dateRange.endTime.toISOString().split('T')[0];
+  
+  // Call Fitbit API to get blood pressure data
+  // Fitbit API uses a different endpoint for blood pressure data
+  const response = await fetch(
+    `${FITBIT_API_URL}/user/-/bp/date/${startDate}/${endDate}.json`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept-Language': 'en_US'
+      }
+    }
+  );
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token might be invalid, try refreshing again
+      const refreshResult = await refreshAccessToken(connection);
+      accessToken = refreshResult.accessToken;
+      
+      // Retry request with new token
+      const retryResponse = await fetch(
+        `${FITBIT_API_URL}/user/-/bp/date/${startDate}/${endDate}.json`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept-Language': 'en_US'
+          }
+        }
+      );
+      
+      if (!retryResponse.ok) {
+        const errorData = await retryResponse.json();
+        throw new Error(`Failed to fetch Fitbit blood pressure data: ${
+          errorData.errors?.[0]?.message || retryResponse.statusText
+        }`);
+      }
+      
+      return await processFitbitBloodPressureData(retryResponse, connection);
+    } else {
+      const errorData = await response.json();
+      throw new Error(`Failed to fetch Fitbit blood pressure data: ${
+        errorData.errors?.[0]?.message || response.statusText
+      }`);
+    }
+  }
+  
+  return await processFitbitBloodPressureData(response, connection);
+}
+
+/**
+ * Process blood pressure data from Fitbit API
+ */
+async function processFitbitBloodPressureData(
+  response: Response, 
+  connection: HealthDeviceConnection
+): Promise<Partial<BloodPressure>[]> {
+  const data = await response.json();
+  const bpReadings: Partial<BloodPressure>[] = [];
+  
+  // Fitbit blood pressure data has a specific format with a 'bp' array
+  if (data.bp && Array.isArray(data.bp)) {
+    for (const reading of data.bp) {
+      // Validate the reading has systolic and diastolic values
+      if (!reading.systolic || !reading.diastolic) {
+        continue;
+      }
+      
+      // Convert date from Fitbit format
+      const readingTime = new Date(reading.dateTime);
+      
+      // Create blood pressure reading
+      bpReadings.push({
+        careRecipientId: connection.careRecipientId,
+        systolic: reading.systolic,
+        diastolic: reading.diastolic,
+        pulse: reading.heartRate || null, // Some Fitbit devices record heart rate with BP
+        oxygenLevel: null, // Fitbit does not typically include SpO2 with BP
+        timeOfReading: readingTime,
+        notes: "Imported from Fitbit",
+        position: reading.position || null
+      });
+    }
+  }
+  
+  // Mark the connection as synced
+  await db.update(healthDeviceConnections)
+    .set({ 
+      lastSynced: new Date(),
+      updatedAt: new Date()
+    })
+    .where(eq(healthDeviceConnections.id, connection.id));
+  
+  return bpReadings;
 }
 
 /**
