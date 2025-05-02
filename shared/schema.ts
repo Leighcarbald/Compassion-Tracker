@@ -47,7 +47,10 @@ export const medicationSchedules = pgTable("medication_schedules", {
   withFood: boolean("with_food").default(false),
   active: boolean("active").default(true),
   reminderEnabled: boolean("reminder_enabled").default(true),
-  asNeeded: boolean("as_needed").default(false), // New field for as-needed medications
+  asNeeded: boolean("as_needed").default(false), // Field for as-needed medications
+  specificDays: jsonb("specific_days").default([]),  // Specific calendar days (MM/DD/YYYY)
+  isTapering: boolean("is_tapering").default(false), // Whether this is a tapering schedule
+  taperingSchedule: jsonb("tapering_schedule").default([]), // Array of {startDate, endDate, quantity}
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
