@@ -2,10 +2,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, scheduleMidnightReset } from "./storage";
 import { setupAuth } from "./auth";
+import { setupWebAuthn } from "./webauthn";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   const { isAuthenticated } = setupAuth(app);
+  
+  // Set up WebAuthn for biometric authentication
+  await setupWebAuthn(app);
   
   // Initialize the midnight stats reset scheduler
   scheduleMidnightReset();
