@@ -13,6 +13,9 @@ import EmergencyInfo from "@/pages/EmergencyInfo";
 import BloodPressure from "@/pages/BloodPressure";
 import GlucoseInsulin from "@/pages/GlucoseInsulin";
 import BowelMovements from "@/pages/BowelMovements";
+import HealthPlatforms from "@/pages/HealthPlatforms";
+import HealthConnectionSuccess from "@/pages/HealthConnectionSuccess";
+import HealthConnectionError from "@/pages/HealthConnectionError";
 import { useState, lazy, Suspense } from "react";
 import { TabType } from "./lib/types";
 import { PinAuthProvider } from "@/hooks/use-pin-auth";
@@ -36,6 +39,7 @@ function Router() {
   const renderBloodPressure = () => <BloodPressure activeTab={activeTab} setActiveTab={setActiveTab} />;
   const renderGlucoseInsulin = () => <GlucoseInsulin activeTab={activeTab} setActiveTab={setActiveTab} />;
   const renderBowelMovements = () => <BowelMovements activeTab={activeTab} setActiveTab={setActiveTab} />;
+  const renderHealthPlatforms = () => <HealthPlatforms />;
   
   const renderMeals = () => (
     <Suspense fallback={
@@ -72,6 +76,9 @@ function Router() {
         <Route path="/bowel-movements" component={renderBowelMovements} />
         <Route path="/meals" component={renderMeals} />
         <Route path="/sleep" component={renderSleep} />
+        <Route path="/health-platforms" component={renderHealthPlatforms} />
+        <Route path="/health-connection-success" component={HealthConnectionSuccess} />
+        <Route path="/health-connection-error" component={HealthConnectionError} />
         <Route component={NotFound} />
       </Switch>
       <Toaster />
