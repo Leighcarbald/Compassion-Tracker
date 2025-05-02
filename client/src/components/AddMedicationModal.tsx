@@ -264,34 +264,19 @@ export default function AddMedicationModal({
     enabled: !!careRecipientId && isOpen,
   });
   
-  // Get medication name suggestions as user types
+  // We're not using medication name suggestions anymore
   const fetchMedicationSuggestions = useCallback(async (partialName: string) => {
     if (!partialName || partialName.length < 2) {
       setSuggestions([]);
       return;
     }
     
-    setIsLoadingSuggestions(true);
-    try {
-      const response = await apiRequest(
-        'GET',
-        `/api/medications/suggestions?name=${encodeURIComponent(partialName)}`
-      );
-      const data = await response.json();
-      setSuggestions(data);
-    } catch (error) {
-      console.error('Failed to fetch medication suggestions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch medication suggestions.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  }, [toast]);
+    // Just return empty array since we're not using autofill
+    setSuggestions([]);
+    setIsLoadingSuggestions(false);
+  }, []);
   
-  // Create a debounced version of the fetch function
+  // Create a debounced version of the fetch function (not used but keeping for code structure)
   const debouncedFetchSuggestions = useCallback(
     debounce((name: string) => fetchMedicationSuggestions(name), 500),
     [fetchMedicationSuggestions]
@@ -526,7 +511,7 @@ export default function AddMedicationModal({
                     </div>
                   )}
                   <FormDescription className="text-xs">
-                    Start typing to see suggestions from our medication database.
+                    Enter the exact medication name as it appears on the label.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
