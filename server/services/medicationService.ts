@@ -11,19 +11,25 @@ const RXNORM_APPROX_MATCH_API_URL = 'https://rxnav.nlm.nih.gov/REST/approximateT
  */
 export async function getRxCuiByName(name: string): Promise<{ success: boolean; rxcui?: string; message?: string }> {
   try {
+    console.log(`Fetching RxCUI for medication: ${name}`);
     const response = await axios.get(`${RXNORM_API_BASE_URL}.json`, {
       params: {
         name
       }
     });
 
+    console.log('RxCUI API response:', JSON.stringify(response.data, null, 2));
+
     if (response.data.idGroup && response.data.idGroup.rxnormId && response.data.idGroup.rxnormId.length > 0) {
+      const rxcui = response.data.idGroup.rxnormId[0];
+      console.log(`Found RxCUI: ${rxcui} for medication: ${name}`);
       return {
         success: true,
-        rxcui: response.data.idGroup.rxnormId[0]
+        rxcui
       };
     }
 
+    console.log(`No RxCUI found for medication: ${name}`);
     return {
       success: false,
       message: 'No RxCUI found for the medication'
@@ -100,22 +106,89 @@ export async function getMedicationInfoByRxCui(rxcui: string): Promise<any> {
 }
 
 /**
- * Checks for interactions between multiple medications
+ * Checks for interactions between multiple medications using medication names
  */
-export async function checkDrugInteractions(rxcuiList: string[]): Promise<any> {
+export async function checkDrugInteractionsByNames(medicationNames: string[]): Promise<any> {
   try {
-    if (!rxcuiList || rxcuiList.length === 0) {
+    if (!medicationNames || medicationNames.length < 2) {
+      console.log('Not enough medications to check for interactions');
       return {
         success: true,
         interactions: []
       };
     }
 
+    console.log(`Checking interactions for medications: ${medicationNames.join(', ')}`);
+    
+    // First, get the RxCUIs for each medication
+    const rxcuiPromises = medicationNames.map(name => getRxCuiByName(name));
+    const rxcuiResults = await Promise.all(rxcuiPromises);
+    
+    // Filter out medications for which we couldn't find RxCUIs
+    const validRxcuis = rxcuiResults
+      .filter(result => result.success && result.rxcui)
+      .map(result => result.rxcui as string);
+    
+    const nameToRxcui = new Map<string, string>();
+    medicationNames.forEach((name, index) => {
+      if (rxcuiResults[index].success && rxcuiResults[index].rxcui) {
+        nameToRxcui.set(name.toLowerCase(), rxcuiResults[index].rxcui as string);
+      }
+    });
+    
+    console.log(`Found valid RxCUIs: ${validRxcuis.join(', ')}`);
+    
+    if (validRxcuis.length < 2) {
+      console.log('Not enough valid RxCUIs to check for interactions');
+      return {
+        success: true,
+        interactions: []
+      };
+    }
+    
+    // Now check for interactions using the RxCUIs
+    return await checkDrugInteractions(validRxcuis, nameToRxcui);
+  } catch (error) {
+    console.error('Error checking drug interactions by names:', error);
+    return {
+      success: false,
+      message: 'Error checking drug interactions'
+    };
+  }
+}
+
+/**
+ * Checks for interactions between multiple medications using RxCUIs
+ */
+export async function checkDrugInteractions(
+  rxcuiList: string[], 
+  nameToRxcui?: Map<string, string>
+): Promise<any> {
+  try {
+    if (!rxcuiList || rxcuiList.length < 2) {
+      return {
+        success: true,
+        interactions: []
+      };
+    }
+
+    console.log(`Requesting interactions for RxCUIs: ${rxcuiList.join('+')}`);
+    
     const response = await axios.get(`${DRUG_INTERACTION_API_BASE_URL}/list.json`, {
       params: {
         rxcuis: rxcuiList.join('+')
       }
     });
+    
+    console.log('Drug interaction API response:', JSON.stringify(response.data, null, 2));
+
+    // Create a map from RxCUI back to the original medication name if provided
+    const rxcuiToName = new Map<string, string>();
+    if (nameToRxcui) {
+      for (const [name, rxcui] of nameToRxcui.entries()) {
+        rxcuiToName.set(rxcui, name);
+      }
+    }
 
     if (response.data.fullInteractionTypeGroup) {
       // Extract detailed interactions
@@ -125,8 +198,23 @@ export async function checkDrugInteractions(rxcuiList: string[]): Promise<any> {
 
       if (interactionGroup && interactionGroup.fullInteractionType) {
         const interactions = interactionGroup.fullInteractionType.map((interaction: any) => {
-          const drug1 = interaction.minConcept[0].name;
-          const drug2 = interaction.minConcept[1].name;
+          let drug1 = interaction.minConcept[0].name;
+          let drug2 = interaction.minConcept[1].name;
+          
+          // If we have the original names, use those instead
+          if (rxcuiToName) {
+            const rxcui1 = interaction.minConcept[0].rxcui;
+            const rxcui2 = interaction.minConcept[1].rxcui;
+            
+            if (rxcuiToName.has(rxcui1)) {
+              drug1 = rxcuiToName.get(rxcui1) || drug1;
+            }
+            
+            if (rxcuiToName.has(rxcui2)) {
+              drug2 = rxcuiToName.get(rxcui2) || drug2;
+            }
+          }
+          
           const description = interaction.description;
           const severity = getSeverityFromDescription(description);
 
@@ -138,6 +226,7 @@ export async function checkDrugInteractions(rxcuiList: string[]): Promise<any> {
           };
         });
 
+        console.log(`Found ${interactions.length} interactions`);
         return {
           success: true,
           interactions
@@ -145,6 +234,7 @@ export async function checkDrugInteractions(rxcuiList: string[]): Promise<any> {
       }
     }
 
+    console.log('No interactions found');
     return {
       success: true,
       interactions: []

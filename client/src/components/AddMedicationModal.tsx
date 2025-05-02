@@ -101,6 +101,12 @@ export default function AddMedicationModal({
 }: AddMedicationModalProps) {
   const { toast } = useToast();
   const [daysToReorder, setDaysToReorder] = useState(7);
+  const [medNameInput, setMedNameInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [interactions, setInteractions] = useState<any[]>([]);
+  const [showInteractions, setShowInteractions] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(medicationSchema),
@@ -120,6 +126,94 @@ export default function AddMedicationModal({
       expirationDate: "",
     }
   });
+  
+  // Fetch current medications for interaction checking
+  const { data: medications } = useQuery({
+    queryKey: ['/api/medications', careRecipientId],
+    queryFn: async () => {
+      if (!careRecipientId) return [];
+      const res = await apiRequest('GET', `/api/medications?careRecipientId=${careRecipientId}`);
+      return await res.json();
+    },
+    enabled: !!careRecipientId && isOpen,
+  });
+  
+  // Get medication name suggestions as user types
+  const fetchMedicationSuggestions = useCallback(async (partialName: string) => {
+    if (!partialName || partialName.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    
+    setIsLoadingSuggestions(true);
+    try {
+      const response = await apiRequest(
+        'GET',
+        `/api/medications/suggestions?name=${encodeURIComponent(partialName)}`
+      );
+      const data = await response.json();
+      setSuggestions(data);
+    } catch (error) {
+      console.error('Failed to fetch medication suggestions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch medication suggestions.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, [toast]);
+  
+  // Create a debounced version of the fetch function
+  const debouncedFetchSuggestions = useCallback(
+    debounce((name: string) => fetchMedicationSuggestions(name), 500),
+    [fetchMedicationSuggestions]
+  );
+  
+  // Handle changes to the medication name input
+  const handleMedNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMedNameInput(value);
+    form.setValue('name', value);
+    
+    if (value.length >= 2) {
+      debouncedFetchSuggestions(value);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+  
+  // Function to check for drug interactions
+  const checkDrugInteractions = useCallback(async (medName: string) => {
+    if (!medications || !medName) return;
+    
+    const medicationNames = medications.map((med: any) => med.name);
+    medicationNames.push(medName);
+    
+    try {
+      const response = await apiRequest(
+        'POST',
+        '/api/medications/interactions',
+        { medicationNames }
+      );
+      const data = await response.json();
+      
+      if (data.success && data.interactions && data.interactions.length > 0) {
+        setInteractions(data.interactions);
+        setShowInteractions(true);
+      } else {
+        setInteractions([]);
+        setShowInteractions(false);
+      }
+    } catch (error) {
+      console.error('Failed to check drug interactions:', error);
+      setInteractions([]);
+      setShowInteractions(false);
+    }
+  }, [medications]);
 
   const createMedication = useMutation({
     mutationFn: async (data: z.infer<typeof medicationSchema>) => {
@@ -160,6 +254,11 @@ export default function AddMedicationModal({
     }
   });
 
+  // Check if we have serious drug interactions
+  const hasHighSeverityInteractions = interactions.some(
+    interaction => interaction.severity === 'high'
+  );
+
   const onSubmit = (data: z.infer<typeof medicationSchema>) => {
     if (!careRecipientId) return;
     
@@ -177,6 +276,18 @@ export default function AddMedicationModal({
       updatedAt: undefined,
       instructions: data.instructions || ""
     };
+    
+    // Check for drug interactions one last time before submitting
+    if (hasHighSeverityInteractions) {
+      // Warn the user about high-severity interactions
+      toast({
+        title: "Warning: Potential Serious Drug Interactions",
+        description: "This medication may have serious interactions with other medications. Please confirm with a healthcare provider before adding.",
+        variant: "destructive",
+        duration: 10000, // Show warning longer
+      });
+      // We still proceed with adding the medication, but with a warning
+    }
     
     console.log("Adding medication:", formattedData);
     createMedication.mutate(formattedData);
@@ -198,11 +309,81 @@ export default function AddMedicationModal({
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Medication Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Lisinopril" {...field} />
-                  </FormControl>
+                  <Popover open={showSuggestions && suggestions.length > 0} onOpenChange={setShowSuggestions}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            placeholder="e.g., Lisinopril" 
+                            value={medNameInput}
+                            onChange={handleMedNameChange}
+                            onBlur={() => {
+                              field.onBlur();
+                              // Check for drug interactions when user finishes typing
+                              if (medNameInput.length > 2) {
+                                checkDrugInteractions(medNameInput);
+                              }
+                              // Close suggestions after a delay to allow for selection
+                              setTimeout(() => setShowSuggestions(false), 200);
+                            }}
+                          />
+                          {isLoadingSuggestions && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-[300px] max-h-[200px] overflow-y-auto" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search medication..." />
+                        <CommandEmpty>No medication found.</CommandEmpty>
+                        <CommandGroup>
+                          {suggestions.map((suggestion) => (
+                            <CommandItem
+                              key={suggestion}
+                              value={suggestion}
+                              onSelect={(value) => {
+                                setMedNameInput(value);
+                                form.setValue('name', value);
+                                setShowSuggestions(false);
+                                checkDrugInteractions(value);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  medNameInput === suggestion ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {suggestion}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {showInteractions && interactions.length > 0 && (
+                    <div className="mt-2">
+                      {interactions.map((interaction, index) => (
+                        <Alert key={index} variant={interaction.severity === 'high' ? 'destructive' : 'default'} className="mb-2">
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                          <AlertTitle className="text-sm font-semibold">
+                            Interaction with {interaction.drug1 === medNameInput ? interaction.drug2 : interaction.drug1}
+                          </AlertTitle>
+                          <AlertDescription className="text-xs mt-1">
+                            {interaction.description}
+                          </AlertDescription>
+                        </Alert>
+                      ))}
+                    </div>
+                  )}
+                  <FormDescription className="text-xs">
+                    Start typing to see suggestions from our medication database.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
