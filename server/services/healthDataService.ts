@@ -618,6 +618,9 @@ export async function importSleepData(
       case 'google':
         sleepRecords = await fetchGoogleFitSleepData(connection, dateRange);
         break;
+      case 'fitbit':
+        sleepRecords = await fetchFitbitSleepData(connection, dateRange);
+        break;
       // Handle other providers
       default:
         throw new Error(`Provider ${connection.provider} not yet implemented`);
@@ -736,6 +739,131 @@ export async function syncAllBloodPressureData(): Promise<{
   }
   
   return result;
+}
+
+/**
+ * Fetch sleep data from Fitbit
+ */
+export async function fetchFitbitSleepData(
+  connection: HealthDeviceConnection,
+  dateRange: { startTime: Date, endTime: Date }
+): Promise<Partial<Sleep>[]> {
+  // Check if token needs refresh
+  const now = new Date();
+  let accessToken = connection.accessToken;
+  
+  if (connection.tokenExpiry && connection.tokenExpiry < now && connection.refreshToken) {
+    const refreshResult = await refreshAccessToken(connection);
+    accessToken = refreshResult.accessToken;
+  }
+  
+  // Format dates for Fitbit API (yyyy-MM-dd)
+  const startDate = dateRange.startTime.toISOString().split('T')[0];
+  const endDate = dateRange.endTime.toISOString().split('T')[0];
+  
+  // Call Fitbit API to get sleep data
+  // Fitbit's API uses a different endpoint for sleep data
+  const response = await fetch(
+    `${FITBIT_API_URL}/user/-/sleep/date/${startDate}/${endDate}.json`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept-Language': 'en_US'
+      }
+    }
+  );
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token might be invalid, try refreshing again
+      const refreshResult = await refreshAccessToken(connection);
+      accessToken = refreshResult.accessToken;
+      
+      // Retry request with new token
+      const retryResponse = await fetch(
+        `${FITBIT_API_URL}/user/-/sleep/date/${startDate}/${endDate}.json`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept-Language': 'en_US'
+          }
+        }
+      );
+      
+      if (!retryResponse.ok) {
+        const errorData = await retryResponse.json();
+        throw new Error(`Failed to fetch Fitbit sleep data: ${
+          errorData.errors?.[0]?.message || retryResponse.statusText
+        }`);
+      }
+      
+      return await processFitbitSleepData(retryResponse, connection);
+    } else {
+      const errorData = await response.json();
+      throw new Error(`Failed to fetch Fitbit sleep data: ${
+        errorData.errors?.[0]?.message || response.statusText
+      }`);
+    }
+  }
+  
+  return await processFitbitSleepData(response, connection);
+}
+
+/**
+ * Process sleep data from Fitbit API
+ */
+async function processFitbitSleepData(
+  response: Response, 
+  connection: HealthDeviceConnection
+): Promise<Partial<Sleep>[]> {
+  const data = await response.json();
+  const sleepSessions: Partial<Sleep>[] = [];
+  
+  // Fitbit sleep data has a specific format with a 'sleep' array
+  if (data.sleep && Array.isArray(data.sleep)) {
+    for (const session of data.sleep) {
+      // Skip entries that are naps or have no duration
+      if (session.type === 'nap' || !session.duration) {
+        continue;
+      }
+      
+      // Convert dates from Fitbit format
+      const startTime = new Date(session.startTime);
+      const endTime = new Date(session.endTime);
+      
+      // Calculate quality based on efficiency score (if available)
+      let quality = "fair";
+      if (session.efficiency) {
+        if (session.efficiency >= 90) {
+          quality = "excellent";
+        } else if (session.efficiency >= 80) {
+          quality = "good";
+        } else if (session.efficiency >= 70) {
+          quality = "fair";
+        } else {
+          quality = "poor";
+        }
+      }
+      
+      sleepSessions.push({
+        startTime,
+        endTime,
+        careRecipientId: connection.careRecipientId,
+        notes: `Imported from Fitbit${session.efficiency ? ` (Efficiency: ${session.efficiency}%)` : ''}`,
+        quality
+      });
+    }
+  }
+  
+  // Mark the connection as synced
+  await db.update(healthDeviceConnections)
+    .set({ 
+      lastSynced: new Date(),
+      updatedAt: new Date()
+    })
+    .where(eq(healthDeviceConnections.id, connection.id));
+  
+  return sleepSessions;
 }
 
 /**

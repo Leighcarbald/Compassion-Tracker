@@ -1663,6 +1663,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // OAuth callback for Fitbit
+  app.get(`${apiPrefix}/oauth/fitbit/callback`, async (req, res) => {
+    try {
+      const code = req.query.code as string;
+      const state = req.query.state as string;
+      
+      if (!code) {
+        return res.status(400).json({ message: 'Authorization code is required' });
+      }
+      
+      // Parse state parameter which contains careRecipientId and provider
+      let stateObj;
+      try {
+        stateObj = JSON.parse(state);
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid state parameter' });
+      }
+      
+      const { careRecipientId, provider } = stateObj;
+      
+      if (!careRecipientId || provider !== 'fitbit') {
+        return res.status(400).json({ message: 'Invalid state parameter' });
+      }
+      
+      // Exchange code for tokens
+      const tokens = await healthDataService.exchangeCodeForTokens('fitbit', code);
+      
+      // Create or update health device connection
+      const connection = await db
+        .insert(healthDeviceConnections)
+        .values({
+          careRecipientId,
+          provider: 'fitbit',
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          tokenExpiry: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : null,
+          providerUserId: tokens.providerUserId,
+          syncEnabled: true,
+          lastSynced: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning()
+        .onConflictDoUpdate({
+          target: [healthDeviceConnections.careRecipientId, healthDeviceConnections.provider],
+          set: {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken || undefined,
+            tokenExpiry: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : undefined,
+            providerUserId: tokens.providerUserId || undefined,
+            syncEnabled: true,
+            updatedAt: new Date()
+          }
+        });
+      
+      // Redirect to success page
+      res.redirect('/#/health-connection-success');
+    } catch (error) {
+      console.error('Error exchanging Fitbit OAuth code:', error);
+      // Redirect to error page
+      res.redirect(`/#/health-connection-error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+    }
+  });
+  
   // List connected health platforms for a care recipient
   app.get(`${apiPrefix}/health-platforms/connections`, async (req, res) => {
     try {
