@@ -56,7 +56,7 @@ export default function EditMedicationModal({
         dosage: medication.dosage || '',
         instructions: medication.instructions || '',
         // Use nullish coalescing for optional properties with defaults
-        form: medication.form as string || 'pill',
+        form: (medication as any).form || 'pill',
         icon: medication.icon || 'pill',
         iconColor: medication.iconColor || 'blue',
         // These properties might not exist in the schema, so we'll handle them safely
