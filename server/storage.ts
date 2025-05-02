@@ -975,6 +975,7 @@ export const storage = {
       
       // Delete the schedule
       await db.delete(medicationSchedules).where(eq(medicationSchedules.id, scheduleId));
+      return { success: true };
     } else {
       // If it's a string ID (UUID), we need to try to find the schedule by numeric ID
       const numericId = parseInt(scheduleId);
