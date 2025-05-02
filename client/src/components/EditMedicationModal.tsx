@@ -1,22 +1,27 @@
-import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
+import React, { useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
   DialogFooter,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Medication, MedicationLog } from "@shared/schema";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatDate, formatTime } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Medication, MedicationSchedule } from '@shared/schema';
 
 interface EditMedicationModalProps {
   isOpen: boolean;
@@ -27,46 +32,57 @@ interface EditMedicationModalProps {
 export default function EditMedicationModal({
   isOpen,
   onClose,
-  medication
+  medication,
 }: EditMedicationModalProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const [medicationData, setMedicationData] = useState({
-    name: "",
-    dosage: "",
-    instructions: ""
+  const [medicationData, setMedicationData] = useState<any>({
+    name: '',
+    dosage: '',
+    instructions: '',
+    form: 'pill',
+    icon: 'pill',
+    iconColor: 'blue',
+    prescribingDoctorId: null,
+    prescriptionNumber: '',
+    reorderThreshold: 5,
   });
 
-  // Load existing data when medication changes
+  const { toast } = useToast();
+
   useEffect(() => {
     if (medication) {
       setMedicationData({
-        name: medication.name || "",
-        dosage: medication.dosage || "",
-        instructions: medication.instructions || ""
+        id: medication.id,
+        name: medication.name || '',
+        dosage: medication.dosage || '',
+        instructions: medication.instructions || '',
+        form: medication.form || 'pill',
+        icon: medication.icon || 'pill',
+        iconColor: medication.iconColor || 'blue',
+        prescribingDoctorId: medication.prescribingDoctorId || null,
+        prescriptionNumber: medication.prescriptionNumber || '',
+        reorderThreshold: medication.reorderThreshold || 5,
+        careRecipientId: medication.careRecipientId,
       });
     }
   }, [medication]);
 
   const updateMedicationMutation = useMutation({
-    mutationFn: async (data: typeof medicationData) => {
-      if (!medication) return null;
-      
+    mutationFn: async (data: any) => {
       const response = await apiRequest(
-        "PATCH", 
-        `/api/medications/${medication.id}`,
-        { ...medication, ...data }
+        "PATCH",
+        `/api/medications/${data.id}`,
+        data
       );
       return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Medication Updated",
-        description: "Medication has been updated successfully."
+        description: "Successfully updated the medication information"
       });
+      
+      // Refresh medication data
       queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', medication?.careRecipientId?.toString()] });
       onClose();
     },
     onError: (error) => {
@@ -80,135 +96,242 @@ export default function EditMedicationModal({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setMedicationData(prev => ({
+    setMedicationData((prev: any) => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSelectChange = (name: string, value: string) => {
+    setMedicationData((prev: any) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const parsedValue = parseInt(value);
+    
+    if (!isNaN(parsedValue) || value === '') {
+      setMedicationData((prev: any) => ({
+        ...prev,
+        [name]: value === '' ? '' : parsedValue
+      }));
+    }
+  };
+
+  const handleSave = () => {
+    if (!medicationData.name || !medicationData.dosage) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both name and dosage for the medication",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     updateMedicationMutation.mutate(medicationData);
   };
 
-  // Fetch medication logs
-  const { data: medicationLogs } = useQuery<MedicationLog[]>({
-    queryKey: ['/api/medication-logs', medication?.careRecipientId],
-    enabled: !!medication?.careRecipientId,
-  });
+  // Form based medicine options
+  const getMedicationFormOptions = () => {
+    return [
+      { value: 'pill', label: 'Pill' },
+      { value: 'tablet', label: 'Tablet' },
+      { value: 'capsule', label: 'Capsule' },
+      { value: 'liquid', label: 'Liquid' },
+      { value: 'injection', label: 'Injection' },
+      { value: 'patch', label: 'Patch' },
+      { value: 'inhaler', label: 'Inhaler' },
+      { value: 'drops', label: 'Drops' },
+      { value: 'cream', label: 'Cream/Ointment' },
+      { value: 'powder', label: 'Powder' },
+      { value: 'other', label: 'Other' },
+    ];
+  };
 
-  // Filter logs for current medication
-  const filteredLogs = medicationLogs?.filter(log => log.medicationId === medication?.id) || [];
+  // Icon options
+  const getIconOptions = () => {
+    return [
+      { value: 'pill', label: 'Pill' },
+      { value: 'capsules', label: 'Capsule' },
+      { value: 'tablets', label: 'Tablet' },
+      { value: 'syringe', label: 'Injection' },
+      { value: 'inhaler', label: 'Inhaler' },
+      { value: 'drops', label: 'Drops' },
+      { value: 'cream', label: 'Cream' },
+      { value: 'liquid', label: 'Liquid' },
+    ];
+  };
 
-  if (!medication) return null;
+  // Color options
+  const getColorOptions = () => {
+    return [
+      { value: 'blue', label: 'Blue' },
+      { value: 'green', label: 'Green' },
+      { value: 'red', label: 'Red' },
+      { value: 'yellow', label: 'Yellow' },
+      { value: 'purple', label: 'Purple' },
+      { value: 'pink', label: 'Pink' },
+      { value: 'orange', label: 'Orange' },
+      { value: 'gray', label: 'Gray' },
+    ];
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{medication.name}</DialogTitle>
+          <DialogTitle>Edit Medication</DialogTitle>
           <DialogDescription>
-            Edit medication details and view history
+            Update the details for this medication.
           </DialogDescription>
         </DialogHeader>
-        
-        <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="details" className="space-y-4">
-            <div className="grid gap-4 py-2">
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="name">Medication Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={medicationData.name}
-                  onChange={handleInputChange}
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="dosage">Dosage</Label>
-                <Input
-                  id="dosage"
-                  name="dosage"
-                  value={medicationData.dosage}
-                  onChange={handleInputChange}
-                  className="w-full"
-                  placeholder="e.g., 10mg"
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="instructions">Instructions</Label>
-                <Textarea
-                  id="instructions"
-                  name="instructions"
-                  value={medicationData.instructions}
-                  onChange={handleInputChange}
-                  className="w-full"
-                  placeholder="Special instructions"
-                  rows={3}
-                />
-              </div>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Medication Name</Label>
+              <Input
+                id="name"
+                name="name"
+                value={medicationData.name}
+                onChange={handleInputChange}
+                placeholder="Medication name"
+              />
             </div>
-            
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="sm:order-1 w-full sm:w-auto"
+
+            <div className="space-y-2">
+              <Label htmlFor="dosage">Dosage</Label>
+              <Input
+                id="dosage"
+                name="dosage"
+                value={medicationData.dosage}
+                onChange={handleInputChange}
+                placeholder="e.g., 10mg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instructions">Instructions</Label>
+              <Textarea
+                id="instructions"
+                name="instructions"
+                value={medicationData.instructions}
+                onChange={handleInputChange}
+                placeholder="Take with food, etc."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="form">Form</Label>
+              <Select
+                value={medicationData.form}
+                onValueChange={(value) => handleSelectChange('form', value)}
               >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSubmit}
-                className="sm:order-2 w-full sm:w-auto"
-                disabled={updateMedicationMutation.isPending}
-              >
-                {updateMedicationMutation.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </DialogFooter>
-          </TabsContent>
-          
-          <TabsContent value="history">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Medication History</h3>
-              
-              {filteredLogs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No medication history available.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredLogs.map((log) => (
-                    <div key={log.id} className="border rounded-md p-3">
-                      <div className="flex justify-between items-center">
-                        <div className="font-medium">
-                          {log.taken ? "Taken" : "Skipped"}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatDate(new Date(log.takenAt))}
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Time: {formatTime(new Date(log.takenAt))}
-                      </div>
-                      {log.notes && (
-                        <div className="text-sm mt-1">
-                          Notes: {log.notes}
-                        </div>
-                      )}
-                    </div>
+                <SelectTrigger id="form">
+                  <SelectValue placeholder="Select form" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getMedicationFormOptions().map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
                   ))}
-                </div>
-              )}
+                </SelectContent>
+              </Select>
             </div>
-          </TabsContent>
-        </Tabs>
+
+            <div className="space-y-2">
+              <Label htmlFor="icon">Icon</Label>
+              <Select
+                value={medicationData.icon}
+                onValueChange={(value) => handleSelectChange('icon', value)}
+              >
+                <SelectTrigger id="icon">
+                  <SelectValue placeholder="Select icon" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getIconOptions().map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="iconColor">Icon Color</Label>
+              <Select
+                value={medicationData.iconColor}
+                onValueChange={(value) => handleSelectChange('iconColor', value)}
+              >
+                <SelectTrigger id="iconColor">
+                  <SelectValue placeholder="Select color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getColorOptions().map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                This color is for visual organization only and does not represent the actual medication color.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reorderThreshold">Reorder Threshold</Label>
+              <Input
+                id="reorderThreshold"
+                name="reorderThreshold"
+                type="number"
+                min="1"
+                value={medicationData.reorderThreshold}
+                onChange={handleNumberChange}
+                placeholder="5"
+              />
+              <p className="text-xs text-gray-500">
+                You'll be notified when inventory falls below this number.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="prescriptionNumber">Prescription Number</Label>
+              <Input
+                id="prescriptionNumber"
+                name="prescriptionNumber"
+                value={medicationData.prescriptionNumber}
+                onChange={handleInputChange}
+                placeholder="Optional"
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="mt-2 sm:mt-0"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            className="mt-2 sm:mt-0"
+            disabled={updateMedicationMutation.isPending}
+          >
+            {updateMedicationMutation.isPending ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
