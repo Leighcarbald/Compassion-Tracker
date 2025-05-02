@@ -59,9 +59,11 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
   const [logDoseMode, setLogDoseMode] = useState(false);
-  // State for delete confirmation dialog
+  // State for delete confirmation dialogs
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleteMedicationConfirmOpen, setIsDeleteMedicationConfirmOpen] = useState(false);
   const [logToDelete, setLogToDelete] = useState<MedicationLog | null>(null);
+  const [medicationToDelete, setMedicationToDelete] = useState<MedicationWithSchedules | null>(null);
   const { toast } = useToast();
   
   // Use the global care recipient context
@@ -329,6 +331,51 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const confirmDeleteLog = () => {
     if (logToDelete) {
       deleteMedicationLogMutation.mutate(logToDelete.id);
+    }
+  };
+  
+  // Delete medication mutation
+  const deleteMedicationMutation = useMutation({
+    mutationFn: async (medicationId: number) => {
+      const response = await apiRequest(
+        "DELETE",
+        `/api/medications/${medicationId}`
+      );
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Medication Deleted",
+        description: "Successfully deleted the medication"
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/upcoming-events'] });
+      
+      setIsDeleteMedicationConfirmOpen(false);
+      setMedicationToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete medication: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle delete medication click
+  const handleDeleteMedication = (medication: MedicationWithSchedules) => {
+    setMedicationToDelete(medication);
+    setIsDeleteMedicationConfirmOpen(true);
+  };
+  
+  // Handle confirm delete medication
+  const confirmDeleteMedication = () => {
+    if (medicationToDelete) {
+      deleteMedicationMutation.mutate(medicationToDelete.id);
     }
   };
 
