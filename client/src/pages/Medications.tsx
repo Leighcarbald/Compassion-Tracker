@@ -375,11 +375,15 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                               className={`text-xs py-0.5 px-2 h-auto rounded-full ${
                                 isDoseTaken(med.id, schedule.id)
                                   ? "bg-green-600 text-white border-green-600"
-                                  : "text-primary border border-primary"
+                                  : schedule.asNeeded 
+                                    ? "text-amber-600 border border-amber-600" 
+                                    : "text-primary border border-primary"
                               }`}
                               onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
                             >
-                              {schedule.time?.toString().slice(0, 5) || "Take"}
+                              {schedule.asNeeded 
+                                ? "As Needed" 
+                                : (schedule.time?.toString().slice(0, 5) || "Take")}
                               {isDoseTaken(med.id, schedule.id) && (
                                 <Check className="ml-1 h-3 w-3" />
                               )}
