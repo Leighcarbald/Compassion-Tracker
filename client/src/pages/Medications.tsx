@@ -6,6 +6,7 @@ import MedicationInventoryModal from "@/components/MedicationInventoryModal";
 import AddMedicationModal from "@/components/AddMedicationModal";
 import EditMedicationSchedulesModal from "@/components/EditMedicationSchedulesModal";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MedicationLog, CareRecipient, Medication, MedicationSchedule } from "@shared/schema";
 import { TabType } from "@/lib/types";
@@ -345,7 +346,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   };
 
   return (
-    <>
+    <TooltipProvider>
       <PageHeader title="Medications" icon={<Pill />} />
       
       <main className="flex-1 overflow-auto pb-16">
@@ -610,6 +611,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         onClose={() => setIsSchedulesModalOpen(false)}
         medication={selectedMedication}
       />
-    </>
+    </TooltipProvider>
   );
 }
