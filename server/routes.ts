@@ -578,6 +578,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
+  
+  app.patch(`${apiPrefix}/meals/:id`, async (req, res) => {
+    try {
+      const mealId = parseInt(req.params.id);
+      
+      if (isNaN(mealId)) {
+        return res.status(400).json({ message: 'Invalid meal ID' });
+      }
+      
+      console.log(`Received update request for meal ${mealId} with body:`, req.body);
+      
+      const updatedMeal = await storage.updateMeal(mealId, req.body);
+      console.log(`Meal ${mealId} updated successfully:`, updatedMeal);
+      
+      res.json(updatedMeal);
+    } catch (error) {
+      console.error(`Error updating meal:`, error);
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: 'Error updating meal', 
+          error: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      } else {
+        res.status(500).json({ message: 'Unknown error updating meal' });
+      }
+    }
+  });
+  
+  app.delete(`${apiPrefix}/meals/:id`, async (req, res) => {
+    try {
+      const mealId = parseInt(req.params.id);
+      
+      if (isNaN(mealId)) {
+        return res.status(400).json({ message: 'Invalid meal ID' });
+      }
+      
+      console.log(`Received delete request for meal ${mealId}`);
+      
+      await storage.deleteMeal(mealId);
+      console.log(`Meal ${mealId} deleted successfully`);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error(`Error deleting meal:`, error);
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: 'Error deleting meal', 
+          error: error.message
+        });
+      } else {
+        res.status(500).json({ message: 'Unknown error deleting meal' });
+      }
+    }
+  });
 
   // Bowel Movements
   app.get(`${apiPrefix}/bowel-movements`, async (req, res) => {

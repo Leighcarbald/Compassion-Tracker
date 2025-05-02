@@ -1069,6 +1069,51 @@ export const storage = {
       throw error;
     }
   },
+  
+  async updateMeal(id: number, mealData: any) {
+    console.log(`Storage: updating meal ${id} with data:`, mealData);
+    try {
+      // Handle consumedAt format - convert ISO string to Date object if needed
+      let processedData = { ...mealData };
+      
+      if (typeof processedData.consumedAt === 'string') {
+        processedData.consumedAt = new Date(processedData.consumedAt);
+      }
+      
+      // Ensure careRecipientId is a number if provided
+      if (processedData.careRecipientId) {
+        processedData.careRecipientId = parseInt(processedData.careRecipientId.toString());
+      }
+      
+      console.log('Storage: processed meal update data:', processedData);
+      
+      // Update meal record
+      const [updatedMeal] = await db.update(meals)
+        .set({
+          ...processedData,
+          updatedAt: new Date(),
+        })
+        .where(eq(meals.id, id))
+        .returning();
+      
+      console.log('Storage: meal updated successfully:', updatedMeal);
+      return updatedMeal;
+    } catch (error) {
+      console.error(`Storage: Error updating meal ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  async deleteMeal(id: number) {
+    console.log(`Storage: deleting meal ${id}`);
+    try {
+      await db.delete(meals).where(eq(meals.id, id));
+      return { success: true };
+    } catch (error) {
+      console.error(`Storage: Error deleting meal ${id}:`, error);
+      throw error;
+    }
+  },
 
   // Bowel Movements
   async getBowelMovements(careRecipientId: number) {
