@@ -43,6 +43,7 @@ interface AddCareEventModalProps {
   defaultEventType?: EventType;
   selectedDate?: Date;
   hideCategorySelector?: boolean;
+  defaultMedicationId?: number;
 }
 
 const eventSchema = z.object({
@@ -64,7 +65,8 @@ export default function AddCareEventModal({
   careRecipientId,
   defaultEventType = "meal",
   selectedDate,
-  hideCategorySelector = false
+  hideCategorySelector = false,
+  defaultMedicationId
 }: AddCareEventModalProps) {
   const [eventType, setEventType] = useState<EventType>(defaultEventType);
 
@@ -109,7 +111,7 @@ export default function AddCareEventModal({
         notes: "",
         reminder: false,
         careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
-        medicationId: undefined,
+        medicationId: defaultMedicationId,
         mealType: defaultEventType === "meal" ? "breakfast" : undefined
       });
       
@@ -118,7 +120,7 @@ export default function AddCareEventModal({
       
       console.log("Form reset on modal open with values:", form.getValues());
     }
-  }, [isOpen, form, selectedDate, defaultEventType, careRecipientId]);
+  }, [isOpen, form, selectedDate, defaultEventType, careRecipientId, defaultMedicationId]);
   
   // When medication is selected, update the name field
   useEffect(() => {
