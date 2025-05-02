@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { CareRecipient } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDate } from "@/lib/utils";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, UserCog } from "lucide-react";
 import CareRecipientTabs from "./CareRecipientTabs";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { UserSettingsModal } from "./UserSettingsModal";
+import { useAuth } from "@/hooks/use-auth";
 
 interface HeaderProps {
   isLoading?: boolean;
@@ -14,6 +17,9 @@ interface HeaderProps {
 export default function Header({ 
   isLoading = false 
 }: HeaderProps) {
+  const [userSettingsOpen, setUserSettingsOpen] = useState(false);
+  const { user } = useAuth();
+  
   const { 
     activeCareRecipientId: activeCareRecipient, 
     setActiveCareRecipientId: onChangeRecipient, 
@@ -31,44 +37,60 @@ export default function Header({
           <h1 className="text-xl font-semibold text-primary">CareCompanion</h1>
         </div>
         
-        {isLoading ? (
-          <Skeleton className="h-10 w-32" />
-        ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md border border-gray-300 shadow-sm hover:bg-gray-50">
-                {currentRecipient ? (
-                  <span className="flex items-center">
-                    <span 
-                      className="h-2 w-2 rounded-full mr-2"
-                      style={{ backgroundColor: currentRecipient.status === 'active' ? '#10B981' : '#F59E0B' }}
-                    />
-                    <span>{currentRecipient.name}</span>
-                  </span>
-                ) : (
-                  <span>Select Recipient</span>
-                )}
-                <ChevronDown className="ml-2 h-4 w-4 text-gray-500" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {careRecipients.map(recipient => (
-                <DropdownMenuItem key={recipient.id} onClick={() => onChangeRecipient(recipient.id.toString())}>
-                  <div className="flex items-center">
-                    <span 
-                      className="h-2 w-2 rounded-full mr-2"
-                      style={{ backgroundColor: recipient.status === 'active' ? '#10B981' : '#F59E0B' }}
-                    />
-                    <span>{recipient.name}</span>
-                    {recipient.id.toString() === activeCareRecipient && (
-                      <Check className="ml-2 h-4 w-4" />
-                    )}
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        <div className="flex gap-2">
+          {/* User Settings Button */}
+          {user && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9"
+              onClick={() => setUserSettingsOpen(true)}
+              title="User Settings"
+            >
+              <UserCog className="h-5 w-5" />
+            </Button>
+          )}
+          
+          {/* Care Recipient Selector */}
+          {isLoading ? (
+            <Skeleton className="h-10 w-32" />
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="inline-flex justify-center items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md border border-gray-300 shadow-sm hover:bg-gray-50">
+                  {currentRecipient ? (
+                    <span className="flex items-center">
+                      <span 
+                        className="h-2 w-2 rounded-full mr-2"
+                        style={{ backgroundColor: currentRecipient.status === 'active' ? '#10B981' : '#F59E0B' }}
+                      />
+                      <span>{currentRecipient.name}</span>
+                    </span>
+                  ) : (
+                    <span>Select Recipient</span>
+                  )}
+                  <ChevronDown className="ml-2 h-4 w-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {careRecipients.map(recipient => (
+                  <DropdownMenuItem key={recipient.id} onClick={() => onChangeRecipient(recipient.id.toString())}>
+                    <div className="flex items-center">
+                      <span 
+                        className="h-2 w-2 rounded-full mr-2"
+                        style={{ backgroundColor: recipient.status === 'active' ? '#10B981' : '#F59E0B' }}
+                      />
+                      <span>{recipient.name}</span>
+                      {recipient.id.toString() === activeCareRecipient && (
+                        <Check className="ml-2 h-4 w-4" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
       
       {/* Date Bar */}
@@ -84,6 +106,12 @@ export default function Header({
         activeCareRecipient={activeCareRecipient}
         onChangeRecipient={onChangeRecipient}
         isLoading={isLoading}
+      />
+      
+      {/* User Settings Modal */}
+      <UserSettingsModal 
+        open={userSettingsOpen} 
+        onOpenChange={setUserSettingsOpen} 
       />
     </header>
   );

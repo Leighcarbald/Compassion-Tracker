@@ -5,7 +5,7 @@ import {
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
 } from "@simplewebauthn/server";
-import {
+import type {
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
   PublicKeyCredentialCreationOptionsJSON,
@@ -16,10 +16,19 @@ import { db } from "../db";
 import * as schema from "@shared/schema";
 import { eq } from "drizzle-orm";
 
+// Set up WebAuthn relying party details
 const rpName = "CareGiver App";
+// For development on localhost, we need to use "localhost" as the RP ID
+// In production, this would be your domain name
 const rpID = process.env.RP_ID || "localhost";
-const origin = process.env.ORIGIN || `https://${rpID}`;
-const expectedOrigin = origin;
+// Origin needs to include the protocol
+const origin = process.env.ORIGIN || (process.env.NODE_ENV === "production" 
+  ? `https://${rpID}` 
+  : `http://${rpID}:5000`); // Use port 5000 in development
+// In development, we need to accept multiple origins due to how Replit serves apps
+const expectedOrigin = process.env.NODE_ENV === "production" 
+  ? origin 
+  : [origin, `https://${rpID}.replit.app`];
 
 /**
  * Creates WebAuthn endpoints for biometric authentication

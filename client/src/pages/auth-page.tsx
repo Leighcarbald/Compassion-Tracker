@@ -10,7 +10,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Fingerprint, User, LogIn, UserPlus, Mail, Lock, BadgeInfo } from "lucide-react";
+import { Fingerprint, User, LogIn, UserPlus, Mail, Lock, BadgeInfo, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
 
 // Form validation schemas
 const loginSchema = z.object({
@@ -26,16 +28,40 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, "Password must contain at least one special character"),
+    .regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/, "Password must contain at least one special character"),
+});
+
+const biometricLoginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
+type BiometricLoginFormValues = z.infer<typeof biometricLoginSchema>;
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
-  const { user, loginMutation, registerMutation, 
-          biometricStatus, loginWithBiometricMutation } = useAuth();
+  const [webAuthnSupported, setWebAuthnSupported] = useState<boolean | null>(null);
+  
+  const { 
+    user, 
+    loginMutation, 
+    registerMutation, 
+    biometricStatus, 
+    loginWithBiometricMutation,
+    biometricUsername,
+    setBiometricUsername,
+    registerBiometricMutation
+  } = useAuth();
+
+  // Check if WebAuthn is supported
+  useEffect(() => {
+    async function checkWebAuthnSupport() {
+      const supported = await browserSupportsWebAuthn();
+      setWebAuthnSupported(supported);
+    }
+    checkWebAuthnSupport();
+  }, []);
 
   // Login form setup
   const loginForm = useForm<LoginFormValues>({
@@ -57,17 +83,36 @@ export default function AuthPage() {
     },
   });
 
+  // Biometric login form setup
+  const biometricLoginForm = useForm<BiometricLoginFormValues>({
+    resolver: zodResolver(biometricLoginSchema),
+    defaultValues: {
+      username: biometricUsername || "",
+    },
+  });
+
+  // Update biometric login form when biometricUsername changes
+  useEffect(() => {
+    if (biometricUsername) {
+      biometricLoginForm.setValue("username", biometricUsername);
+    }
+  }, [biometricUsername, biometricLoginForm]);
+
   // Handle form submissions
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
+    
+    // Store the username for potential biometric login
+    setBiometricUsername(data.username);
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     registerMutation.mutate(data);
   };
 
-  const handleBiometricLogin = () => {
-    loginWithBiometricMutation.mutate();
+  const onBiometricLoginSubmit = (data: BiometricLoginFormValues) => {
+    setBiometricUsername(data.username);
+    loginWithBiometricMutation.mutate({ username: data.username });
   };
 
   // If user is already logged in, redirect to home
@@ -75,8 +120,8 @@ export default function AuthPage() {
     return <Redirect to="/" />;
   }
 
-  // Show biometric button only if it's available and registered
-  const showBiometricOption = biometricStatus.data?.available && biometricStatus.data?.registered;
+  // Show biometric button only if it's available on this device
+  const showBiometricOption = webAuthnSupported;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -164,7 +209,7 @@ export default function AuthPage() {
                   </form>
                 </Form>
 
-                {/* Biometric Login Button */}
+                {/* Biometric Login Button & Form */}
                 {showBiometricOption && (
                   <div className="pt-2">
                     <div className="relative">
@@ -175,25 +220,63 @@ export default function AuthPage() {
                         <span className="bg-white px-2 text-gray-500">Or</span>
                       </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4" 
-                      onClick={handleBiometricLogin}
-                      disabled={loginWithBiometricMutation.isPending}
-                    >
-                      {loginWithBiometricMutation.isPending ? (
-                        <>
-                          <span className="mr-2">Verifying</span>
-                          <Fingerprint className="h-4 w-4 animate-pulse" />
-                        </>
-                      ) : (
-                        <>
-                          <Fingerprint className="mr-2 h-4 w-4" />
-                          Sign in with biometrics
-                        </>
-                      )}
-                    </Button>
+                    
+                    <div className="mt-4">
+                      <Form {...biometricLoginForm}>
+                        <form onSubmit={biometricLoginForm.handleSubmit(onBiometricLoginSubmit)} className="space-y-4">
+                          <FormField
+                            control={biometricLoginForm.control}
+                            name="username"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Username for Biometric Login</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Input 
+                                      placeholder="Enter your username" 
+                                      className="pl-10" 
+                                      {...field} 
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button 
+                            type="submit" 
+                            variant="outline" 
+                            className="w-full" 
+                            disabled={loginWithBiometricMutation.isPending}
+                          >
+                            {loginWithBiometricMutation.isPending ? (
+                              <>
+                                <span className="mr-2">Verifying</span>
+                                <Fingerprint className="h-4 w-4 animate-pulse" />
+                              </>
+                            ) : (
+                              <>
+                                <Fingerprint className="mr-2 h-4 w-4" />
+                                Sign in with biometrics
+                              </>
+                            )}
+                          </Button>
+                        </form>
+                      </Form>
+                    </div>
                   </div>
+                )}
+
+                {/* WebAuthn Not Supported */}
+                {webAuthnSupported === false && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Biometric login unavailable</AlertTitle>
+                    <AlertDescription>
+                      Your browser does not support biometric authentication. Please use username and password.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </TabsContent>
 
@@ -299,7 +382,49 @@ export default function AuthPage() {
                     </Button>
                   </form>
                 </Form>
+
+                {/* Show information about biometric setup */}
+                {webAuthnSupported && (
+                  <Alert className="mt-4">
+                    <Fingerprint className="h-4 w-4" />
+                    <AlertTitle>Biometric login available</AlertTitle>
+                    <AlertDescription>
+                      After creating your account, you can set up biometric authentication (fingerprint/Face ID) from your profile.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </TabsContent>
+
+              {/* Add register biometric option for logged in users */}
+              {user && biometricStatus.data?.available && !biometricStatus.data?.registered && (
+                <TabsContent value="setup-biometric" className="space-y-4">
+                  <Alert className="mb-4">
+                    <Fingerprint className="h-4 w-4" />
+                    <AlertTitle>Set up biometric authentication</AlertTitle>
+                    <AlertDescription>
+                      Register your device's biometric authentication (fingerprint/Face ID) for faster login.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <Button 
+                    onClick={() => registerBiometricMutation.mutate()}
+                    className="w-full"
+                    disabled={registerBiometricMutation.isPending}
+                  >
+                    {registerBiometricMutation.isPending ? (
+                      <>
+                        <span className="mr-2">Setting up</span>
+                        <Fingerprint className="h-4 w-4 animate-pulse" />
+                      </>
+                    ) : (
+                      <>
+                        <Fingerprint className="mr-2 h-4 w-4" />
+                        Enable biometric login
+                      </>
+                    )}
+                  </Button>
+                </TabsContent>
+              )}
             </Tabs>
           </CardContent>
         </Card>
@@ -323,7 +448,7 @@ export default function AuthPage() {
               <div>
                 <h3 className="font-semibold">Secure biometric login</h3>
                 <p className="text-sm text-white/80">
-                  Access your account quickly and securely with your device's biometric authentication.
+                  Access your account quickly and securely with your device's fingerprint or Face ID.
                 </p>
               </div>
             </div>

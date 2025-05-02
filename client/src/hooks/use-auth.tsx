@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 import {
   useQuery,
   useMutation,
@@ -8,7 +8,11 @@ import {
 import { InsertUser, User } from "@shared/schema";
 import { apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import * as webauthnBrowser from "@simplewebauthn/browser";
+import {
+  browserSupportsWebAuthn,
+  startAuthentication,
+  startRegistration,
+} from "@simplewebauthn/browser";
 
 // Types
 type LoginData = {
@@ -23,17 +27,25 @@ type RegisterData = {
   email: string;
 };
 
-type BiometricLoginStartResponse = {
-  options: PublicKeyCredentialRequestOptions;
+// WebAuthn related types
+type WebAuthnCredential = {
+  id: number;
+  created: string;
 };
 
-type BiometricRegisterStartResponse = {
-  options: PublicKeyCredentialCreationOptions;
+type BiometricStatusResponse = {
+  enabled: boolean;
+  credentials: WebAuthnCredential[];
 };
 
 type BiometricAuthStatus = {
   available: boolean;
   registered: boolean;
+  credentials: WebAuthnCredential[];
+};
+
+type WebAuthnLoginData = {
+  username: string;
 };
 
 type AuthContextType = {
@@ -45,7 +57,9 @@ type AuthContextType = {
   registerMutation: UseMutationResult<User, Error, RegisterData>;
   biometricStatus: UseQueryResult<BiometricAuthStatus>;
   registerBiometricMutation: UseMutationResult<any, Error, void>;
-  loginWithBiometricMutation: UseMutationResult<User, Error, void>;
+  loginWithBiometricMutation: UseMutationResult<any, Error, WebAuthnLoginData>;
+  biometricUsername: string;
+  setBiometricUsername: (username: string) => void;
 };
 
 // Context
@@ -54,6 +68,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 // Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [biometricUsername, setBiometricUsername] = useState<string>("");
 
   // Query to get the current user
   const {
@@ -80,6 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Login failed");
+      }
       return await res.json();
     },
     onSuccess: (user: User) => {
@@ -102,6 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
       const res = await apiRequest("POST", "/api/register", credentials);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Registration failed");
+      }
       return await res.json();
     },
     onSuccess: (user: User) => {
@@ -146,21 +169,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/webauthn/status"],
     queryFn: async () => {
       // First check if the browser supports WebAuthn
-      const available = await webauthnBrowser.browserSupportsWebAuthn();
+      const available = await browserSupportsWebAuthn();
       
-      // If WebAuthn is supported, check if the user has registered credentials
+      // If WebAuthn is supported and we're logged in, check if credentials are registered
       if (available && user) {
         try {
           const res = await apiRequest("GET", "/api/webauthn/status");
-          const data = await res.json();
-          return { available, registered: data.registered };
+          if (!res.ok) {
+            throw new Error("Failed to check WebAuthn status");
+          }
+          
+          const data: BiometricStatusResponse = await res.json();
+          return { 
+            available, 
+            registered: data.enabled, 
+            credentials: data.credentials || []
+          };
         } catch (error) {
           console.error("Error checking WebAuthn status:", error);
-          return { available, registered: false };
+          return { available, registered: false, credentials: [] };
         }
       }
       
-      return { available: available, registered: false };
+      return { available, registered: false, credentials: [] };
     },
     // Only run if we have a user
     enabled: !!user,
@@ -171,13 +202,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async () => {
       // 1. Get registration options from the server
       const regOptionsResponse = await apiRequest("GET", "/api/webauthn/register/start");
-      const regOptionsData: BiometricRegisterStartResponse = await regOptionsResponse.json();
+      if (!regOptionsResponse.ok) {
+        const errorData = await regOptionsResponse.json();
+        throw new Error(errorData.message || "Failed to start registration");
+      }
+      
+      const regOptionsData = await regOptionsResponse.json();
 
       // 2. Use the browser API to create the credentials
-      const credential = await webauthnBrowser.startRegistration(regOptionsData.options);
+      const credential = await startRegistration(regOptionsData);
 
       // 3. Send the credential back to the server for verification
       const verificationResponse = await apiRequest("POST", "/api/webauthn/register/finish", credential);
+      if (!verificationResponse.ok) {
+        const errorData = await verificationResponse.json();
+        throw new Error(errorData.message || "Failed to verify registration");
+      }
+      
       return await verificationResponse.json();
     },
     onSuccess: () => {
@@ -199,23 +240,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login with biometric credentials
   const loginWithBiometricMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ username }: WebAuthnLoginData) => {
       // 1. Get authentication options from the server
-      const authOptionsResponse = await apiRequest("GET", "/api/webauthn/login/start");
-      const authOptionsData: BiometricLoginStartResponse = await authOptionsResponse.json();
+      const authOptionsResponse = await apiRequest("GET", `/api/webauthn/login/start?username=${encodeURIComponent(username)}`);
+      if (!authOptionsResponse.ok) {
+        const errorData = await authOptionsResponse.json();
+        throw new Error(errorData.message || "Failed to start authentication");
+      }
+      
+      const authOptionsData = await authOptionsResponse.json();
 
       // 2. Use the browser API to get the assertion
-      const assertion = await webauthnBrowser.startAuthentication(authOptionsData.options);
+      const assertion = await startAuthentication(authOptionsData);
 
       // 3. Send the assertion back to the server for verification
       const verificationResponse = await apiRequest("POST", "/api/webauthn/login/finish", assertion);
-      return await verificationResponse.json();
+      if (!verificationResponse.ok) {
+        const errorData = await verificationResponse.json();
+        throw new Error(errorData.message || "Authentication failed");
+      }
+      
+      const data = await verificationResponse.json();
+      return data;
     },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: (data) => {
+      // Update the user data in the cache
+      queryClient.setQueryData(["/api/user"], data.user);
+      
       toast({
         title: "Biometric login successful",
-        description: `Welcome back, ${user.name || user.username}!`,
+        description: `Welcome back, ${data.user.name || data.user.username}!`,
       });
     },
     onError: (error: Error) => {
@@ -239,6 +293,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         biometricStatus,
         registerBiometricMutation,
         loginWithBiometricMutation,
+        biometricUsername,
+        setBiometricUsername,
       }}
     >
       {children}
