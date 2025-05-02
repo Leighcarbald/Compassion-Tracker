@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Header from "@/components/Header";
+import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,11 +88,9 @@ export default function Notes({ activeTab, setActiveTab }: NotesProps) {
 
   return (
     <>
-      <Header 
-        activeCareRecipient={activeCareRecipient} 
-        careRecipients={careRecipients || []} 
-        onChangeRecipient={handleChangeRecipient}
-        isLoading={isLoadingRecipients}
+      <PageHeader 
+        title="Notes" 
+        icon={<StickyNote className="h-6 w-6" />}
       />
       
       <main className="flex-1 overflow-auto pb-16">

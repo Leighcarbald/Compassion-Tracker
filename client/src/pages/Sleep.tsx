@@ -125,7 +125,6 @@ export default function Sleep({ activeTab, setActiveTab }: SleepProps) {
       <PageHeader 
         title="Sleep Tracking" 
         icon={<Moon className="h-6 w-6" />}
-        showHomeButton={false}
       />
       
       <Card className="mb-6">
