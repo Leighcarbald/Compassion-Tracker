@@ -15,6 +15,7 @@ import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import type { Doctor } from "@shared/schema";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { formatPhoneNumber, normalizePhoneNumber } from "@/lib/utils";
 
 interface DoctorsProps {
   activeTab: TabType;
@@ -46,7 +47,13 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Special handling for phone numbers
+    if (name === "phoneNumber") {
+      setFormData(prev => ({ ...prev, [name]: normalizePhoneNumber(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
   
   // Handle add doctor
@@ -232,7 +239,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-primary" />
-                    <span>{doctor.phoneNumber}</span>
+                    <span>{formatPhoneNumber(doctor.phoneNumber)}</span>
                   </div>
                   {doctor.address && (
                     <div className="text-sm text-gray-600">

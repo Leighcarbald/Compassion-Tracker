@@ -16,6 +16,7 @@ import PageHeader from "@/components/PageHeader";
 import type { Pharmacy } from "@shared/schema";
 import { format } from "date-fns";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { formatPhoneNumber, normalizePhoneNumber } from "@/lib/utils";
 
 interface PharmaciesProps {
   activeTab: TabType;

@@ -151,3 +151,43 @@ export function debounce<T extends (...args: any[]) => any>(
     timeout = setTimeout(later, wait);
   };
 }
+
+/**
+ * Formats a phone number string to (xxx) xxx-xxxx format
+ * @param phoneNumberString - The phone number to format
+ * @returns Formatted phone number or original string if invalid
+ */
+export function formatPhoneNumber(phoneNumberString: string): string {
+  // Strip all non-numeric characters
+  const cleaned = phoneNumberString.replace(/\D/g, '');
+  
+  // Check if we have exactly 10 digits (US phone number)
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+  }
+  
+  // Otherwise return the original input
+  return phoneNumberString;
+}
+
+/**
+ * Validates and normalizes a phone number while typing
+ * @param phoneNumberString - The phone number being entered
+ * @returns Formatted phone number for display during input
+ */
+export function normalizePhoneNumber(phoneNumberString: string): string {
+  // Remove all non-numeric characters
+  const cleaned = phoneNumberString.replace(/\D/g, '');
+  
+  // Limit to 10 digits
+  const truncated = cleaned.slice(0, 10);
+  
+  // Format as user types
+  if (truncated.length <= 3) {
+    return truncated;
+  } else if (truncated.length <= 6) {
+    return `(${truncated.slice(0, 3)}) ${truncated.slice(3)}`;
+  } else {
+    return `(${truncated.slice(0, 3)}) ${truncated.slice(3, 6)}-${truncated.slice(6)}`;
+  }
+}
