@@ -33,6 +33,16 @@ const APPLE_AUTH_URL = "https://appleid.apple.com/auth/authorize";
 const APPLE_TOKEN_URL = "https://appleid.apple.com/auth/token";
 const APPLE_HEALTH_API_URL = "https://api.apple.com/healthkit/v1";
 
+// Fitbit constants
+const FITBIT_CLIENT_ID = process.env.FITBIT_CLIENT_ID;
+const FITBIT_CLIENT_SECRET = process.env.FITBIT_CLIENT_SECRET;
+const FITBIT_AUTH_URL = "https://www.fitbit.com/oauth2/authorize";
+const FITBIT_TOKEN_URL = "https://api.fitbit.com/oauth2/token";
+const FITBIT_API_URL = "https://api.fitbit.com/1";
+const FITBIT_REDIRECT_URI = process.env.NODE_ENV === "production"
+  ? `${process.env.PUBLIC_URL}/api/oauth/fitbit/callback`
+  : "http://localhost:3000/api/oauth/fitbit/callback";
+
 // Health data providers
 type HealthProvider = 'google' | 'apple' | 'fitbit' | 'samsung' | 'garmin';
 
@@ -83,6 +93,23 @@ export function getAuthorizationUrl(provider: HealthProvider, careRecipientId: n
       return `${APPLE_AUTH_URL}?${appleParams.toString()}`;
       
     case 'fitbit':
+      const fitbitScopes = [
+        'sleep', 
+        'heartrate',
+        'activity',
+        'profile'
+      ].join(' ');
+      
+      const fitbitParams = new URLSearchParams({
+        client_id: FITBIT_CLIENT_ID || '',
+        redirect_uri: FITBIT_REDIRECT_URI,
+        response_type: 'code',
+        scope: fitbitScopes,
+        state: JSON.stringify({ careRecipientId, provider })
+      });
+      
+      return `${FITBIT_AUTH_URL}?${fitbitParams.toString()}`;
+      
     case 'samsung':
     case 'garmin':
       throw new Error(`Provider ${provider} not yet implemented`);
@@ -175,6 +202,38 @@ export async function exchangeCodeForTokens(provider: HealthProvider, code: stri
         throw new Error(`Failed to exchange Apple code: ${error instanceof Error ? error.message : String(error)}`);
       }
       
+    case 'fitbit':
+      try {
+        // Fitbit requires Basic auth with client_id:client_secret base64 encoded
+        const authHeader = Buffer.from(`${FITBIT_CLIENT_ID}:${FITBIT_CLIENT_SECRET}`).toString('base64');
+        
+        const response = await axios.post(FITBIT_TOKEN_URL, qs.stringify({
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: FITBIT_REDIRECT_URI
+        }), {
+          headers: {
+            'Authorization': `Basic ${authHeader}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+        
+        const data = response.data;
+        
+        return {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          expiresIn: data.expires_in,
+          providerUserId: data.user_id
+        };
+      } catch (error) {
+        console.error('Fitbit token exchange error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+          throw new Error(`Failed to exchange Fitbit code: ${error.response.data?.errors?.[0]?.message || error.response.data?.error || error.message}`);
+        }
+        throw new Error(`Failed to exchange Fitbit code: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      
     default:
       throw new Error(`Provider ${provider} not yet implemented`);
   }
@@ -259,6 +318,44 @@ export async function refreshAccessToken(connection: HealthDeviceConnection): Pr
         accessToken: data.access_token,
         expiresIn: data.expires_in
       };
+      
+    case 'fitbit':
+      try {
+        // Fitbit requires Basic auth with client_id:client_secret base64 encoded
+        const authHeader = Buffer.from(`${FITBIT_CLIENT_ID}:${FITBIT_CLIENT_SECRET}`).toString('base64');
+        
+        const response = await axios.post(FITBIT_TOKEN_URL, qs.stringify({
+          refresh_token: connection.refreshToken,
+          grant_type: 'refresh_token'
+        }), {
+          headers: {
+            'Authorization': `Basic ${authHeader}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+        
+        const data = response.data;
+        
+        // Update the database with the new token
+        await db.update(healthDeviceConnections)
+          .set({ 
+            accessToken: data.access_token,
+            tokenExpiry: new Date(Date.now() + (data.expires_in * 1000)),
+            updatedAt: new Date()
+          })
+          .where(eq(healthDeviceConnections.id, connection.id));
+        
+        return {
+          accessToken: data.access_token,
+          expiresIn: data.expires_in
+        };
+      } catch (error) {
+        console.error('Fitbit token refresh error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+          throw new Error(`Failed to refresh Fitbit token: ${error.response.data?.errors?.[0]?.message || error.response.data?.error || error.message}`);
+        }
+        throw new Error(`Failed to refresh Fitbit token: ${error instanceof Error ? error.message : String(error)}`);
+      }
       
     // Implement other providers similarly
     default:
