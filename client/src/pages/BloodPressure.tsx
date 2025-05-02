@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { TabType } from "@/lib/types";
 import { format } from "date-fns";
-import { Activity, PlusCircle, ArrowLeft, ArrowRight, Heart } from "lucide-react";
+import { Activity, PlusCircle, ArrowLeft, ArrowRight, Heart, AlignLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,6 +23,7 @@ import { BloodPressure } from "@shared/schema";
 import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { CharacterCount } from "@/components/ui/character-count";
 
 interface BloodPressurePageProps {
   activeTab: TabType;
@@ -290,13 +291,18 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
               </div>
 
               <div className="space-y-2 mb-4">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes" className="flex items-center space-x-1">
+                  <span>Notes</span>
+                  <span className="text-xs text-muted-foreground italic"> - Include details about abnormal readings</span>
+                </Label>
                 <Textarea
                   id="notes"
-                  placeholder="Add any additional information"
+                  placeholder="Add details about medication changes, symptoms, or circumstances that may affect readings"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
+                  className="min-h-[100px]"
                 />
+                <CharacterCount value={notes} maxLength={500} />
               </div>
 
               <Button 
