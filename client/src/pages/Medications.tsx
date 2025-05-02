@@ -384,9 +384,16 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
               medications.map((med) => (
                 <div key={med.id} className="p-3 border-b border-gray-100">
                   <div className="flex items-start mb-2">
-                    <div className={`w-10 h-10 rounded-full bg-${med.iconColor ? med.iconColor.replace('#', '') : 'gray'}-100 flex items-center justify-center mr-3`}>
-                      {renderMedicationIcon(med.icon || 'pill', med.iconColor ? med.iconColor.replace('#', '') : 'gray')}
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={`w-10 h-10 rounded-full bg-${med.iconColor ? med.iconColor.replace('#', '') : 'gray'}-100 flex items-center justify-center mr-3 cursor-help`}>
+                          {renderMedicationIcon(med.icon || 'pill', med.iconColor ? med.iconColor.replace('#', '') : 'gray')}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>The color is for visual organization only and does not represent the actual medication color.</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <div className="flex-1">
                       {editingMedicationId === med.id ? (
                         // Editing mode for the medication

@@ -445,14 +445,14 @@ export default function AddMedicationModal({
                 name="icon"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Icon</FormLabel>
+                    <FormLabel>Icon Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select icon" />
+                          <SelectValue placeholder="Select icon type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -463,6 +463,9 @@ export default function AddMedicationModal({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription className="text-xs">
+                      Select the type of medication for display purposes. This helps identify the medication format in the list.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -473,14 +476,14 @@ export default function AddMedicationModal({
                 name="iconColor"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Color</FormLabel>
+                    <FormLabel>Display Color</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select color" />
+                          <SelectValue placeholder="Select display color" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -499,6 +502,9 @@ export default function AddMedicationModal({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription className="text-xs">
+                      This color is used for organization purposes only and helps you visually distinguish between medications in the list.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
