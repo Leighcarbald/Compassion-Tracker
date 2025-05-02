@@ -222,7 +222,7 @@ export default function Notes({ activeTab, setActiveTab }: NotesProps) {
                     <FormControl>
                       <Textarea 
                         placeholder="Write your observations here..." 
-                        className="min-h-[150px]" 
+                        className="min-h-[150px] overflow-y-auto"
                         maxLength={1000} 
                         {...field} 
                       />

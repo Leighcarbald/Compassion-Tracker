@@ -234,7 +234,7 @@ export default function AddBowelMovementModal({
                   <FormControl>
                     <Textarea
                       placeholder="Add any additional notes here..."
-                      className="resize-none"
+                      className="resize-none overflow-y-auto"
                       maxLength={500}
                       {...field}
                     />
