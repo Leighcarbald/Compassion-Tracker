@@ -555,46 +555,49 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {glucoseReadings.map((reading: Glucose) => (
-                <Card key={reading.id}>
-                  <CardHeader className="pb-2">
+                <Card key={reading.id} className="overflow-hidden">
+                  <CardHeader className="pb-2 px-3 py-2">
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-base">
                         <span className={getGlucoseStatusColor(reading.level, reading.readingType)}>
                           {reading.level} mg/dL
                         </span>
                       </CardTitle>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button 
                           variant="ghost" 
                           size="icon" 
+                          className="h-7 w-7"
                           onClick={() => handleEdit("glucose", reading)}
                           title="Edit reading"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         {reading.level > 130 ? (
-                          <ArrowUp className="h-5 w-5 text-red-500" />
+                          <ArrowUp className="h-4 w-4 text-red-500" />
                         ) : reading.level < 70 ? (
-                          <ArrowDown className="h-5 w-5 text-red-500" />
+                          <ArrowDown className="h-4 w-4 text-red-500" />
                         ) : (
-                          <Droplets className="h-5 w-5 text-green-500" />
+                          <Droplets className="h-4 w-4 text-green-500" />
                         )}
                       </div>
                     </div>
-                    <CardDescription>
-                      {format(new Date(reading.timeOfReading), "PPP 'at' p")}
+                    <CardDescription className="text-xs">
+                      {format(new Date(reading.timeOfReading), "MMM d, yyyy 'at' h:mm a")}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2">
+                  <CardContent className="pt-0 px-3 py-2">
+                    <div className="space-y-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Type:</span>
-                        {getReadingTypeBadge(reading.readingType)}
+                        <span className="text-muted-foreground text-xs">Type:</span>
+                        <div className="scale-90 origin-right">
+                          {getReadingTypeBadge(reading.readingType)}
+                        </div>
                       </div>
                       {reading.notes && (
-                        <div className="pt-2">
-                          <p className="text-sm text-muted-foreground">Notes:</p>
-                          <p className="text-sm">{reading.notes}</p>
+                        <div className="pt-1 mt-1 border-t border-gray-100">
+                          <p className="text-xs text-muted-foreground mb-0.5">Notes:</p>
+                          <p className="text-xs line-clamp-2">{reading.notes}</p>
                         </div>
                       )}
                     </div>
@@ -621,44 +624,47 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {insulinRecords.map((record: Insulin) => (
-                <Card key={record.id}>
-                  <CardHeader className="pb-2">
+                <Card key={record.id} className="overflow-hidden">
+                  <CardHeader className="pb-2 px-3 py-2">
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-base">
                         {record.units} units
                       </CardTitle>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button 
                           variant="ghost" 
                           size="icon" 
+                          className="h-7 w-7"
                           onClick={() => handleEdit("insulin", record)}
                           title="Edit record"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Syringe className="h-5 w-5" />
+                        <Syringe className="h-4 w-4" />
                       </div>
                     </div>
-                    <CardDescription>
-                      {format(new Date(record.timeAdministered), "PPP 'at' p")}
+                    <CardDescription className="text-xs">
+                      {format(new Date(record.timeAdministered), "MMM d, yyyy 'at' h:mm a")}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2">
+                  <CardContent className="pt-0 px-3 py-2">
+                    <div className="space-y-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Type:</span>
-                        {getInsulinTypeBadge(record.insulinType)}
+                        <span className="text-muted-foreground text-xs">Type:</span>
+                        <div className="scale-90 origin-right">
+                          {getInsulinTypeBadge(record.insulinType)}
+                        </div>
                       </div>
                       {record.site && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Site:</span>
-                          <span className="capitalize">{record.site}</span>
+                          <span className="text-muted-foreground text-xs">Site:</span>
+                          <span className="capitalize text-xs">{record.site}</span>
                         </div>
                       )}
                       {record.notes && (
-                        <div className="pt-2">
-                          <p className="text-sm text-muted-foreground">Notes:</p>
-                          <p className="text-sm">{record.notes}</p>
+                        <div className="pt-1 mt-1 border-t border-gray-100">
+                          <p className="text-xs text-muted-foreground mb-0.5">Notes:</p>
+                          <p className="text-xs line-clamp-2">{record.notes}</p>
                         </div>
                       )}
                     </div>
