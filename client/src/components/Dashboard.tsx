@@ -128,6 +128,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
           secondaryText={todayStats?.supplies?.depends 
             ? `${todayStats.supplies.depends} depends remaining` 
             : "No supply data"}
+          onClick={() => setLocation(`/bowel-movements?careRecipientId=${careRecipientId}`)}
         />
 
         {/* Sleep Card */}
@@ -137,6 +138,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
           icon={<Moon className="h-4 w-4" />}
           color="blue-400"
           secondaryText={todayStats?.sleep?.quality || ""}
+          onClick={() => setLocation(`/sleep?careRecipientId=${careRecipientId}`)}
         />
       </div>
 
