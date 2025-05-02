@@ -10,5 +10,6 @@ declare module 'express-session' {
     currentChallenge?: string;
     currentRegistrationOptions?: PublicKeyCredentialCreationOptionsJSON;
     currentAuthenticationOptions?: PublicKeyCredentialRequestOptionsJSON;
+    temporaryUsername?: string;
   }
 }
