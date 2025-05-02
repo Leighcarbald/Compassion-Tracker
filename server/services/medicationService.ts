@@ -202,6 +202,12 @@ export function checkKnownInteractions(medicationNames: string[]): { success: bo
       severity: 'high'
     },
     {
+      drug1: 'warfarin',
+      drug2: 'nsaid',
+      description: 'Concurrent use of warfarin and NSAIDs may result in an increased risk of bleeding.',
+      severity: 'high'
+    },
+    {
       drug1: 'lisinopril',
       drug2: 'spironolactone',
       description: 'Concurrent use may result in hyperkalemia (elevated potassium levels).',
@@ -232,6 +238,12 @@ export function checkKnownInteractions(medicationNames: string[]): { success: bo
       severity: 'high'
     },
     {
+      drug1: 'methotrexate',
+      drug2: 'nsaid',
+      description: 'NSAIDs may increase methotrexate levels, increasing the risk of toxicity.',
+      severity: 'high'
+    },
+    {
       drug1: 'ciprofloxacin',
       drug2: 'calcium',
       description: 'Calcium may reduce the absorption of ciprofloxacin, making it less effective.',
@@ -248,15 +260,55 @@ export function checkKnownInteractions(medicationNames: string[]): { success: bo
       drug2: 'furosemide',
       description: 'Furosemide may increase the risk of lactic acidosis in patients taking metformin.',
       severity: 'medium'
+    },
+    {
+      drug1: 'aspirin',
+      drug2: 'ibuprofen',
+      description: 'Using multiple NSAIDs together increases the risk of gastrointestinal bleeding and ulcers.',
+      severity: 'medium'
+    },
+    {
+      drug1: 'aspirin',
+      drug2: 'nsaid',
+      description: 'Using multiple NSAIDs together increases the risk of gastrointestinal bleeding and ulcers.',
+      severity: 'medium'
     }
   ];
   
   // Check for interactions
   for (const pair of knownInteractionPairs) {
-    const hasDrug1 = normalizedNames.some(name => name.includes(pair.drug1));
-    const hasDrug2 = normalizedNames.some(name => name.includes(pair.drug2));
+    // Add special handling for common medication classes
+    const nsaids = ['nsaid', 'ibuprofen', 'naproxen', 'aspirin', 'diclofenac', 'meloxicam', 'indomethacin'];
+    const bloodThinners = ['warfarin', 'coumadin', 'apixaban', 'eliquis', 'rivaroxaban', 'xarelto'];
+    
+    // Helper function to check if a name belongs to a medication class
+    const isInClass = (name: string, classNames: string[]) => {
+      return classNames.some(className => name.includes(className));
+    };
+    
+    // Do normal checks for exact matches
+    let hasDrug1 = normalizedNames.some(name => name.includes(pair.drug1));
+    let hasDrug2 = normalizedNames.some(name => name.includes(pair.drug2));
+    
+    // Special class-based checks
+    if (pair.drug1 === 'warfarin') {
+      hasDrug1 = normalizedNames.some(name => isInClass(name, bloodThinners));
+    }
+    
+    if (pair.drug2 === 'warfarin') {
+      hasDrug2 = normalizedNames.some(name => isInClass(name, bloodThinners));
+    }
+    
+    if (pair.drug1 === 'ibuprofen' || pair.drug1 === 'aspirin') {
+      hasDrug1 = normalizedNames.some(name => isInClass(name, nsaids));
+    }
+    
+    if (pair.drug2 === 'ibuprofen' || pair.drug2 === 'aspirin') {
+      hasDrug2 = normalizedNames.some(name => isInClass(name, nsaids));
+    }
     
     if (hasDrug1 && hasDrug2) {
+      console.log(`Found interaction between ${pair.drug1} and ${pair.drug2}`);
       interactions.push(pair);
     }
   }

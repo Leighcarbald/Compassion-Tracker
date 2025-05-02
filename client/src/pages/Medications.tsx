@@ -68,6 +68,10 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   
   // Use the global care recipient context
   const { activeCareRecipientId, careRecipients, isLoading: isLoadingRecipients } = useCareRecipient();
+  
+  // State for tracking medication interactions
+  const [medicationInteractions, setMedicationInteractions] = useState<any[]>([]);
+  const [isCheckingInteractions, setIsCheckingInteractions] = useState(false);
 
   // Fetch medications with their schedules
   const { data: medications, isLoading: isLoadingMedications } = useQuery<MedicationWithSchedules[]>({
@@ -107,6 +111,36 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       setTakenMedicationDoses(takenDosesMap);
     }
   }, [medicationLogs, medications]);
+  
+  // Check for medication interactions whenever medications change
+  React.useEffect(() => {
+    const checkInteractions = async () => {
+      if (!medications || medications.length < 2) {
+        setMedicationInteractions([]);
+        return;
+      }
+      
+      setIsCheckingInteractions(true);
+      try {
+        const medicationNames = medications.map(med => med.name);
+        const response = await apiRequest('POST', '/api/medications/interactions', { medications: medicationNames });
+        const data = await response.json();
+        
+        if (data.success && data.interactions) {
+          setMedicationInteractions(data.interactions);
+        } else {
+          setMedicationInteractions([]);
+        }
+      } catch (error) {
+        console.error('Error checking for medication interactions:', error);
+        setMedicationInteractions([]);
+      } finally {
+        setIsCheckingInteractions(false);
+      }
+    };
+    
+    checkInteractions();
+  }, [medications]);
 
   // Handle modal open/close
   const handleAddEvent = () => {
