@@ -98,7 +98,7 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
       return response.json();
     },
     onSuccess: () => {
-      // Reset the form and hide it
+      // Reset only the glucose form and hide it (keep insulin form data intact)
       setShowAddForm(false);
       setGlucoseLevel("");
       setReadingType("fasting");
@@ -144,7 +144,7 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
       return response.json();
     },
     onSuccess: () => {
-      // Reset the form and hide it
+      // Reset only the insulin form and hide it (keep glucose form data intact)
       setShowAddForm(false);
       setInsulinUnits("");
       setInsulinType("rapid-acting");
@@ -294,7 +294,10 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
       
       <div className="flex justify-between items-center mb-6">
         <div></div> {/* Empty div for flex spacing */}
-        <Button onClick={() => setShowAddForm(!showAddForm)}>
+        <Button onClick={() => {
+          // Only toggle the visibility, don't reset form data
+          setShowAddForm(!showAddForm)
+        }}>
           {showAddForm ? "Cancel" : "Add Record"}
           {!showAddForm && <PlusCircle className="ml-2 h-4 w-4" />}
         </Button>
@@ -307,17 +310,28 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
           <CardHeader>
             <Tabs
               value={formType}
-              onValueChange={(value) => setFormType(value as "glucose" | "insulin")}
+              onValueChange={(value) => {
+                // Just update the tab without resetting form data
+                setFormType(value as "glucose" | "insulin");
+              }}
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="glucose">
+                <TabsTrigger value="glucose" className="relative">
                   <Droplets className="mr-2 h-4 w-4" />
                   Glucose Reading
+                  {formType !== "glucose" && glucoseLevel && 
+                    <div className="absolute top-1 right-1 h-2 w-2 rounded-full bg-green-500" 
+                         title="Form data preserved"></div>
+                  }
                 </TabsTrigger>
-                <TabsTrigger value="insulin">
+                <TabsTrigger value="insulin" className="relative">
                   <Syringe className="mr-2 h-4 w-4" />
                   Insulin Dose
+                  {formType !== "insulin" && insulinUnits && 
+                    <div className="absolute top-1 right-1 h-2 w-2 rounded-full bg-green-500" 
+                         title="Form data preserved"></div>
+                  }
                 </TabsTrigger>
               </TabsList>
             </Tabs>
