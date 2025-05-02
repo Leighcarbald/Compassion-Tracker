@@ -4,6 +4,11 @@ import { storage, scheduleMidnightReset } from "./storage";
 import { setupAuth } from "./auth";
 import { setupWebAuthn } from "./webauthn";
 import * as medicationService from "./services/medicationService";
+import * as healthDataService from "./services/healthDataService";
+import { WebSocketServer } from "ws";
+import { db } from "../db";
+import { eq, and } from "drizzle-orm";
+import { healthDeviceConnections } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
@@ -1489,6 +1494,373 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Health Platform Integration Routes
+  // Get authorization URL for health platforms
+  app.get(`${apiPrefix}/health-platforms/auth-url`, async (req, res) => {
+    try {
+      const provider = req.query.provider as string;
+      const careRecipientId = parseInt(req.query.careRecipientId as string);
+      
+      if (!provider || !['google', 'apple', 'fitbit', 'samsung', 'garmin'].includes(provider)) {
+        return res.status(400).json({ message: 'Invalid health provider' });
+      }
+      
+      if (isNaN(careRecipientId)) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const authUrl = healthDataService.getAuthorizationUrl(provider as any, careRecipientId);
+      res.json({ authUrl });
+    } catch (error) {
+      console.error('Error generating auth URL:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error generating auth URL' 
+      });
+    }
+  });
+  
+  // OAuth callback for Google Fit
+  app.get(`${apiPrefix}/oauth/google/callback`, async (req, res) => {
+    try {
+      const code = req.query.code as string;
+      const state = req.query.state as string;
+      
+      if (!code) {
+        return res.status(400).json({ message: 'Authorization code is required' });
+      }
+      
+      // Parse state parameter which contains careRecipientId and provider
+      let stateObj;
+      try {
+        stateObj = JSON.parse(state);
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid state parameter' });
+      }
+      
+      const { careRecipientId, provider } = stateObj;
+      
+      if (!careRecipientId || provider !== 'google') {
+        return res.status(400).json({ message: 'Invalid state parameter' });
+      }
+      
+      // Exchange code for tokens
+      const tokens = await healthDataService.exchangeCodeForTokens('google', code);
+      
+      // Create or update health device connection
+      const connection = await db
+        .insert(healthDeviceConnections)
+        .values({
+          careRecipientId,
+          provider: 'google',
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          tokenExpiry: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : null,
+          providerUserId: tokens.providerUserId,
+          syncEnabled: true,
+          lastSynced: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning()
+        .onConflictDoUpdate({
+          target: [healthDeviceConnections.careRecipientId, healthDeviceConnections.provider],
+          set: {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken || undefined,
+            tokenExpiry: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : undefined,
+            providerUserId: tokens.providerUserId || undefined,
+            syncEnabled: true,
+            updatedAt: new Date()
+          }
+        });
+      
+      // Redirect to success page
+      res.redirect('/#/health-connection-success');
+    } catch (error) {
+      console.error('Error exchanging OAuth code:', error);
+      // Redirect to error page
+      res.redirect(`/#/health-connection-error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
+    }
+  });
+  
+  // OAuth callback for Apple Health
+  app.post(`${apiPrefix}/oauth/apple/callback`, async (req, res) => {
+    try {
+      const code = req.body.code;
+      const state = req.body.state;
+      
+      if (!code) {
+        return res.status(400).json({ message: 'Authorization code is required' });
+      }
+      
+      // Parse state parameter which contains careRecipientId and provider
+      let stateObj;
+      try {
+        stateObj = JSON.parse(state);
+      } catch (e) {
+        return res.status(400).json({ message: 'Invalid state parameter' });
+      }
+      
+      const { careRecipientId, provider } = stateObj;
+      
+      if (!careRecipientId || provider !== 'apple') {
+        return res.status(400).json({ message: 'Invalid state parameter' });
+      }
+      
+      // Exchange code for tokens
+      const tokens = await healthDataService.exchangeCodeForTokens('apple', code);
+      
+      // Create or update health device connection
+      const connection = await db
+        .insert(healthDeviceConnections)
+        .values({
+          careRecipientId,
+          provider: 'apple',
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          tokenExpiry: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : null,
+          providerUserId: tokens.providerUserId,
+          syncEnabled: true,
+          lastSynced: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning()
+        .onConflictDoUpdate({
+          target: [healthDeviceConnections.careRecipientId, healthDeviceConnections.provider],
+          set: {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken || undefined,
+            tokenExpiry: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : undefined,
+            providerUserId: tokens.providerUserId || undefined,
+            syncEnabled: true,
+            updatedAt: new Date()
+          }
+        });
+      
+      // Redirect to success page - using form post instead of redirect for Apple
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.href = '/#/health-connection-success';
+            </script>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Error exchanging Apple OAuth code:', error);
+      // Redirect to error page using form post
+      res.send(`
+        <html>
+          <body>
+            <script>
+              window.location.href = '/#/health-connection-error?message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}';
+            </script>
+          </body>
+        </html>
+      `);
+    }
+  });
+  
+  // List connected health platforms for a care recipient
+  app.get(`${apiPrefix}/health-platforms/connections`, async (req, res) => {
+    try {
+      const careRecipientId = parseInt(req.query.careRecipientId as string);
+      
+      if (isNaN(careRecipientId)) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      const connections = await db
+        .select({
+          id: healthDeviceConnections.id,
+          provider: healthDeviceConnections.provider,
+          syncEnabled: healthDeviceConnections.syncEnabled,
+          lastSynced: healthDeviceConnections.lastSynced,
+          createdAt: healthDeviceConnections.createdAt
+        })
+        .from(healthDeviceConnections)
+        .where(eq(healthDeviceConnections.careRecipientId, careRecipientId));
+      
+      res.json(connections);
+    } catch (error) {
+      console.error('Error fetching health platform connections:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error fetching health platform connections' 
+      });
+    }
+  });
+  
+  // Enable/disable syncing for a health platform connection
+  app.patch(`${apiPrefix}/health-platforms/connections/:id`, async (req, res) => {
+    try {
+      const connectionId = parseInt(req.params.id);
+      
+      if (isNaN(connectionId)) {
+        return res.status(400).json({ message: 'Connection ID is required' });
+      }
+      
+      const { syncEnabled } = req.body;
+      
+      if (typeof syncEnabled !== 'boolean') {
+        return res.status(400).json({ message: 'syncEnabled must be a boolean' });
+      }
+      
+      const updatedConnection = await db
+        .update(healthDeviceConnections)
+        .set({ 
+          syncEnabled, 
+          updatedAt: new Date() 
+        })
+        .where(eq(healthDeviceConnections.id, connectionId))
+        .returning();
+      
+      if (updatedConnection.length === 0) {
+        return res.status(404).json({ message: 'Connection not found' });
+      }
+      
+      res.json(updatedConnection[0]);
+    } catch (error) {
+      console.error('Error updating health platform connection:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error updating health platform connection' 
+      });
+    }
+  });
+  
+  // Delete a health platform connection
+  app.delete(`${apiPrefix}/health-platforms/connections/:id`, async (req, res) => {
+    try {
+      const connectionId = parseInt(req.params.id);
+      
+      if (isNaN(connectionId)) {
+        return res.status(400).json({ message: 'Connection ID is required' });
+      }
+      
+      const deletedCount = await db
+        .delete(healthDeviceConnections)
+        .where(eq(healthDeviceConnections.id, connectionId))
+        .returning({ id: healthDeviceConnections.id });
+      
+      if (deletedCount.length === 0) {
+        return res.status(404).json({ message: 'Connection not found' });
+      }
+      
+      res.json({ message: 'Connection deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting health platform connection:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error deleting health platform connection' 
+      });
+    }
+  });
+  
+  // Manually trigger sync for health data
+  app.post(`${apiPrefix}/health-platforms/sync`, async (req, res) => {
+    try {
+      const { careRecipientId, provider, dataType } = req.body;
+      
+      if (!careRecipientId) {
+        return res.status(400).json({ message: 'Care recipient ID is required' });
+      }
+      
+      if (provider && !['google', 'apple', 'fitbit', 'samsung', 'garmin'].includes(provider)) {
+        return res.status(400).json({ message: 'Invalid health provider' });
+      }
+      
+      if (dataType && !['sleep', 'bloodPressure', 'glucose', 'heartRate', 'activity'].includes(dataType)) {
+        return res.status(400).json({ message: 'Invalid data type' });
+      }
+      
+      let syncResult: any;
+      
+      // If specific data type is provided, sync only that data type
+      if (dataType === 'sleep') {
+        syncResult = await healthDataService.syncAllSleepData();
+      } else if (dataType === 'bloodPressure') {
+        syncResult = await healthDataService.syncAllBloodPressureData();
+      } else {
+        // Sync all data types
+        syncResult = await healthDataService.syncAllHealthData();
+      }
+      
+      res.json({
+        message: 'Health data sync triggered successfully',
+        result: syncResult
+      });
+    } catch (error) {
+      console.error('Error syncing health data:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Error syncing health data' 
+      });
+    }
+  });
+
+  // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Set up WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Handle WebSocket connections
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    // Send initial connection message
+    ws.send(JSON.stringify({
+      type: 'connection',
+      message: 'Connected to health data WebSocket server',
+      timestamp: new Date().toISOString()
+    }));
+    
+    // Handle incoming messages
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Received WebSocket message:', data);
+        
+        // Handle subscription requests
+        if (data.type === 'subscribe' && data.careRecipientId) {
+          // Store the care recipient ID in the WebSocket connection
+          (ws as any).careRecipientId = data.careRecipientId;
+          
+          // Send confirmation
+          ws.send(JSON.stringify({
+            type: 'subscribed',
+            careRecipientId: data.careRecipientId,
+            timestamp: new Date().toISOString()
+          }));
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Error processing message',
+          timestamp: new Date().toISOString()
+        }));
+      }
+    });
+    
+    // Handle disconnection
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+    });
+  });
+  
+  // Function to broadcast health data updates to connected clients
+  const broadcastHealthUpdate = (careRecipientId: number, dataType: string, data: any) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN && (client as any).careRecipientId === careRecipientId) {
+        client.send(JSON.stringify({
+          type: 'update',
+          dataType,
+          data,
+          timestamp: new Date().toISOString()
+        }));
+      }
+    });
+  };
+  
   return httpServer;
 }
