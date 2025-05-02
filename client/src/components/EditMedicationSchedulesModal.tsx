@@ -55,6 +55,17 @@ const scheduleItemSchema = z.object({
   reminderEnabled: z.boolean().default(true),
   // Add asNeeded flag for "as needed" medications
   asNeeded: z.boolean().default(false),
+  // Add specific days selection (for medications taken on specific calendar days)
+  specificDays: z.array(z.string()).default([]),
+  // Add tapering dose schedule support
+  isTapering: z.boolean().default(false),
+  taperingSchedule: z.array(
+    z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      quantity: z.string(),
+    })
+  ).default([]),
 });
 
 const scheduleSchema = z.object({
@@ -182,7 +193,11 @@ export default function EditMedicationSchedulesModal({
           withFood: schedule.withFood || false,
           active: schedule.active || true,
           reminderEnabled: schedule.reminderEnabled || true,
-          asNeeded: schedule.asNeeded || false, // Add the asNeeded property
+          asNeeded: schedule.asNeeded || false,
+          // Add the new fields with defaults if they don't exist in the schedule
+          specificDays: schedule.specificDays || [],
+          isTapering: schedule.isTapering || false,
+          taperingSchedule: schedule.taperingSchedule || [],
         })),
       });
       
@@ -328,6 +343,9 @@ export default function EditMedicationSchedulesModal({
       active: true,
       reminderEnabled: true, // Keep this true even though UI option is removed
       asNeeded: false, // Default to regular schedule (not as-needed)
+      specificDays: [], // Default to no specific days
+      isTapering: false, // Default to not tapering
+      taperingSchedule: [], // Default to no tapering schedule
     });
   };
 
@@ -622,27 +640,234 @@ export default function EditMedicationSchedulesModal({
                           />
                         )}
 
-                        {/* As Needed option */}
-                        <FormField
-                          control={form.control}
-                          name={`schedules.${index}.asNeeded`}
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3">
-                              <div className="space-y-0.5">
-                                <FormLabel>Take As Needed</FormLabel>
-                                <p className="text-xs text-muted-foreground">
-                                  Instead of a regular schedule, take only when needed
-                                </p>
-                              </div>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
+                        {/* Scheduling options group */}
+                        <div className="border p-4 rounded-md space-y-4">
+                          <h4 className="text-sm font-medium">Schedule Type</h4>
+                          
+                          {/* As Needed option */}
+                          <FormField
+                            control={form.control}
+                            name={`schedules.${index}.asNeeded`}
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3">
+                                <div className="space-y-0.5">
+                                  <FormLabel>Take As Needed</FormLabel>
+                                  <p className="text-xs text-muted-foreground">
+                                    Instead of a regular schedule, take only when needed
+                                  </p>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={(value) => {
+                                      field.onChange(value);
+                                      // If switching to as needed, clear specific days and tapering
+                                      if (value) {
+                                        form.setValue(`schedules.${index}.specificDays`, []);
+                                        form.setValue(`schedules.${index}.isTapering`, false);
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          
+                          {/* Only show if not "As Needed" */}
+                          {!form.watch(`schedules.${index}.asNeeded`) && (
+                            <>
+                              {/* Specific Days option */}
+                              <FormField
+                                control={form.control}
+                                name={`schedules.${index}.specificDays`}
+                                render={({ field }) => (
+                                  <FormItem className="space-y-2">
+                                    <div className="flex flex-row items-start justify-between space-y-0">
+                                      <div className="space-y-0.5">
+                                        <FormLabel>Specific Calendar Dates</FormLabel>
+                                        <p className="text-xs text-muted-foreground">
+                                          Choose specific dates rather than days of week
+                                        </p>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          // Add today's date in YYYY-MM-DD format
+                                          const today = new Date();
+                                          const dateString = today.toISOString().split('T')[0];
+                                          const currentDates = field.value || [];
+                                          
+                                          // Only add if not already present
+                                          if (!currentDates.includes(dateString)) {
+                                            field.onChange([...currentDates, dateString].sort());
+                                          }
+                                        }}
+                                      >
+                                        Add Date
+                                      </Button>
+                                    </div>
+                                    
+                                    {field.value && field.value.length > 0 && (
+                                      <div className="space-y-2 mt-2">
+                                        {field.value.map((date, dateIndex) => (
+                                          <div key={date} className="flex items-center justify-between border p-2 rounded">
+                                            <span>{new Date(date).toLocaleDateString()}</span>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => {
+                                                const newDates = [...field.value];
+                                                newDates.splice(dateIndex, 1);
+                                                field.onChange(newDates);
+                                              }}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              {/* Tapering Dose option */}
+                              <FormField
+                                control={form.control}
+                                name={`schedules.${index}.isTapering`}
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3">
+                                    <div className="space-y-0.5">
+                                      <FormLabel>Tapering Schedule</FormLabel>
+                                      <p className="text-xs text-muted-foreground">
+                                        Gradually change dose amount over time
+                                      </p>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              {/* Show tapering schedule if enabled */}
+                              {form.watch(`schedules.${index}.isTapering`) && (
+                                <FormField
+                                  control={form.control}
+                                  name={`schedules.${index}.taperingSchedule`}
+                                  render={({ field }) => (
+                                    <FormItem className="space-y-2">
+                                      <div className="flex justify-between items-center">
+                                        <FormLabel>Tapering Schedule</FormLabel>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            // Get start date 3 days from now
+                                            const startDate = new Date();
+                                            startDate.setDate(startDate.getDate() + 3);
+                                            
+                                            // Get end date 10 days from now
+                                            const endDate = new Date();
+                                            endDate.setDate(endDate.getDate() + 10);
+                                            
+                                            // Create a new tapering item
+                                            const newSchedule = [
+                                              ...(field.value || []),
+                                              {
+                                                startDate: startDate.toISOString().split('T')[0],
+                                                endDate: endDate.toISOString().split('T')[0],
+                                                quantity: form.watch(`schedules.${index}.quantity`),
+                                              }
+                                            ];
+                                            
+                                            field.onChange(newSchedule);
+                                          }}
+                                        >
+                                          Add Tapering Step
+                                        </Button>
+                                      </div>
+                                      
+                                      {field.value && field.value.length > 0 && (
+                                        <div className="space-y-3 mt-2">
+                                          {field.value.map((step, stepIndex) => (
+                                            <div key={stepIndex} className="border p-3 rounded">
+                                              <div className="flex justify-between mb-2">
+                                                <h5 className="text-sm font-medium">Step {stepIndex + 1}</h5>
+                                                <Button
+                                                  type="button"
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    const newSchedule = [...field.value];
+                                                    newSchedule.splice(stepIndex, 1);
+                                                    field.onChange(newSchedule);
+                                                  }}
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                              
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <div>
+                                                  <label className="text-xs font-medium">Start Date</label>
+                                                  <Input 
+                                                    type="date" 
+                                                    value={step.startDate}
+                                                    onChange={(e) => {
+                                                      const newSchedule = [...field.value];
+                                                      newSchedule[stepIndex].startDate = e.target.value;
+                                                      field.onChange(newSchedule);
+                                                    }}
+                                                  />
+                                                </div>
+                                                
+                                                <div>
+                                                  <label className="text-xs font-medium">End Date</label>
+                                                  <Input 
+                                                    type="date" 
+                                                    value={step.endDate}
+                                                    onChange={(e) => {
+                                                      const newSchedule = [...field.value];
+                                                      newSchedule[stepIndex].endDate = e.target.value;
+                                                      field.onChange(newSchedule);
+                                                    }}
+                                                  />
+                                                </div>
+                                                
+                                                <div className="sm:col-span-2">
+                                                  <label className="text-xs font-medium">Quantity</label>
+                                                  <Input 
+                                                    value={step.quantity}
+                                                    onChange={(e) => {
+                                                      const newSchedule = [...field.value];
+                                                      newSchedule[stepIndex].quantity = e.target.value;
+                                                      field.onChange(newSchedule);
+                                                    }}
+                                                    placeholder="e.g., 1/2 tablet"
+                                                  />
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
                                 />
-                              </FormControl>
-                            </FormItem>
+                              )}
+                            </>
                           )}
-                        />
+                        </div>
                         
                         {/* Single column for with food option - reminder option removed */}
                         <FormField
