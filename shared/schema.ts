@@ -47,6 +47,7 @@ export const medicationSchedules = pgTable("medication_schedules", {
   withFood: boolean("with_food").default(false),
   active: boolean("active").default(true),
   reminderEnabled: boolean("reminder_enabled").default(true),
+  asNeeded: boolean("as_needed").default(false), // New field for as-needed medications
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
