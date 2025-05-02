@@ -563,13 +563,23 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
                           {reading.level} mg/dL
                         </span>
                       </CardTitle>
-                      {reading.level > 130 ? (
-                        <ArrowUp className="h-5 w-5 text-red-500" />
-                      ) : reading.level < 70 ? (
-                        <ArrowDown className="h-5 w-5 text-red-500" />
-                      ) : (
-                        <Droplets className="h-5 w-5 text-green-500" />
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleEdit("glucose", reading)}
+                          title="Edit reading"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {reading.level > 130 ? (
+                          <ArrowUp className="h-5 w-5 text-red-500" />
+                        ) : reading.level < 70 ? (
+                          <ArrowDown className="h-5 w-5 text-red-500" />
+                        ) : (
+                          <Droplets className="h-5 w-5 text-green-500" />
+                        )}
+                      </div>
                     </div>
                     <CardDescription>
                       {format(new Date(reading.timeOfReading), "PPP 'at' p")}
@@ -617,7 +627,17 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
                       <CardTitle className="text-lg">
                         {record.units} units
                       </CardTitle>
-                      <Syringe className="h-5 w-5" />
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleEdit("insulin", record)}
+                          title="Edit record"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Syringe className="h-5 w-5" />
+                      </div>
                     </div>
                     <CardDescription>
                       {format(new Date(record.timeAdministered), "PPP 'at' p")}
@@ -655,6 +675,16 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
         activeTab={activeTab} 
         onChangeTab={setActiveTab} 
       />
+      
+      {/* Edit Modal */}
+      {selectedRecord && (
+        <EditGlucoseInsulinModal
+          type={editModalType}
+          isOpen={editModalOpen}
+          onClose={handleCloseEditModal}
+          data={selectedRecord}
+        />
+      )}
     </div>
   );
 }
