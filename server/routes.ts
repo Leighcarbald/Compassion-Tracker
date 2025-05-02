@@ -366,6 +366,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // First try our fallback mechanism directly since external API is having issues
       const knownInteractions = medicationService.checkKnownInteractions(medicationNames);
+      
+      console.log('Found interactions:', knownInteractions);
+      
       if (knownInteractions.interactions.length > 0) {
         console.log('Found interactions using known medication database');
         return res.json(knownInteractions);

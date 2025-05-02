@@ -123,7 +123,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       setIsCheckingInteractions(true);
       try {
         const medicationNames = medications.map(med => med.name);
-        const response = await apiRequest('POST', '/api/medications/interactions', { medications: medicationNames });
+        const response = await apiRequest('POST', '/api/medications/interactions', { medicationNames });
         const data = await response.json();
         
         if (data.success && data.interactions) {
@@ -432,6 +432,49 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   return (
     <TooltipProvider>
       <PageHeader title="Medications" icon={<Pill />} />
+      
+      {/* Display medication interactions warning if detected */}
+      {medicationInteractions.length > 0 && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded-r">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-amber-800">Potential Medication Interactions Detected</h3>
+              <div className="mt-2 space-y-2">
+                {medicationInteractions.map((interaction, idx) => (
+                  <div key={idx} className="pl-2 border-l-2 border-amber-300">
+                    <p className="text-xs text-amber-700">
+                      <span className="font-medium">{interaction.drug1}</span> + <span className="font-medium">{interaction.drug2}</span>
+                    </p>
+                    <p className="text-xs text-gray-600">{interaction.description}</p>
+                    <div className="mt-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        interaction.severity === 'high' 
+                          ? 'bg-red-100 text-red-700' 
+                          : interaction.severity === 'medium'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {interaction.severity === 'high' 
+                          ? 'High Risk' 
+                          : interaction.severity === 'medium' 
+                            ? 'Medium Risk' 
+                            : 'Low Risk'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {isCheckingInteractions && (
+                <div className="mt-2 flex items-center text-xs text-gray-500">
+                  <div className="animate-spin mr-1 h-3 w-3 border-2 border-amber-500 border-t-transparent rounded-full"></div>
+                  Checking for additional interactions...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <main className="flex-1 overflow-auto pb-16">
         <section className="p-4">
