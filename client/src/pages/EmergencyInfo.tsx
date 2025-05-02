@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import Header from "@/components/Header";
+
 import BottomNavigation from "@/components/BottomNavigation";
 import { TabType } from "@/lib/types";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -458,13 +458,11 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
-      <Header />
 
       <main className="flex-1 overflow-y-auto p-4 pb-24">
         <PageHeader 
           title="Emergency Information" 
           icon={<ShieldAlert className="h-6 w-6 text-red-500" />}
-          showHomeButton={false} 
         />
         
         <div className="flex justify-end gap-2 mt-2 mb-4">
