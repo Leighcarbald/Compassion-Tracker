@@ -8,6 +8,16 @@ import EditMedicationSchedulesModal from "@/components/EditMedicationSchedulesMo
 import EditMedicationModal from "@/components/EditMedicationModal";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MedicationLog, CareRecipient, Medication, MedicationSchedule } from "@shared/schema";
 import { TabType } from "@/lib/types";
@@ -25,7 +35,8 @@ import {
   Edit,
   Save,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 
 // Define a type that includes the schedules array
@@ -48,6 +59,9 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
   const [logDoseMode, setLogDoseMode] = useState(false);
+  // State for delete confirmation dialog
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [logToDelete, setLogToDelete] = useState<MedicationLog | null>(null);
   const { toast } = useToast();
   
   // Use the global care recipient context
@@ -273,6 +287,50 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       setIsSchedulesModalOpen(true);
     }
   };
+  
+  // Handle deleting a medication log
+  const deleteMedicationLogMutation = useMutation({
+    mutationFn: async (logId: number) => {
+      const response = await apiRequest(
+        "DELETE",
+        `/api/medication-logs/${logId}`
+      );
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Log Deleted",
+        description: "Successfully deleted the medication log entry"
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
+      
+      setIsDeleteConfirmOpen(false);
+      setLogToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete log: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle confirmation to delete log
+  const handleDeleteLog = (log: MedicationLog) => {
+    setLogToDelete(log);
+    setIsDeleteConfirmOpen(true);
+  };
+  
+  // Handle confirmed deletion
+  const confirmDeleteLog = () => {
+    if (logToDelete) {
+      deleteMedicationLogMutation.mutate(logToDelete.id);
+    }
+  };
 
   // Render medication icon based on the type
   const renderMedicationIcon = (type: string, color: string) => {
@@ -465,11 +523,22 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
               ) : (
                 medicationLogs.slice(0, 5).map((log) => (
                   <div key={log.id} className="p-3 border-b border-gray-100 text-sm">
-                    <div className="flex justify-between">
-                      <div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
                         {medications?.find(med => med.id === log.medicationId)?.name || `Med #${log.medicationId}`} - {log.notes}
                       </div>
-                      <div className="text-xs text-gray-500">{getTimeAgo(log.takenAt)}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-gray-500">{getTimeAgo(log.takenAt)}</div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0 rounded-full hover:bg-red-50 hover:text-red-500"
+                          onClick={() => handleDeleteLog(log)}
+                          title="Delete log entry"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -525,6 +594,27 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         onClose={() => setIsEditMedicationModalOpen(false)}
         medication={selectedMedication}
       />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Medication Log</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this medication log entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteLog}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }
