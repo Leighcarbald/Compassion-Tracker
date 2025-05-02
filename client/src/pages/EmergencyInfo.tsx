@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from "@/components/ui/switch";
 import { EmergencyInfo as EmergencyInfoType } from "@shared/schema";
 import PageHeader from "@/components/PageHeader";
+import { maskSSN } from "@/lib/utils";
 
 // Use our centralized PIN authentication hook for better state management
 import { usePinAuth } from "@/hooks/use-pin-auth";
@@ -610,7 +611,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                           <div className="flex justify-between py-1 border-b border-gray-100">
                             <span className="text-sm font-medium text-gray-500">SSN</span>
                             <span className="text-sm">
-                              {formData.socialSecurityNumber}
+                              {maskSSN(formData.socialSecurityNumber)}
                             </span>
                           </div>
                         )}
