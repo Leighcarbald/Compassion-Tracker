@@ -712,7 +712,8 @@ export default function EditMedicationSchedulesModal({
                           {/* Only show if not "As Needed" */}
                           {!form.watch(`schedules.${index}.asNeeded`) && (
                             <>
-                              {/* Specific Calendar Dates toggle */}
+                              {/* Specific Calendar Dates - only show if specificDays has values */}
+                              {form.watch(`schedules.${index}.specificDays`).length > 0 && (
                               <FormField
                                 control={form.control}
                                 name={`schedules.${index}.specificDays`}
@@ -812,6 +813,7 @@ export default function EditMedicationSchedulesModal({
                                   </FormItem>
                                 )}
                               />
+                              )}
                               
                               {/* Tapering Dose option */}
                               <FormField
