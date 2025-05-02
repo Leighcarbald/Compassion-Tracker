@@ -1,8 +1,14 @@
 import 'express-session';
+import { AuthenticatorTransportFuture, PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/types';
 
 declare module 'express-session' {
   interface SessionData {
-    // Add custom session properties here
+    // Authentication
     verifiedEmergencyInfos?: number[];
+    
+    // WebAuthn
+    currentChallenge?: string;
+    currentRegistrationOptions?: PublicKeyCredentialCreationOptionsJSON;
+    currentAuthenticationOptions?: PublicKeyCredentialRequestOptionsJSON;
   }
 }

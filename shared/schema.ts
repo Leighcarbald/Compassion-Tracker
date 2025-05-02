@@ -266,15 +266,34 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  fullName: text("full_name"),
+  name: text("name"),
   email: varchar("email", { length: 255 }).unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// WebAuthn credentials table for biometric authentication
+export const webauthnCredentials = pgTable("webauthn_credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  credentialId: text("credential_id").notNull().unique(),
+  publicKey: text("public_key").notNull(),
+  counter: integer("counter").notNull(),
+  transports: text("transports"), // Comma-separated list of transports
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
-  careRecipients: many(careRecipients)
+  careRecipients: many(careRecipients),
+  webauthnCredentials: many(webauthnCredentials)
+}));
+
+export const webauthnCredentialsRelations = relations(webauthnCredentials, ({ one }) => ({
+  user: one(users, {
+    fields: [webauthnCredentials.userId],
+    references: [users.id]
+  })
 }));
 
 export const careRecipientsRelations = relations(careRecipients, ({ one, many }) => ({
@@ -372,9 +391,11 @@ export const emergencyInfoRelations = relations(emergencyInfo, ({ one }) => ({
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
-  fullName: true,
+  name: true,
   email: true
 });
+
+export const insertWebAuthnCredentialSchema = createInsertSchema(webauthnCredentials);
 
 export const insertCareRecipientSchema = createInsertSchema(careRecipients).pick({
   name: true,
@@ -480,3 +501,6 @@ export type InsertGlucose = z.infer<typeof insertGlucoseSchema>;
 
 export type Insulin = typeof insulin.$inferSelect;
 export type InsertInsulin = z.infer<typeof insertInsulinSchema>;
+
+export type WebAuthnCredential = typeof webauthnCredentials.$inferSelect;
+export type InsertWebAuthnCredential = z.infer<typeof insertWebAuthnCredentialSchema>;
