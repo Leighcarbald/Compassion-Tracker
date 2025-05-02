@@ -553,51 +553,51 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
               <p className="text-muted-foreground">No glucose readings recorded yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {glucoseReadings.map((reading: Glucose) => (
-                <Card key={reading.id} className="overflow-hidden">
-                  <CardHeader className="pb-2 px-3 py-2">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-base">
+                <Card key={reading.id} className="overflow-hidden w-full">
+                  <CardHeader className="pb-1 px-2 py-1.5">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-sm">
                         <span className={getGlucoseStatusColor(reading.level, reading.readingType)}>
                           {reading.level} mg/dL
                         </span>
                       </CardTitle>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-7 w-7"
+                          className="h-6 w-6"
                           onClick={() => handleEdit("glucose", reading)}
                           title="Edit reading"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-3 w-3" />
                         </Button>
                         {reading.level > 130 ? (
-                          <ArrowUp className="h-4 w-4 text-red-500" />
+                          <ArrowUp className="h-3.5 w-3.5 text-red-500" />
                         ) : reading.level < 70 ? (
-                          <ArrowDown className="h-4 w-4 text-red-500" />
+                          <ArrowDown className="h-3.5 w-3.5 text-red-500" />
                         ) : (
-                          <Droplets className="h-4 w-4 text-green-500" />
+                          <Droplets className="h-3.5 w-3.5 text-green-500" />
                         )}
                       </div>
                     </div>
-                    <CardDescription className="text-xs">
-                      {format(new Date(reading.timeOfReading), "MMM d, yyyy 'at' h:mm a")}
+                    <CardDescription className="text-[10px] whitespace-nowrap text-ellipsis overflow-hidden">
+                      {format(new Date(reading.timeOfReading), "MM/dd/yy h:mm a")}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0 px-3 py-2">
-                    <div className="space-y-1">
+                  <CardContent className="pt-0 px-2 py-1">
+                    <div className="space-y-0.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-xs">Type:</span>
-                        <div className="scale-90 origin-right">
+                        <span className="text-muted-foreground text-[10px]">Type:</span>
+                        <div className="scale-[0.85] origin-right -mr-1">
                           {getReadingTypeBadge(reading.readingType)}
                         </div>
                       </div>
                       {reading.notes && (
-                        <div className="pt-1 mt-1 border-t border-gray-100">
-                          <p className="text-xs text-muted-foreground mb-0.5">Notes:</p>
-                          <p className="text-xs line-clamp-2">{reading.notes}</p>
+                        <div className="pt-0.5 mt-0.5 border-t border-gray-100">
+                          <p className="text-[10px] text-muted-foreground mb-0.5">Notes:</p>
+                          <p className="text-[10px] line-clamp-1">{reading.notes}</p>
                         </div>
                       )}
                     </div>
@@ -622,49 +622,49 @@ export default function GlucoseInsulinPage({ activeTab, setActiveTab }: GlucoseI
               <p className="text-muted-foreground">No insulin records recorded yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {insulinRecords.map((record: Insulin) => (
-                <Card key={record.id} className="overflow-hidden">
-                  <CardHeader className="pb-2 px-3 py-2">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-base">
+                <Card key={record.id} className="overflow-hidden w-full">
+                  <CardHeader className="pb-1 px-2 py-1.5">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-sm">
                         {record.units} units
                       </CardTitle>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-7 w-7"
+                          className="h-6 w-6"
                           onClick={() => handleEdit("insulin", record)}
                           title="Edit record"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-3 w-3" />
                         </Button>
-                        <Syringe className="h-4 w-4" />
+                        <Syringe className="h-3.5 w-3.5" />
                       </div>
                     </div>
-                    <CardDescription className="text-xs">
-                      {format(new Date(record.timeAdministered), "MMM d, yyyy 'at' h:mm a")}
+                    <CardDescription className="text-[10px] whitespace-nowrap text-ellipsis overflow-hidden">
+                      {format(new Date(record.timeAdministered), "MM/dd/yy h:mm a")}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0 px-3 py-2">
-                    <div className="space-y-1">
+                  <CardContent className="pt-0 px-2 py-1">
+                    <div className="space-y-0.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-xs">Type:</span>
-                        <div className="scale-90 origin-right">
+                        <span className="text-muted-foreground text-[10px]">Type:</span>
+                        <div className="scale-[0.85] origin-right -mr-1">
                           {getInsulinTypeBadge(record.insulinType)}
                         </div>
                       </div>
                       {record.site && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground text-xs">Site:</span>
-                          <span className="capitalize text-xs">{record.site}</span>
+                          <span className="text-muted-foreground text-[10px]">Site:</span>
+                          <span className="capitalize text-[10px] truncate max-w-[70%] text-right">{record.site}</span>
                         </div>
                       )}
                       {record.notes && (
-                        <div className="pt-1 mt-1 border-t border-gray-100">
-                          <p className="text-xs text-muted-foreground mb-0.5">Notes:</p>
-                          <p className="text-xs line-clamp-2">{record.notes}</p>
+                        <div className="pt-0.5 mt-0.5 border-t border-gray-100">
+                          <p className="text-[10px] text-muted-foreground mb-0.5">Notes:</p>
+                          <p className="text-[10px] line-clamp-1">{record.notes}</p>
                         </div>
                       )}
                     </div>
