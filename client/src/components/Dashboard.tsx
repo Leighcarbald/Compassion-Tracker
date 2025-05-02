@@ -28,6 +28,12 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
       level: number;
       timeOfReading: string;
       whenTaken: string;
+      readingType?: string;
+    }>;
+    insulin?: Array<{
+      units: number;
+      timeOfAdministration: string;
+      insulinType?: string;
     }>;
   }>({
     queryKey: ['/api/care-stats/today', careRecipientId],
@@ -67,6 +73,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
           icon={<Pill className="h-4 w-4" />}
           color="primary"
           progress={todayStats?.medications?.progress || 0}
+          onClick={() => setLocation(`/medications?careRecipientId=${careRecipientId}`)}
         />
 
         {/* Blood Pressure Card */}
@@ -80,6 +87,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
           secondaryText={todayStats?.bloodPressure && todayStats.bloodPressure.length > 0 
             ? `Pulse: ${todayStats.bloodPressure[0].pulse}`
             : ""}
+          onClick={() => setLocation(`/blood-pressure?careRecipientId=${careRecipientId}`)}
         />
 
         {/* Glucose/Insulin Card */}
@@ -97,6 +105,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
             : todayStats?.insulin && todayStats.insulin.length > 0 
               ? `${todayStats.insulin[0].insulinType || ""}`
               : ""}
+          onClick={() => setLocation(`/glucose-insulin?careRecipientId=${careRecipientId}`)}
         />
 
         {/* Meals Card */}
@@ -107,6 +116,7 @@ export default function Dashboard({ careRecipientId, inspirationMessage }: Dashb
           icon={<Utensils className="h-4 w-4" />}
           color="secondary"
           progress={todayStats?.meals?.progress || 0}
+          onClick={() => setLocation(`/meals?careRecipientId=${careRecipientId}`)}
         />
 
         {/* Bowel Movements Card */}

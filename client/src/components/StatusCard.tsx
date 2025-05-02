@@ -10,6 +10,7 @@ interface StatusCardProps {
   color: string;
   progress?: number;
   secondaryText?: string;
+  onClick?: () => void;
 }
 
 export default function StatusCard({ 
@@ -19,7 +20,8 @@ export default function StatusCard({
   icon, 
   color, 
   progress = 0,
-  secondaryText
+  secondaryText,
+  onClick
 }: StatusCardProps) {
   // Convert color to Tailwind color class
   const getColorClass = (colorName: string) => {
@@ -30,7 +32,10 @@ export default function StatusCard({
   const progressColorClass = `bg-${getColorClass(color)}`;
   
   return (
-    <Card className="care-card border border-gray-100">
+    <Card 
+      className={`care-card border border-gray-100 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={onClick}
+    >
       <CardContent className="p-3">
         <div className="flex justify-between items-start">
           <div>
