@@ -358,7 +358,7 @@ export default function EditMedicationSchedulesModal({
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mb-6">
             {fields.length === 0 ? (
               <div className="text-center py-6">
                 <p className="text-muted-foreground mb-4">No schedules set for this medication.</p>
@@ -374,7 +374,7 @@ export default function EditMedicationSchedulesModal({
             ) : (
               <>
                 {fields.map((field, index) => (
-                  <div key={field.id} className="border rounded-lg p-4 space-y-3 relative">
+                  <div key={field.id} className="border rounded-lg p-4 space-y-4 relative">
                     <Button
                       type="button"
                       variant="ghost"
@@ -435,45 +435,51 @@ export default function EditMedicationSchedulesModal({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Time</FormLabel>
-                          <div className="flex gap-2">
-                            <Select
-                              onValueChange={(value) => handleTimeOptionSelect(index, value)}
-                              value={
-                                showCustomTime.includes(index) 
-                                  ? "custom" 
-                                  : timeOptions.some(opt => opt.value === field.value)
-                                    ? field.value
-                                    : "custom"
-                              }
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select time" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {timeOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="custom">Custom Time</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          {/* Wrap flex container in a margin bottom to ensure spacing */}
+                          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                            <div className="w-full">
+                              <Select
+                                onValueChange={(value) => handleTimeOptionSelect(index, value)}
+                                value={
+                                  showCustomTime.includes(index) 
+                                    ? "custom" 
+                                    : timeOptions.some(opt => opt.value === field.value)
+                                      ? field.value
+                                      : "custom"
+                                }
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select time" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {timeOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                  <SelectItem value="custom">Custom Time</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                             
                             {showCustomTime.includes(index) && (
-                              <FormControl>
-                                <Input
-                                  type="time"
-                                  {...field}
-                                  onChange={(e) => {
-                                    // Convert the time input (HH:MM) to HH:MM:00 format
-                                    const timeValue = e.target.value + ":00";
-                                    field.onChange(timeValue);
-                                  }}
-                                  value={field.value.slice(0, 5)} // Display only HH:MM part
-                                />
-                              </FormControl>
+                              <div className="w-full sm:w-auto">
+                                <FormControl>
+                                  <Input
+                                    type="time"
+                                    className="w-full"
+                                    {...field}
+                                    onChange={(e) => {
+                                      // Convert the time input (HH:MM) to HH:MM:00 format
+                                      const timeValue = e.target.value + ":00";
+                                      field.onChange(timeValue);
+                                    }}
+                                    value={field.value.slice(0, 5)} // Display only HH:MM part
+                                  />
+                                </FormControl>
+                              </div>
                             )}
                           </div>
                           <FormMessage />
@@ -491,51 +497,57 @@ export default function EditMedicationSchedulesModal({
                         return (
                           <FormItem>
                             <FormLabel>Dose Quantity</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={
-                                medicationQuantityOptions.some(opt => opt.value === field.value)
-                                  ? field.value
-                                  : "custom"
-                              }
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select quantity" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {medicationQuantityOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="custom">Custom Quantity</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="w-full mb-2">
+                              <Select
+                                onValueChange={field.onChange}
+                                value={
+                                  medicationQuantityOptions.some(opt => opt.value === field.value)
+                                    ? field.value
+                                    : "custom"
+                                }
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select quantity" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {medicationQuantityOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                  <SelectItem value="custom">Custom Quantity</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                             
                             {field.value === "custom" && (
-                              <FormControl>
-                                <Input 
-                                  className="mt-2"
-                                  placeholder="Enter custom quantity" 
-                                  onChange={(e) => field.onChange(e.target.value)}
-                                  // Don't use the field's value if it's "custom"
-                                  value=""
-                                />
-                              </FormControl>
+                              <div className="w-full mb-2">
+                                <FormControl>
+                                  <Input 
+                                    className="w-full"
+                                    placeholder="Enter custom quantity" 
+                                    onChange={(e) => field.onChange(e.target.value)}
+                                    // Don't use the field's value if it's "custom"
+                                    value=""
+                                  />
+                                </FormControl>
+                              </div>
                             )}
                             
                             {field.value !== undefined && 
                              !medicationQuantityOptions.some(opt => opt.value === field.value) && 
                              field.value !== "custom" && (
-                              <FormControl>
-                                <Input 
-                                  className="mt-2"
-                                  placeholder="Enter custom quantity" 
-                                  {...field} 
-                                />
-                              </FormControl>
+                              <div className="w-full mb-2">
+                                <FormControl>
+                                  <Input 
+                                    className="w-full"
+                                    placeholder="Enter custom quantity" 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                              </div>
                             )}
                             <FormMessage />
                           </FormItem>
@@ -625,17 +637,19 @@ export default function EditMedicationSchedulesModal({
               </>
             )}
             
-            <DialogFooter className="flex justify-end space-x-3 pt-4">
+            <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 pt-4 mt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={saveSchedules.isPending || fields.length === 0}
+                className="w-full sm:w-auto"
               >
                 {saveSchedules.isPending ? "Saving..." : "Save Schedules"}
               </Button>
