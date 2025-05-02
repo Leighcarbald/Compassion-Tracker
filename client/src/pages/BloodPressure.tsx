@@ -332,16 +332,16 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {readings.map((reading: BloodPressure) => (
-              <Card key={reading.id}>
-                <CardHeader className="pb-2">
+              <Card key={reading.id} className="overflow-hidden">
+                <CardHeader className="pb-2 px-3 py-2">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-base">
                       <span className={getStatusColor(reading)}>
                         {reading.systolic}/{reading.diastolic}
                       </span> 
-                      <span className="text-base font-normal ml-1">mmHg</span>
+                      <span className="text-sm font-normal ml-1">mmHg</span>
                       {(reading.systolic >= 130 || reading.diastolic >= 80) && (
-                        <span className={`text-xs font-medium ml-2 py-0.5 px-1.5 rounded ${
+                        <span className={`text-xs font-medium ml-1 py-0.5 px-1 rounded ${
                           reading.systolic >= 180 || reading.diastolic >= 120 
                             ? "bg-red-100 text-red-800" 
                             : reading.systolic >= 140 || reading.diastolic >= 90
@@ -356,39 +356,39 @@ export default function BloodPressurePage({ activeTab, setActiveTab }: BloodPres
                         </span>
                       )}
                     </CardTitle>
-                    <Heart className={`h-5 w-5 ${getStatusColor(reading)}`} />
+                    <Heart className={`h-4 w-4 ${getStatusColor(reading)}`} />
                   </div>
-                  <CardDescription>
-                    {format(new Date(reading.timeOfReading), "PPP 'at' p")}
+                  <CardDescription className="text-xs">
+                    {format(new Date(reading.timeOfReading), "MMM d, yyyy 'at' h:mm a")}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
+                <CardContent className="px-3 py-2">
+                  <div className="space-y-1 text-sm">
                     {reading.pulse && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Pulse:</span>
-                        <span>{reading.pulse} bpm</span>
+                        <span className="text-muted-foreground text-xs">Pulse:</span>
+                        <span className="text-xs">{reading.pulse} bpm</span>
                       </div>
                     )}
                     {reading.oxygenLevel && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Oxygen Level:</span>
-                        <span className={reading.oxygenLevel >= 95 ? "text-green-500" : reading.oxygenLevel >= 90 ? "text-amber-500" : "text-red-500"}>
+                        <span className="text-muted-foreground text-xs">O₂:</span>
+                        <span className={`text-xs ${reading.oxygenLevel >= 95 ? "text-green-500" : reading.oxygenLevel >= 90 ? "text-amber-500" : "text-red-500"}`}>
                           {reading.oxygenLevel}%
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Position:</span>
-                      <span className="capitalize">{reading.position || "Not recorded"}</span>
+                      <span className="text-muted-foreground text-xs">Position:</span>
+                      <span className="capitalize text-xs">{reading.position || "Not recorded"}</span>
                     </div>
                     {reading.notes && (
-                      <div className="pt-2 mt-2 border-t border-gray-100">
+                      <div className="pt-1 mt-1 border-t border-gray-100">
                         <div className="flex items-center gap-1 mb-1">
-                          <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
-                          <p className="text-sm font-medium text-muted-foreground">Notes:</p>
+                          <AlignLeft className="h-3 w-3 text-muted-foreground" />
+                          <p className="text-xs font-medium text-muted-foreground">Notes:</p>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap break-words">
+                        <p className="text-xs line-clamp-2">
                           {reading.notes}
                         </p>
                       </div>
