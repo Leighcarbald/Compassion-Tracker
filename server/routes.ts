@@ -1146,7 +1146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Send initial connection message
     ws.send(JSON.stringify({
       type: 'connection',
-      message: 'Connected to health data WebSocket server',
+      message: 'Connected to WebSocket server',
       timestamp: new Date().toISOString()
     }));
     
@@ -1184,7 +1184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Broadcast health data updates to all connected clients
+  // Broadcast updates to all connected clients
   const broadcastUpdate = (type: string, data: any) => {
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
