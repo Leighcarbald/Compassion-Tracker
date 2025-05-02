@@ -31,7 +31,7 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
   const { activeCareRecipientId, careRecipients, isLoading: isLoadingCareRecipients } = useCareRecipient();
 
   // Get bowel movements for the active care recipient
-  const { data: movements = [], isLoading: isLoadingMovements } = useQuery({
+  const { data: movements = [], isLoading: isLoadingMovements, refetch } = useQuery({
     queryKey: ['/api/bowel-movements', activeCareRecipientId],
     queryFn: async () => {
       if (!activeCareRecipientId) return [];
@@ -39,7 +39,9 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
       if (!res.ok) throw new Error('Failed to fetch bowel movements');
       return res.json();
     },
-    enabled: !!activeCareRecipientId
+    enabled: !!activeCareRecipientId,
+    // Ensure we always get fresh data by setting staleTime to 0
+    staleTime: 0
   });
 
   // Delete bowel movement
@@ -65,6 +67,13 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
       });
     }
   });
+
+  // Manually refresh bowel movement data
+  const refreshBowelMovements = async () => {
+    console.log("Refreshing bowel movement data...");
+    await refetch();
+    console.log("Bowel movement data refreshed!");
+  };
 
   const handleDeleteMovement = (id: number) => {
     if (confirm("Are you sure you want to delete this record?")) {
@@ -225,8 +234,13 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
       {/* Add Event Modal */}
       <AddBowelMovementModal 
         isOpen={isAddEventOpen}
-        onClose={() => setIsAddEventOpen(false)}
+        onClose={() => {
+          setIsAddEventOpen(false);
+          // Refresh data when modal is closed
+          refreshBowelMovements();
+        }}
         careRecipientId={activeCareRecipientId}
+        onSuccess={refreshBowelMovements}
       />
       
       {/* Bottom Navigation */}

@@ -39,6 +39,7 @@ interface AddBowelMovementModalProps {
   isOpen: boolean;
   onClose: () => void;
   careRecipientId: string | null;
+  onSuccess?: () => void;
 }
 
 const formSchema = z.object({
@@ -55,6 +56,7 @@ export default function AddBowelMovementModal({
   isOpen,
   onClose,
   careRecipientId,
+  onSuccess,
 }: AddBowelMovementModalProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -87,16 +89,22 @@ export default function AddBowelMovementModal({
       };
       
       console.log("Submitting bowel movement data:", postData);
-      return await apiRequest("POST", "/api/bowel-movements", postData);
+      const response = await apiRequest("POST", "/api/bowel-movements", postData);
+      return response.json(); // Parse the JSON response to get the created record
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Bowel movement record has been added",
-        variant: "default",
-      });
+    onSuccess: (newBowelMovement) => {
+      // First invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/bowel-movements', careRecipientId] });
       queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today', careRecipientId] });
+      
+      // Show success toast with more details
+      toast({
+        title: "Success",
+        description: `${newBowelMovement.type} bowel movement record has been added`,
+        variant: "default",
+      });
+      
+      // Reset form
       form.reset({
         type: "Regular",
         date: format(new Date(), "yyyy-MM-dd"),
@@ -104,6 +112,8 @@ export default function AddBowelMovementModal({
         notes: "",
         careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
       });
+      
+      // Close the modal after all operations are complete
       onClose();
     },
     onError: (error: Error) => {
@@ -128,7 +138,9 @@ export default function AddBowelMovementModal({
             Add Bowel Movement
           </DialogTitle>
           <DialogDescription>
-            Record a new bowel movement
+            {createMutation.isPending
+              ? "Adding bowel movement record..."
+              : "Record a new bowel movement"}
           </DialogDescription>
         </DialogHeader>
         
