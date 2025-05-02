@@ -314,7 +314,8 @@ export const careRecipientsRelations = relations(careRecipients, ({ one, many })
   emergencyInfo: many(emergencyInfo),
   bloodPressureReadings: many(bloodPressure),
   glucoseReadings: many(glucose),
-  insulinRecords: many(insulin)
+  insulinRecords: many(insulin),
+  healthDeviceConnections: many(healthDeviceConnections)
 }));
 
 export const medicationsRelations = relations(medications, ({ one, many }) => ({
@@ -503,5 +504,35 @@ export type InsertGlucose = z.infer<typeof insertGlucoseSchema>;
 export type Insulin = typeof insulin.$inferSelect;
 export type InsertInsulin = z.infer<typeof insertInsulinSchema>;
 
+// Health device connections for smartwatch and fitness tracker integration
+export const healthDeviceConnections = pgTable("health_device_connections", {
+  id: serial("id").primaryKey(),
+  careRecipientId: integer("care_recipient_id").references(() => careRecipients.id).notNull(),
+  provider: text("provider").notNull(), // 'google', 'apple', 'fitbit', 'samsung', 'garmin'
+  providerUserId: text("provider_user_id"), // User ID from the provider
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  tokenExpiry: timestamp("token_expiry"),
+  lastSynced: timestamp("last_synced"),
+  syncEnabled: boolean("sync_enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const healthDeviceConnectionsRelations = relations(healthDeviceConnections, ({ one }) => ({
+  careRecipient: one(careRecipients, {
+    fields: [healthDeviceConnections.careRecipientId],
+    references: [careRecipients.id]
+  })
+}));
+
+// Also add to careRecipientsRelations
+// (We'll need to update this separately)
+
+export const insertHealthDeviceConnectionSchema = createInsertSchema(healthDeviceConnections);
+
 export type WebAuthnCredential = typeof webauthnCredentials.$inferSelect;
 export type InsertWebAuthnCredential = z.infer<typeof insertWebAuthnCredentialSchema>;
+
+export type HealthDeviceConnection = typeof healthDeviceConnections.$inferSelect;
+export type InsertHealthDeviceConnection = z.infer<typeof insertHealthDeviceConnectionSchema>;
