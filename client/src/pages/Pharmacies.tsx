@@ -46,7 +46,13 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Special handling for phone numbers
+    if (name === "phoneNumber") {
+      setFormData(prev => ({ ...prev, [name]: normalizePhoneNumber(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
   
   // Handle add pharmacy
@@ -206,7 +212,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-primary" />
-                    <span>{pharmacy.phoneNumber}</span>
+                    <span>{formatPhoneNumber(pharmacy.phoneNumber)}</span>
                   </div>
                   {pharmacy.notes && (
                     <div className="mt-2 text-sm border-t pt-2">
