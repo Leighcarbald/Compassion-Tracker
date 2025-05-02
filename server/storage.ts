@@ -894,6 +894,42 @@ export const storage = {
     return existingMedication;
   },
   
+  async deleteMedication(medicationId: number) {
+    try {
+      console.log(`Deleting medication with ID: ${medicationId}`);
+      
+      // First, delete all associated medication schedules
+      const schedules = await db
+        .select()
+        .from(medicationSchedules)
+        .where(eq(medicationSchedules.medicationId, medicationId));
+      
+      for (const schedule of schedules) {
+        await this.deleteMedicationSchedule(schedule.id);
+      }
+      
+      // Delete any related medication logs
+      await db
+        .delete(medicationLogs)
+        .where(eq(medicationLogs.medicationId, medicationId));
+      
+      // Delete any pharmacy associations
+      await db
+        .delete(medicationPharmacies)
+        .where(eq(medicationPharmacies.medicationId, medicationId));
+      
+      // Finally delete the medication itself
+      await db
+        .delete(medications)
+        .where(eq(medications.id, medicationId));
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting medication:', error);
+      throw error;
+    }
+  },
+  
   // Medication Schedules
   async getMedicationSchedules(medicationId: number) {
     return db.query.medicationSchedules.findMany({

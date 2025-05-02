@@ -163,6 +163,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error creating medication' });
     }
   });
+  
+  // Delete medication
+  app.delete(`${apiPrefix}/medications/:id`, async (req, res) => {
+    try {
+      const medicationId = parseInt(req.params.id);
+      
+      if (isNaN(medicationId)) {
+        return res.status(400).json({ message: 'Invalid medication ID format' });
+      }
+      
+      await storage.deleteMedication(medicationId);
+      res.status(200).json({ message: 'Medication deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting medication:', error);
+      res.status(500).json({ message: 'Error deleting medication' });
+    }
+  });
 
   // Update medication information
   app.patch(`${apiPrefix}/medications/:id`, async (req, res) => {
