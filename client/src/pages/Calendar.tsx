@@ -28,6 +28,7 @@ import {
   Syringe,
   Moon,
   FileText,
+  AlignLeft,
   AlertCircle
 } from "lucide-react";
 
@@ -533,8 +534,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                 </div>
                               </div>
                               {record.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {record.notes}
+                                <div className="mt-2 text-sm">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    <AlignLeft className="h-3 w-3 text-gray-500" />
+                                    <p className="text-xs font-medium text-gray-500">Notes:</p>
+                                  </div>
+                                  <div className="text-gray-600 bg-gray-50 p-2 rounded whitespace-pre-wrap break-words">
+                                    {record.notes}
+                                  </div>
                                 </div>
                               )}
                             </CardContent>
@@ -579,8 +586,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                 </div>
                               </div>
                               {meal.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {meal.notes}
+                                <div className="mt-2 text-sm">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    <AlignLeft className="h-3 w-3 text-gray-500" />
+                                    <p className="text-xs font-medium text-gray-500">Notes:</p>
+                                  </div>
+                                  <div className="text-gray-600 bg-gray-50 p-2 rounded whitespace-pre-wrap break-words">
+                                    {meal.notes}
+                                  </div>
                                 </div>
                               )}
                             </CardContent>
@@ -621,8 +634,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                 </div>
                               </div>
                               {movement.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {movement.notes}
+                                <div className="mt-2 text-sm">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    <AlignLeft className="h-3 w-3 text-gray-500" />
+                                    <p className="text-xs font-medium text-gray-500">Notes:</p>
+                                  </div>
+                                  <div className="text-gray-600 bg-gray-50 p-2 rounded whitespace-pre-wrap break-words">
+                                    {movement.notes}
+                                  </div>
                                 </div>
                               )}
                             </CardContent>
@@ -669,8 +688,14 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                 </div>
                               </div>
                               {record.notes && (
-                                <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                  {record.notes}
+                                <div className="mt-2 text-sm">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    <AlignLeft className="h-3 w-3 text-gray-500" />
+                                    <p className="text-xs font-medium text-gray-500">Notes:</p>
+                                  </div>
+                                  <div className="text-gray-600 bg-gray-50 p-2 rounded whitespace-pre-wrap break-words">
+                                    {record.notes}
+                                  </div>
                                 </div>
                               )}
                             </CardContent>
