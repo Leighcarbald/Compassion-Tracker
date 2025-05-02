@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -7,12 +7,13 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Medication } from "@shared/schema";
+import { Medication, MedicationLog } from "@shared/schema";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -21,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate, formatTime } from "@/lib/utils";
 
 interface MedicationInventoryModalProps {
   isOpen: boolean;
@@ -148,101 +151,157 @@ export default function MedicationInventoryModal({
     }
   };
 
+  // Fetch medication logs
+  const { data: medicationLogs } = useQuery<MedicationLog[]>({
+    queryKey: ['/api/medication-logs', medication?.careRecipientId],
+    enabled: !!medication?.careRecipientId,
+  });
+
+  // Filter logs for current medication
+  const filteredLogs = medicationLogs?.filter(log => log.medicationId === medication?.id) || [];
+
   if (!medication) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {medication.name} - Inventory Management
+            {medication.name}
           </DialogTitle>
+          <DialogDescription>
+            Update inventory and view medication history
+          </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 items-center gap-4">
-            <Label htmlFor="currentQuantity">Current Quantity</Label>
-            <Input
-              id="currentQuantity"
-              name="currentQuantity"
-              type="number"
-              min="0"
-              value={inventoryData.currentQuantity}
-              onChange={handleInputChange}
-            />
-          </div>
+        <Tabs defaultValue="inventory" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="inventory">Inventory</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
           
-          <div className="grid grid-cols-2 items-center gap-4">
-            <Label htmlFor="reorderThreshold">Reorder Threshold</Label>
-            <Input
-              id="reorderThreshold"
-              name="reorderThreshold"
-              type="number"
-              min="1"
-              value={inventoryData.reorderThreshold}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 items-center gap-4">
-            <Label htmlFor="daysToReorder">Days to Reorder (1-30)</Label>
-            <div className="flex flex-col gap-2">
-              <Slider 
-                id="daysToReorder"
-                min={1} 
-                max={30} 
-                step={1}
-                value={[inventoryData.daysToReorder]}
-                onValueChange={(values) => handleDaysToReorderChange(values[0])}
-              />
-              <div className="text-sm text-center">
-                {inventoryData.daysToReorder} {inventoryData.daysToReorder === 1 ? 'day' : 'days'}
+          <TabsContent value="inventory" className="space-y-4">
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 items-center gap-4">
+                <Label htmlFor="currentQuantity">Current Quantity</Label>
+                <Input
+                  id="currentQuantity"
+                  name="currentQuantity"
+                  type="number"
+                  min="0"
+                  value={inventoryData.currentQuantity}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 items-center gap-4">
+                <Label htmlFor="reorderThreshold">Reorder Threshold</Label>
+                <Input
+                  id="reorderThreshold"
+                  name="reorderThreshold"
+                  type="number"
+                  min="1"
+                  value={inventoryData.reorderThreshold}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 items-center gap-4">
+                <Label htmlFor="daysToReorder">Days to Reorder (1-30)</Label>
+                <div className="flex flex-col gap-2">
+                  <Slider 
+                    id="daysToReorder"
+                    min={1} 
+                    max={30} 
+                    step={1}
+                    value={[inventoryData.daysToReorder]}
+                    onValueChange={(values) => handleDaysToReorderChange(values[0])}
+                  />
+                  <div className="text-sm text-center">
+                    {inventoryData.daysToReorder} {inventoryData.daysToReorder === 1 ? 'day' : 'days'}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 items-center gap-4">
+                <Label htmlFor="originalQuantity">Original Prescription Quantity</Label>
+                <Input
+                  id="originalQuantity"
+                  name="originalQuantity"
+                  type="number"
+                  min="0"
+                  value={inventoryData.originalQuantity}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 items-center gap-4">
+                <Label htmlFor="refillsRemaining">Refills Remaining</Label>
+                <Input
+                  id="refillsRemaining"
+                  name="refillsRemaining"
+                  type="number"
+                  min="0"
+                  value={inventoryData.refillsRemaining}
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
-          </div>
+            
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleRefill}
+                className="sm:order-1 w-full sm:w-auto"
+                disabled={updateInventoryMutation.isPending || refillMutation.isPending}
+              >
+                Refill Medication
+              </Button>
+              <Button 
+                onClick={handleSubmit}
+                className="sm:order-2 w-full sm:w-auto"
+                disabled={updateInventoryMutation.isPending || refillMutation.isPending}
+              >
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </TabsContent>
           
-          <div className="grid grid-cols-2 items-center gap-4">
-            <Label htmlFor="originalQuantity">Original Prescription Quantity</Label>
-            <Input
-              id="originalQuantity"
-              name="originalQuantity"
-              type="number"
-              min="0"
-              value={inventoryData.originalQuantity}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 items-center gap-4">
-            <Label htmlFor="refillsRemaining">Refills Remaining</Label>
-            <Input
-              id="refillsRemaining"
-              name="refillsRemaining"
-              type="number"
-              min="0"
-              value={inventoryData.refillsRemaining}
-              onChange={handleInputChange}
-            />
-          </div>
-        </div>
-        
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <Button
-            variant="outline"
-            onClick={handleRefill}
-            className="sm:order-1"
-            disabled={updateInventoryMutation.isPending || refillMutation.isPending}
-          >
-            Refill Medication
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            className="sm:order-2"
-            disabled={updateInventoryMutation.isPending || refillMutation.isPending}
-          >
-            Save Changes
-          </Button>
-        </DialogFooter>
+          <TabsContent value="history">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Medication History</h3>
+              
+              {filteredLogs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No medication history available.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredLogs.map((log) => (
+                    <div key={log.id} className="border rounded-md p-3">
+                      <div className="flex justify-between items-center">
+                        <div className="font-medium">
+                          {log.taken ? "Taken" : "Skipped"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(new Date(log.takenAt))}
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Time: {formatTime(new Date(log.takenAt))}
+                      </div>
+                      {log.notes && (
+                        <div className="text-sm mt-1">
+                          Notes: {log.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
