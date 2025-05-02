@@ -59,7 +59,13 @@ const dataTypeNames = {
 export default function HealthPlatforms() {
   const [selectedTab, setSelectedTab] = useState<string>('connected');
   const [connectionToDelete, setConnectionToDelete] = useState<HealthPlatformConnection | null>(null);
-  const { selectedCareRecipient } = useCareRecipient();
+  const { selectedCareRecipient, activeCareRecipientId, careRecipients } = useCareRecipient();
+  
+  // If selectedCareRecipient is not available, find it using activeCareRecipientId
+  const currentCareRecipient = selectedCareRecipient || 
+    (activeCareRecipientId && careRecipients ? 
+      careRecipients.find(r => r.id.toString() === activeCareRecipientId) : 
+      undefined);
   const { 
     connections, 
     isLoadingConnections, 
@@ -71,11 +77,11 @@ export default function HealthPlatforms() {
     isUpdating,
     isDeleting,
     isSyncing,
-  } = useHealthPlatforms(selectedCareRecipient?.id);
+  } = useHealthPlatforms(currentCareRecipient && typeof currentCareRecipient === 'object' ? currentCareRecipient.id : undefined);
   
   // Connect to WebSocket for real-time health data updates
   const { status: wsStatus } = useHealthWebSocket({
-    careRecipientId: selectedCareRecipient?.id,
+    careRecipientId: currentCareRecipient && typeof currentCareRecipient === 'object' ? currentCareRecipient.id : undefined,
   });
   
   const platforms: HealthProvider[] = ['google', 'apple', 'fitbit', 'samsung', 'garmin'];
@@ -83,7 +89,7 @@ export default function HealthPlatforms() {
     platform => !connections?.some(conn => conn.provider === platform)
   );
   
-  if (!selectedCareRecipient) {
+  if (!currentCareRecipient || typeof currentCareRecipient !== 'object') {
     return (
       <div className="container py-6">
         <Header title="Health Platforms" />
