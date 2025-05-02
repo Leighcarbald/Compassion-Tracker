@@ -91,7 +91,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
   
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="Pharmacies" icon={<Store className="h-6 w-6" />} showHomeButton={false} />
+      <PageHeader title="Pharmacies" icon={<Store className="h-6 w-6" />} />
       
       {/* Care Recipient Tabs are no longer needed since we're using global context */}
       

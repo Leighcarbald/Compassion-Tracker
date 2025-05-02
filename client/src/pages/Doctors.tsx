@@ -94,7 +94,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
   
   return (
     <div className="container mx-auto p-4">
-      <PageHeader title="Doctors" icon={<Stethoscope className="h-6 w-6" />} showHomeButton={false} />
+      <PageHeader title="Doctors" icon={<Stethoscope className="h-6 w-6" />} />
       
       {/* Care Recipient Tabs are no longer needed since we're using global context */}
       
