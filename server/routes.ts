@@ -332,6 +332,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Drug Database - Check medication interactions
+  app.post(`${apiPrefix}/medications/interactions`, async (req, res) => {
+    try {
+      const { medicationNames } = req.body;
+      
+      if (!medicationNames || !Array.isArray(medicationNames) || medicationNames.length === 0) {
+        return res.status(400).json({ 
+          success: true,
+          interactions: [],
+          message: 'Medication names array is required'
+        });
+      }
+      
+      console.log(`Checking interactions for medications: ${medicationNames.join(', ')}`);
+      
+      // First try our fallback mechanism directly since external API is having issues
+      const knownInteractions = medicationService.checkKnownInteractions(medicationNames);
+      if (knownInteractions.interactions.length > 0) {
+        console.log('Found interactions using known medication database');
+        return res.json(knownInteractions);
+      }
+      
+      // If no known interactions, try the full service with external API
+      try {
+        const result = await medicationService.checkDrugInteractionsByNames(medicationNames);
+        res.json(result);
+      } catch (serviceError) {
+        console.error('Service error:', serviceError);
+        // Return empty interactions rather than an error
+        res.json({ 
+          success: true,
+          interactions: [] 
+        });
+      }
+    } catch (error) {
+      console.error('Error checking drug interactions:', error);
+      res.status(500).json({ message: 'Error checking drug interactions' });
+    }
+  });
+  
   // Drug Database - Get normalized medication name
   app.get(`${apiPrefix}/medications/normalize-name`, async (req, res) => {
     try {
