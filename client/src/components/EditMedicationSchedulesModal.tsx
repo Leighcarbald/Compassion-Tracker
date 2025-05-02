@@ -29,11 +29,13 @@ import {
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, PlusCircle, Loader2 } from "lucide-react";
-import { Medication } from "@shared/schema";
+import { Medication, MedicationLog } from "@shared/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate, formatTime } from "@/lib/utils";
 
 interface EditMedicationSchedulesModalProps {
   isOpen: boolean;
@@ -345,317 +347,370 @@ export default function EditMedicationSchedulesModal({
     saveSchedules.mutate(data);
   };
 
+  // Fetch medication logs
+  const { data: medicationLogs } = useQuery<MedicationLog[]>({
+    queryKey: ['/api/medication-logs', medication?.careRecipientId],
+    enabled: !!medication?.careRecipientId,
+  });
+
+  // Filter logs for current medication
+  const filteredLogs = medicationLogs?.filter(log => log.medicationId === medication?.id) || [];
+
   if (!medication) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Medication Schedules</DialogTitle>
+          <DialogTitle>{medication.name}</DialogTitle>
           <DialogDescription>
-            Set the times and days when {medication.name} should be taken.
+            Manage medication schedules and view history
           </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mb-6">
-            {fields.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground mb-4">No schedules set for this medication.</p>
-                <Button 
-                  type="button" 
-                  onClick={addSchedule}
-                  className="flex items-center gap-2"
-                >
-                  <PlusCircle size={16} />
-                  Add Schedule
-                </Button>
-              </div>
-            ) : (
-              <>
-                {fields.map((field, index) => (
-                  <div key={field.id} className="border rounded-lg p-4 space-y-4 relative">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 text-destructive"
-                      onClick={() => {
-                        const schedule = fields[index];
-                        console.log("Field to delete:", schedule);
-                        if (schedule.id) {
-                          // Pass the ID directly without conversion
-                          console.log(`Using original schedule ID format: ${schedule.id} (${typeof schedule.id})`);
-                          
-                          // If it has an ID, it exists in the database, so delete it
-                          deleteSchedule.mutate(schedule.id, {
-                            onSuccess: () => {
-                              // After deleting from server, remove from form
-                              remove(index);
-                              toast({
-                                title: "Schedule Removed",
-                                description: "Medication schedule deleted successfully",
-                                variant: "default",
+        <Tabs defaultValue="schedules" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="schedules">Schedules</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="schedules">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {fields.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-muted-foreground mb-4">No schedules set for this medication.</p>
+                    <Button 
+                      type="button" 
+                      onClick={addSchedule}
+                      className="flex items-center gap-2"
+                    >
+                      <PlusCircle size={16} />
+                      Add Schedule
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="border rounded-lg p-4 space-y-4 relative">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 text-destructive"
+                          onClick={() => {
+                            const schedule = fields[index];
+                            console.log("Field to delete:", schedule);
+                            if (schedule.id) {
+                              // Pass the ID directly without conversion
+                              console.log(`Using original schedule ID format: ${schedule.id} (${typeof schedule.id})`);
+                              
+                              // If it has an ID, it exists in the database, so delete it
+                              deleteSchedule.mutate(schedule.id, {
+                                onSuccess: () => {
+                                  // After deleting from server, remove from form
+                                  remove(index);
+                                  toast({
+                                    title: "Schedule Removed",
+                                    description: "Medication schedule deleted successfully",
+                                    variant: "default",
+                                  });
+                                },
+                                onError: (error) => {
+                                  // If deletion fails, we'll still remove it from the form
+                                  // This happens if it's a new schedule that was just added
+                                  console.log("Error deleting, removing from form anyway:", error);
+                                  remove(index);
+                                  toast({
+                                    title: "Schedule Removed",
+                                    description: "Schedule removed from form. You'll need to Save to update the database.",
+                                    variant: "default",
+                                  });
+                                }
                               });
-                            },
-                            onError: (error) => {
-                              // If deletion fails, we'll still remove it from the form
-                              // This happens if it's a new schedule that was just added
-                              console.log("Error deleting, removing from form anyway:", error);
+                            } else {
+                              // If no ID, it's a new schedule that doesn't exist in the database yet
                               remove(index);
                               toast({
                                 title: "Schedule Removed",
-                                description: "Schedule removed from form. You'll need to Save to update the database.",
+                                description: "Schedule removed from form.",
                                 variant: "default",
                               });
                             }
-                          });
-                        } else {
-                          // If no ID, it's a new schedule that doesn't exist in the database yet
-                          remove(index);
-                          toast({
-                            title: "Schedule Removed",
-                            description: "Schedule removed from form.",
-                            variant: "default",
-                          });
-                        }
-                      }}
-                      disabled={deleteSchedule.isPending}
-                    >
-                      {deleteSchedule.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                    
-                    <FormField
-                      control={form.control}
-                      name={`schedules.${index}.time`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Time</FormLabel>
-                          {/* Wrap flex container in a margin bottom to ensure spacing */}
-                          <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                            <div className="w-full">
-                              <Select
-                                onValueChange={(value) => handleTimeOptionSelect(index, value)}
-                                value={
-                                  showCustomTime.includes(index) 
-                                    ? "custom" 
-                                    : timeOptions.some(opt => opt.value === field.value)
-                                      ? field.value
-                                      : "custom"
-                                }
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select time" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {timeOptions.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                  <SelectItem value="custom">Custom Time</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            {showCustomTime.includes(index) && (
-                              <div className="w-full sm:w-auto">
-                                <FormControl>
-                                  <Input
-                                    type="time"
-                                    className="w-full"
-                                    {...field}
-                                    onChange={(e) => {
-                                      // Convert the time input (HH:MM) to HH:MM:00 format
-                                      const timeValue = e.target.value + ":00";
-                                      field.onChange(timeValue);
-                                    }}
-                                    value={field.value.slice(0, 5)} // Display only HH:MM part
-                                  />
-                                </FormControl>
-                              </div>
-                            )}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`schedules.${index}.quantity`}
-                      render={({ field }) => {
-                        // Get medication-specific quantity options
-                        const medicationQuantityOptions = getQuantityOptionsForMedication(medication);
+                          }}
+                          disabled={deleteSchedule.isPending}
+                        >
+                          {deleteSchedule.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                         
-                        return (
-                          <FormItem>
-                            <FormLabel>Dose Quantity</FormLabel>
-                            <div className="w-full mb-2">
-                              <Select
-                                onValueChange={field.onChange}
-                                value={
-                                  medicationQuantityOptions.some(opt => opt.value === field.value)
-                                    ? field.value
-                                    : "custom"
-                                }
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select quantity" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {medicationQuantityOptions.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                  <SelectItem value="custom">Custom Quantity</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            {field.value === "custom" && (
-                              <div className="w-full mb-2">
-                                <FormControl>
-                                  <Input 
-                                    className="w-full"
-                                    placeholder="Enter custom quantity" 
-                                    onChange={(e) => field.onChange(e.target.value)}
-                                    // Don't use the field's value if it's "custom"
-                                    value=""
-                                  />
-                                </FormControl>
-                              </div>
-                            )}
-                            
-                            {field.value !== undefined && 
-                             !medicationQuantityOptions.some(opt => opt.value === field.value) && 
-                             field.value !== "custom" && (
-                              <div className="w-full mb-2">
-                                <FormControl>
-                                  <Input 
-                                    className="w-full"
-                                    placeholder="Enter custom quantity" 
-                                    {...field} 
-                                  />
-                                </FormControl>
-                              </div>
-                            )}
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`schedules.${index}.daysOfWeek`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Days of Week</FormLabel>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {daysOfWeekOptions.map((day) => (
-                              <div 
-                                key={day.value}
-                                className="flex items-center space-x-2"
-                              >
-                                <Checkbox
-                                  id={`day-${index}-${day.value}`}
-                                  checked={field.value?.includes(day.value)}
-                                  onCheckedChange={(checked) => {
-                                    const currentValues = Array.isArray(field.value) ? [...field.value] : [];
-                                    if (checked) {
-                                      // Add the value if it's not already there
-                                      if (!currentValues.includes(day.value)) {
-                                        field.onChange([...currentValues, day.value].sort());
-                                      }
-                                    } else {
-                                      // Remove the value
-                                      field.onChange(currentValues.filter(v => v !== day.value));
+                        <FormField
+                          control={form.control}
+                          name={`schedules.${index}.time`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Time</FormLabel>
+                              {/* Wrap flex container in a margin bottom to ensure spacing */}
+                              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                                <div className="w-full">
+                                  <Select
+                                    onValueChange={(value) => handleTimeOptionSelect(index, value)}
+                                    value={
+                                      showCustomTime.includes(index) 
+                                        ? "custom" 
+                                        : timeOptions.some(opt => opt.value === field.value)
+                                          ? field.value
+                                          : "custom"
                                     }
-                                  }}
-                                />
-                                <label 
-                                  htmlFor={`day-${index}-${day.value}`}
-                                  className="text-xs whitespace-nowrap cursor-pointer"
-                                >
-                                  {day.label.substring(0, 3)}
-                                </label>
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select time" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {timeOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                          {option.label}
+                                        </SelectItem>
+                                      ))}
+                                      <SelectItem value="custom">Custom Time</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                {showCustomTime.includes(index) && (
+                                  <div className="w-full sm:w-auto">
+                                    <FormControl>
+                                      <Input
+                                        type="time"
+                                        className="w-full"
+                                        {...field}
+                                        onChange={(e) => {
+                                          // Convert the time input (HH:MM) to HH:MM:00 format
+                                          const timeValue = e.target.value + ":00";
+                                          field.onChange(timeValue);
+                                        }}
+                                        value={field.value.slice(0, 5)} // Display only HH:MM part
+                                      />
+                                    </FormControl>
+                                  </div>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name={`schedules.${index}.quantity`}
+                          render={({ field }) => {
+                            // Get medication-specific quantity options
+                            const medicationQuantityOptions = getQuantityOptionsForMedication(medication);
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel>Dose Quantity</FormLabel>
+                                <div className="w-full mb-2">
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={
+                                      medicationQuantityOptions.some(opt => opt.value === field.value)
+                                        ? field.value
+                                        : "custom"
+                                    }
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select quantity" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {medicationQuantityOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                          {option.label}
+                                        </SelectItem>
+                                      ))}
+                                      <SelectItem value="custom">Custom Quantity</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                {field.value === "custom" && (
+                                  <div className="w-full mb-2">
+                                    <FormControl>
+                                      <Input 
+                                        className="w-full"
+                                        placeholder="Enter custom quantity" 
+                                        onChange={(e) => field.onChange(e.target.value)}
+                                        // Don't use the field's value if it's "custom"
+                                        value=""
+                                      />
+                                    </FormControl>
+                                  </div>
+                                )}
+                                
+                                {field.value !== undefined && 
+                                 !medicationQuantityOptions.some(opt => opt.value === field.value) && 
+                                 field.value !== "custom" && (
+                                  <div className="w-full mb-2">
+                                    <FormControl>
+                                      <Input 
+                                        className="w-full"
+                                        placeholder="Enter custom quantity" 
+                                        {...field} 
+                                      />
+                                    </FormControl>
+                                  </div>
+                                )}
+                                <FormMessage />
+                              </FormItem>
+                            );
+                          }}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name={`schedules.${index}.daysOfWeek`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Days of Week</FormLabel>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {daysOfWeekOptions.map((day) => (
+                                  <div 
+                                    key={day.value}
+                                    className="flex items-center space-x-2"
+                                  >
+                                    <Checkbox
+                                      id={`day-${index}-${day.value}`}
+                                      checked={field.value?.includes(day.value)}
+                                      onCheckedChange={(checked) => {
+                                        const currentValues = Array.isArray(field.value) ? [...field.value] : [];
+                                        if (checked) {
+                                          // Add the value if it's not already there
+                                          if (!currentValues.includes(day.value)) {
+                                            field.onChange([...currentValues, day.value].sort());
+                                          }
+                                        } else {
+                                          // Remove the value
+                                          field.onChange(currentValues.filter(v => v !== day.value));
+                                        }
+                                      }}
+                                    />
+                                    <label 
+                                      htmlFor={`day-${index}-${day.value}`}
+                                      className="text-xs whitespace-nowrap cursor-pointer"
+                                    >
+                                      {day.label.substring(0, 3)}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {/* Single column for with food option - reminder option removed */}
+                        <FormField
+                          control={form.control}
+                          name={`schedules.${index}.withFood`}
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>Take With Food</FormLabel>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {/* Hidden field to keep reminderEnabled in the form data */}
+                        <input 
+                          type="hidden" 
+                          {...form.register(`schedules.${index}.reminderEnabled`)} 
+                          value="true" 
+                        />
+                      </div>
+                    ))}
                     
-                    {/* Single column for with food option - reminder option removed */}
-                    <FormField
-                      control={form.control}
-                      name={`schedules.${index}.withFood`}
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-md border p-3">
-                          <div className="space-y-0.5">
-                            <FormLabel>Take With Food</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {/* Hidden field to keep reminderEnabled in the form data */}
-                    <input 
-                      type="hidden" 
-                      {...form.register(`schedules.${index}.reminderEnabled`)} 
-                      value="true" 
-                    />
-                  </div>
-                ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2 mt-4"
+                      onClick={addSchedule}
+                    >
+                      <PlusCircle size={16} />
+                      Add Another Time
+                    </Button>
+                  </>
+                )}
                 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={addSchedule}
-                >
-                  <PlusCircle size={16} />
-                  Add Another Time
-                </Button>
-              </>
-            )}
-            
-            <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 pt-4 mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={saveSchedules.isPending || fields.length === 0}
-                className="w-full sm:w-auto"
-              >
-                {saveSchedules.isPending ? "Saving..." : "Save Schedules"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                <DialogFooter className="flex flex-col sm:flex-row justify-end gap-3 pt-4 mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    className="w-full sm:w-auto"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={saveSchedules.isPending || fields.length === 0}
+                    className="w-full sm:w-auto"
+                  >
+                    {saveSchedules.isPending ? "Saving..." : "Save Schedules"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Medication History</h3>
+              
+              {filteredLogs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No medication history available.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredLogs.map((log) => (
+                    <div key={log.id} className="border rounded-md p-3">
+                      <div className="flex justify-between items-center">
+                        <div className="font-medium">
+                          {log.taken ? "Taken" : "Skipped"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(new Date(log.takenAt))}
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Time: {formatTime(new Date(log.takenAt))}
+                      </div>
+                      {log.notes && (
+                        <div className="text-sm mt-1">
+                          Notes: {log.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
