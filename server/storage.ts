@@ -1050,6 +1050,45 @@ export const storage = {
   async deleteBowelMovement(id: number) {
     return db.delete(bowelMovements).where(eq(bowelMovements.id, id));
   },
+  
+  async updateBowelMovement(id: number, movementData: any) {
+    console.log('Storage: updating bowel movement with ID:', id, 'data:', movementData);
+    try {
+      // Handle occuredAt format - convert ISO string to Date object if needed
+      let processedData = { ...movementData };
+      
+      // Ensure the ID is not included in the update data (to avoid conflicts)
+      delete processedData.id;
+      
+      // Process occuredAt if it exists in the data
+      if (processedData.occuredAt) {
+        if (typeof processedData.occuredAt === 'string') {
+          try {
+            processedData.occuredAt = new Date(processedData.occuredAt);
+            console.log('Storage: converted date string to date object:', processedData.occuredAt);
+          } catch (err) {
+            console.error('Storage: Error converting date string:', err);
+            // Don't update occuredAt if conversion fails
+            delete processedData.occuredAt;
+          }
+        }
+      }
+      
+      console.log('Storage: processed bowel movement update data:', processedData);
+      
+      // Update the bowel movement with the provided data
+      const [updatedMovement] = await db.update(bowelMovements)
+        .set(processedData)
+        .where(eq(bowelMovements.id, id))
+        .returning();
+      
+      console.log('Storage: bowel movement updated successfully:', updatedMovement);
+      return updatedMovement;
+    } catch (error) {
+      console.error('Storage: Error updating bowel movement:', error);
+      throw error;
+    }
+  },
 
   // Supplies
   async getSupplies(careRecipientId: number) {

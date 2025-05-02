@@ -655,6 +655,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error deleting bowel movement' });
     }
   });
+  
+  app.patch(`${apiPrefix}/bowel-movements/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      console.log('Received bowel movement update request with body:', req.body);
+      
+      // Transform the data received from the form
+      let updateData: any = {
+        ...req.body
+      };
+      
+      // Handle occuredAt date/time
+      if (req.body.occuredAt) {
+        // If occuredAt is directly provided, use it
+        updateData.occuredAt = new Date(req.body.occuredAt);
+      } else if (req.body.date && req.body.time) {
+        // Otherwise construct from date and time fields
+        const dateTimeStr = `${req.body.date}T${req.body.time}:00`;
+        updateData.occuredAt = new Date(dateTimeStr);
+        console.log('Created occuredAt from date/time:', dateTimeStr, updateData.occuredAt);
+        
+        // Remove the date and time fields as they're not in the schema
+        delete updateData.date;
+        delete updateData.time;
+      }
+      
+      console.log('Processed bowel movement update data:', updateData);
+      
+      const updatedMovement = await storage.updateBowelMovement(id, updateData);
+      console.log('Bowel movement updated successfully:', updatedMovement);
+      
+      res.status(200).json(updatedMovement);
+    } catch (error) {
+      console.error('Error updating bowel movement:', error);
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: 'Error updating bowel movement', 
+          error: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      } else {
+        res.status(500).json({ message: 'Unknown error updating bowel movement' });
+      }
+    }
+  });
 
   // Supplies
   app.get(`${apiPrefix}/supplies`, async (req, res) => {

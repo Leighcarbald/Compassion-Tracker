@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Clock, Loader2, Plus, Toilet } from "lucide-react";
+import { Clock, Loader2, Plus, Toilet, Pencil, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { BowelMovement } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import PageHeader from "@/components/PageHeader";
 import AddBowelMovementModal from "@/components/AddBowelMovementModal";
+import EditBowelMovementModal from "@/components/EditBowelMovementModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -25,6 +26,7 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
   const [selectedMovement, setSelectedMovement] = useState<BowelMovement | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { toast } = useToast();
   
   // Use the global care recipient context
