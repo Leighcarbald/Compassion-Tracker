@@ -85,19 +85,12 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       careRecipientId: activeCareRecipientId,
       allergies: "None",
       bloodType: "Unknown",
-      emergencyContacts: "None added yet",
-      advanceDirectives: "None specified",
-      additionalNotes: "",
-      medicalConditions: "",
-      currentMedications: "",
-      primaryPhysician: "",
-      primaryPhysicianPhone: "",
-      hospitalPreference: "",
-      insuranceProvider: "",
-      insurancePolicyNumber: "",
-      insuranceGroupNumber: "",
-      insurancePhone: "",
-      dnrStatus: false
+      medicationAllergies: "None known",
+      advanceDirectives: false, // Boolean field
+      dnrOrder: false, // Boolean field
+      additionalInfo: "",
+      // Not including fields that don't exist in the schema
+      // to prevent errors
     });
   };
 
