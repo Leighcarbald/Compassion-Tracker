@@ -4,48 +4,68 @@ A comprehensive caregiver support application designed to streamline health mana
 
 ## Features
 
-- Multi-care recipient management with color coordination
-- Comprehensive medication tracking with interaction warnings
-- Health metrics monitoring (blood pressure, glucose, etc.)
-- Calendar and appointment management
-- Emergency information with security features
-- Doctors and pharmacies tracking
-- And much more
+- **Medication Tracking**: Schedule, track, and manage medications with inventory alerts
+- **Health Monitoring**: Track vital signs, glucose levels, blood pressure, and more
+- **Care Recipient Management**: Manage multiple care recipients with color coordination
+- **Emergency Information**: Securely store critical medical information with PIN protection
+- **Appointment Calendar**: Keep track of doctor appointments and medical events
+- **Doctor & Pharmacy Management**: Store contact information and specialties
 
-## Technology Stack
+## Technologies
 
-- Frontend: React + TypeScript with TailwindCSS
-- Backend: Express.js
-- Database: PostgreSQL with Drizzle ORM
-- Authentication: PIN-based security for sensitive data
+- **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Express.js, Node.js
+- **Database**: PostgreSQL with Drizzle ORM
+- **API**: RxNorm for medication information and drug interaction checking
 
-## Deployment Requirements
+## Getting Started
 
-### Environment Variables
+### Prerequisites
 
-The following environment variables need to be set when deploying:
+- Node.js 18+
+- PostgreSQL database
 
-- `DATABASE_URL`: PostgreSQL connection string
-- `SESSION_SECRET`: Secret key for encrypting sessions (can be any long random string)
-- `PORT`: (Optional) Port to run the server on (defaults to 5000)
+### Installation
 
-### For Render Deployment
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/compassion-tracker.git
+   cd compassion-tracker
+   ```
 
-1. Create a new Web Service
-2. Connect your GitHub repository
-3. Select "Node" as runtime
-4. Set the build command: `npm install && npm run db:push && npm run build`
-5. Set the start command: `npm start`
-6. Add the required environment variables listed above
-7. Create a PostgreSQL database service and link it to your web service
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-## Local Development
+3. Set up environment variables:
+   Create a `.env` file in the root directory with the following variables:
+   ```
+   DATABASE_URL=postgresql://username:password@localhost:5432/compassion_tracker
+   NODE_ENV=development
+   SESSION_SECRET=your_session_secret_here
+   ```
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Set up your environment variables in a `.env` file
-4. Initialize the database: `npm run db:push`
-5. Start the development server: `npm run dev`
+4. Initialize the database:
+   ```
+   npm run db:push
+   npm run db:seed
+   ```
+
+5. Start the development server:
+   ```
+   npm run dev
+   ```
+
+6. Open your browser and navigate to `http://localhost:5000`
+
+## Deployment
+
+This application can be deployed on platforms like Render or Heroku. Make sure to set the following environment variables:
+
+- `DATABASE_URL` - Your PostgreSQL connection string
+- `NODE_ENV` - Set to "production"
+- `SESSION_SECRET` - A strong random string for session security
 
 ## License
 
