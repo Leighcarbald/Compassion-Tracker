@@ -507,7 +507,7 @@ export const storage = {
           : "None recorded"
       },
       sleep: {
-        duration: Array.isArray(sleepRecords) && sleepRecords.length > 0 && sleepRecords[0]?.endTime 
+        duration: Array.isArray(sleepRecords) && sleepRecords.length > 0
           ? this.calculateSleepDuration(sleepRecords[0].startTime, sleepRecords[0].endTime) 
           : "No data",
         quality: Array.isArray(sleepRecords) && sleepRecords.length > 0 ? sleepRecords[0]?.quality || "" : ""
@@ -517,16 +517,37 @@ export const storage = {
 
   // Calculate sleep duration in hours
   calculateSleepDuration(startTime: Date, endTime: Date | null) {
-    if (!endTime) return "In progress";
+    let diffMs;
     
-    // Calculate difference in milliseconds
-    const diffMs = new Date(endTime).getTime() - new Date(startTime).getTime();
+    if (!endTime) {
+      // If sleep is still in progress, calculate duration from start time until now
+      diffMs = new Date().getTime() - new Date(startTime).getTime();
+      
+      // Convert to hours and minutes
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      // Format for ongoing sleep
+      if (hours > 0) {
+        return `${hours}h ${minutes}m (ongoing)`;
+      } else {
+        return `${minutes}m (ongoing)`;
+      }
+    }
     
-    // Convert to hours
-    const hours = diffMs / (1000 * 60 * 60);
+    // Calculate difference in milliseconds for completed sleep
+    diffMs = new Date(endTime).getTime() - new Date(startTime).getTime();
     
-    // Format as X.Y hrs
-    return `${hours.toFixed(1)} hrs`;
+    // Convert to hours and minutes
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    // Format for completed sleep
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
   },
 
   // Upcoming Events
