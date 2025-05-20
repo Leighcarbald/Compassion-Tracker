@@ -418,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'At least two medication names are required' });
       }
       
-      const interactions = await medicationService.checkMedicationInteractions(medications);
+      const interactions = await medicationService.checkDrugInteractionsByNames(medications);
       res.json(interactions);
     } catch (error) {
       console.error('Error checking medication interactions:', error);
