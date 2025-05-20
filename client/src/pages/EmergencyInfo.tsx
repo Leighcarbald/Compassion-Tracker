@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import BottomNavigation from "@/components/BottomNavigation";
 import { TabType } from "@/lib/types";
@@ -6,8 +6,12 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Plus, Lock, Unlock, Eye, EyeOff } from "lucide-react";
+import { ShieldAlert, Plus, Lock, Unlock, Eye, EyeOff, XCircle, Save } from "lucide-react";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
 import { usePinAuth } from "@/hooks/use-pin-auth";
 import PageHeader from "@/components/PageHeader";
@@ -27,6 +31,27 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const [isVerifying, setIsVerifying] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isSettingPin, setIsSettingPin] = useState(false);
+  
+  // Form state for emergency info editing
+  const [formData, setFormData] = useState({
+    dateOfBirth: "",
+    socialSecurityNumber: "",
+    allergies: "",
+    medicationAllergies: "",
+    bloodType: "",
+    insuranceProvider: "",
+    insurancePolicyNumber: "",
+    insuranceGroupNumber: "",
+    emergencyContact1Name: "",
+    emergencyContact1Relation: "",
+    emergencyContact1Phone: "",
+    emergencyContact2Name: "",
+    emergencyContact2Relation: "",
+    emergencyContact2Phone: "",
+    advanceDirectives: false,
+    dnrOrder: false,
+    additionalInfo: ""
+  });
   const pinInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { activeCareRecipientId } = useCareRecipient();
@@ -214,6 +239,92 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     if (emergencyInfoId) {
       setPinMutation.mutate({ id: emergencyInfoId, pin: newPin });
     }
+  };
+  
+  // Update existing emergency info
+  const updateEmergencyInfoMutation = useMutation({
+    mutationFn: async (formData: any) => {
+      const response = await apiRequest("PATCH", `/api/emergency-info/${formData.id}`, formData);
+      const data = await response.json();
+      console.log("Emergency info update response:", data);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Emergency info updated",
+        description: "Emergency information was updated successfully"
+      });
+      
+      // Refetch emergency info
+      queryClient.invalidateQueries({
+        queryKey: ["/api/emergency-info", activeCareRecipientId]
+      });
+      
+      // Reset form
+      setIsEditing(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating emergency info",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Load data into form when editing
+  useEffect(() => {
+    if (isEditing && data?.emergencyInfo) {
+      const info = data.emergencyInfo;
+      setFormData({
+        dateOfBirth: info.dateOfBirth || "",
+        socialSecurityNumber: info.socialSecurityNumber || "",
+        allergies: info.allergies || "",
+        medicationAllergies: info.medicationAllergies || "",
+        bloodType: info.bloodType || "",
+        insuranceProvider: info.insuranceProvider || "",
+        insurancePolicyNumber: info.insurancePolicyNumber || "",
+        insuranceGroupNumber: info.insuranceGroupNumber || "",
+        emergencyContact1Name: info.emergencyContact1Name || "",
+        emergencyContact1Relation: info.emergencyContact1Relation || "",
+        emergencyContact1Phone: info.emergencyContact1Phone || "",
+        emergencyContact2Name: info.emergencyContact2Name || "",
+        emergencyContact2Relation: info.emergencyContact2Relation || "",
+        emergencyContact2Phone: info.emergencyContact2Phone || "",
+        advanceDirectives: !!info.advanceDirectives,
+        dnrOrder: !!info.dnrOrder,
+        additionalInfo: info.additionalInfo || ""
+      });
+    }
+  }, [isEditing, data]);
+  
+  // Handle form field changes
+  const handleFormChange = (field: string, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  // Handle form submission for editing
+  const handleSubmitEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!data?.emergencyInfo?.id) {
+      toast({
+        title: "Error",
+        description: "No emergency information ID found for updating",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Include care recipient ID and existing record ID
+    updateEmergencyInfoMutation.mutate({
+      ...formData,
+      id: data.emergencyInfo.id,
+      careRecipientId: activeCareRecipientId
+    });
   };
 
   // Handle starting the creation process
@@ -566,9 +677,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                         variant="outline" 
                         size="sm" 
                         className="w-full"
-                        disabled={true}
+                        onClick={() => setIsEditing(true)}
                       >
-                        Edit Emergency Information (Coming Soon)
+                        Edit Emergency Information
                       </Button>
                     </div>
                   </div>
