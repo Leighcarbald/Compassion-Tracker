@@ -36,7 +36,7 @@ export default function Header({
           {title ? (
             <h1 className="text-xl font-semibold text-primary">{title}</h1>
           ) : (
-            <h1 className="text-xl font-semibold text-primary">CareCompanion</h1>
+            <h1 className="text-xl font-semibold text-primary">Compassion Tracker</h1>
           )}
           {children && <div className="ml-2">{children}</div>}
         </div>

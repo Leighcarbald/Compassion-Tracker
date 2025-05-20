@@ -434,7 +434,7 @@ export default function AuthPage() {
       <div className="hidden md:block md:w-1/2 bg-gradient-to-br from-primary to-primary-dark p-12 text-white flex flex-col justify-center">
         <div className="max-w-md space-y-6">
           <h1 className="text-4xl font-bold leading-tight">
-            Streamline your caregiving with CaregiverAssist
+            Streamline your caregiving with Compassion Tracker
           </h1>
           <p className="text-lg">
             Manage medications, track appointments, monitor vital signs, and keep all your caregiving information organized in one secure place.
