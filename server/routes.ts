@@ -515,10 +515,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get appointments for a month
-  app.get(`${apiPrefix}/appointments/month/:yearMonth`, async (req, res) => {
+  app.get(`${apiPrefix}/appointments/month`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
-      const yearMonth = req.params.yearMonth;
+      const yearMonth = req.query.yearMonth as string;
       
       if (!careRecipientId) {
         return res.status(400).json({ message: 'Care recipient ID is required' });
@@ -528,7 +528,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Year-month must be in YYYY-MM format' });
       }
       
+      console.log(`Getting appointments for month ${yearMonth} and care recipient ${careRecipientId}`);
       const appointments = await storage.getMonthAppointments(parseInt(careRecipientId), yearMonth);
+      console.log(`Found ${appointments.length} appointments for ${yearMonth}`);
       res.json(appointments);
     } catch (error) {
       console.error('Error fetching month appointments:', error);
