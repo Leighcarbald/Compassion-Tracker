@@ -44,7 +44,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       const response = await apiRequest("POST", "/api/emergency-info", formData);
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Emergency info created:", data);
       toast({
         title: "Emergency information created",
         description: "The emergency information has been created successfully.",
@@ -52,6 +53,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
     },
     onError: (error: Error) => {
+      console.error("Error creating emergency info:", error);
       toast({
         title: "Error creating emergency information",
         description: error.message,
@@ -78,14 +80,24 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       return;
     }
     
-    // Create basic emergency info
+    // Create basic emergency info with empty fields that can be filled in later
     createEmergencyInfoMutation.mutate({
       careRecipientId: activeCareRecipientId,
-      allergies: "",
-      bloodType: "",
-      emergencyContacts: "",
-      advanceDirectives: "",
-      additionalNotes: ""
+      allergies: "None",
+      bloodType: "Unknown",
+      emergencyContacts: "None added yet",
+      advanceDirectives: "None specified",
+      additionalNotes: "",
+      medicalConditions: "",
+      currentMedications: "",
+      primaryPhysician: "",
+      primaryPhysicianPhone: "",
+      hospitalPreference: "",
+      insuranceProvider: "",
+      insurancePolicyNumber: "",
+      insuranceGroupNumber: "",
+      insurancePhone: "",
+      dnrStatus: false
     });
   };
 
@@ -151,9 +163,30 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               </CardContent>
             </Card>
           ) : (
-            <div className="bg-green-50 border border-green-200 p-4 rounded-md text-green-700">
-              Emergency information exists! You will be able to securely view and edit it in an upcoming update.
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <ShieldAlert className="h-5 w-5 mr-2 text-green-500" /> 
+                  Emergency Information Exists
+                </CardTitle>
+                <CardDescription>
+                  Emergency info for {selectedCareRecipient?.name || "this care recipient"} has been created
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">
+                  The information is stored securely. You'll be able to view and edit the details in an upcoming update.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full" 
+                  disabled={true}
+                >
+                  View Emergency Information (Coming Soon)
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </div>
       </main>
