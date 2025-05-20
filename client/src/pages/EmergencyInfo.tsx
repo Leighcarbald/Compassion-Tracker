@@ -326,6 +326,35 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       careRecipientId: activeCareRecipientId
     });
   };
+  
+  // Handle form submission for both creating and editing
+  const handleSubmitForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!activeCareRecipientId) {
+      toast({
+        title: "Error",
+        description: "Please select a care recipient first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (data?.emergencyInfo?.id) {
+      // Update existing record
+      updateEmergencyInfoMutation.mutate({
+        ...formData,
+        id: data.emergencyInfo.id,
+        careRecipientId: activeCareRecipientId
+      });
+    } else {
+      // Create new record
+      createEmergencyInfoMutation.mutate({
+        ...formData,
+        careRecipientId: activeCareRecipientId
+      });
+    }
+  };
 
   // Handle starting the creation process
   const handleCreateEmergencyInfo = () => {
@@ -338,18 +367,38 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       return;
     }
     
-    // Create basic emergency info with empty fields that can be filled in later
-    createEmergencyInfoMutation.mutate({
-      careRecipientId: activeCareRecipientId,
-      allergies: "None",
-      bloodType: "Unknown",
-      medicationAllergies: "None known",
-      advanceDirectives: false, // Boolean field
-      dnrOrder: false, // Boolean field
-      additionalInfo: "",
-      // Not including fields that don't exist in the schema
-      // to prevent errors
-    });
+    // Either create immediately or open edit form to create
+    if (isEditing) {
+      // The edit form is already open - the submit handler will create
+      toast({
+        title: "Ready to create",
+        description: "Fill out the form and click Save to create emergency information"
+      });
+    } else {
+      // Open edit form to create new record
+      setIsEditing(true);
+      
+      // Reset form data to defaults since we're creating new
+      setFormData({
+        dateOfBirth: "",
+        socialSecurityNumber: "",
+        allergies: "None",
+        medicationAllergies: "None known",
+        bloodType: "",
+        insuranceProvider: "",
+        insurancePolicyNumber: "",
+        insuranceGroupNumber: "",
+        emergencyContact1Name: "",
+        emergencyContact1Relation: "",
+        emergencyContact1Phone: "",
+        emergencyContact2Name: "",
+        emergencyContact2Relation: "",
+        emergencyContact2Phone: "",
+        advanceDirectives: false,
+        dnrOrder: false,
+        additionalInfo: ""
+      });
+    }
   };
 
   // Find the current care recipient's name
@@ -693,7 +742,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                               <CardDescription>Update emergency information for {selectedCareRecipient?.name || "this care recipient"}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                              <form onSubmit={handleSubmitEdit} className="space-y-4">
+                              <form onSubmit={handleSubmitForm} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="space-y-2">
                                     <Label htmlFor="dateOfBirth">Date of Birth</Label>
