@@ -62,10 +62,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   }, []);
 
   // Fetch emergency info for selected care recipient
-  const { data: emergencyInfo, isLoading, error: emergencyInfoError } = useQuery<EmergencyInfoType>({
+  const { data: emergencyInfoResponse, isLoading, error: emergencyInfoError } = useQuery({
     queryKey: ["/api/emergency-info", activeCareRecipientId],
     enabled: !!activeCareRecipientId
   });
+  
+  // Extract emergency info from the response, accounting for our new response format
+  const emergencyInfo = emergencyInfoResponse?.emergencyInfo?.[0] || null;
+  const needsCreation = emergencyInfoResponse?.needsCreation || emergencyInfoResponse?.status === 'not_found';
 
   // Form state for emergency info
   const [formData, setFormData] = useState({
@@ -501,30 +505,54 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           <div className="bg-red-50 border border-red-200 p-4 rounded-md text-red-700">
             Error loading emergency information
           </div>
+        ) : needsCreation ? (
+          <Card className="mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <ShieldAlert className="h-5 w-5 mr-2 text-orange-500" /> 
+                No Emergency Information
+              </CardTitle>
+              <CardDescription>
+                You need to create emergency information for this care recipient
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                No emergency information has been created yet. Emergency information 
+                contains critical details that may be needed in case of an emergency.
+              </p>
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => setIsEditing(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Create Emergency Information
+              </Button>
+            </CardContent>
+          </Card>
+        ) : isLocked ? (
+          <Card className="mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <Lock className="h-5 w-5 mr-2 text-gray-400" /> 
+                Secured Emergency Information
+              </CardTitle>
+              <CardDescription>
+                This information is PIN protected for privacy
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Personal emergency information is secured for privacy reasons. 
+                Only caregivers with the correct PIN can access this data.
+              </p>
+              <Button variant="outline" size="sm" className="w-full" onClick={toggleLock}>
+                <Key className="h-4 w-4 mr-2" /> Unlock with PIN
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
-          <>
-            {isLocked ? (
-              <Card className="mb-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center">
-                    <Lock className="h-5 w-5 mr-2 text-gray-400" /> 
-                    Secured Emergency Information
-                  </CardTitle>
-                  <CardDescription>
-                    This information is PIN protected for privacy
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Personal emergency information is secured for privacy reasons. 
-                    Only caregivers with the correct PIN can access this data.
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full" onClick={toggleLock}>
-                    <Key className="h-4 w-4 mr-2" /> Unlock with PIN
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
               <>
                 {/* Personal Info Section */}
                 <Card className="mb-4">
