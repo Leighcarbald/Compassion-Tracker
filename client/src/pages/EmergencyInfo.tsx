@@ -63,11 +63,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   });
   
   // Check if we need to create a new record
+  console.log("Emergency data status:", data);
   const needsCreation = 
     !data || 
     data.status === 'not_found' || 
     (data.needsCreation === true) ||
     (data.emergencyInfo && Array.isArray(data.emergencyInfo) && data.emergencyInfo.length === 0);
+  
+  // Emergency info exists if data has a success status
+  const infoExists = data && data.status === 'success';
 
   // Handle starting the creation process
   const handleCreateEmergencyInfo = () => {
@@ -155,28 +159,83 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 </Button>
               </CardContent>
             </Card>
-          ) : (
+          ) : data?.status === "success" ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center">
                   <ShieldAlert className="h-5 w-5 mr-2 text-green-500" /> 
-                  Emergency Information Exists
+                  Emergency Information
                 </CardTitle>
                 <CardDescription>
-                  Emergency info for {selectedCareRecipient?.name || "this care recipient"} has been created
+                  Emergency info for {selectedCareRecipient?.name || "this care recipient"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Allergies</h3>
+                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.allergies || "None"}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium">Medication Allergies</h3>
+                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.medicationAllergies || "None known"}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium">Blood Type</h3>
+                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.bloodType || "Unknown"}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium">Advance Directives</h3>
+                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.advanceDirectives ? "Yes" : "No"}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium">DNR Order</h3>
+                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.dnrOrder ? "Yes" : "No"}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium">Additional Information</h3>
+                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.additionalInfo || "None"}</p>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    disabled={true}
+                  >
+                    Edit Emergency Information (Coming Soon)
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <ShieldAlert className="h-5 w-5 mr-2 text-red-500" /> 
+                  Error Loading Emergency Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  The information is stored securely. You'll be able to view and edit the details in an upcoming update.
+                  There was a problem loading the emergency information. Please try again.
                 </p>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full" 
-                  disabled={true}
+                  className="w-full"
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
+                  }}
                 >
-                  View Emergency Information (Coming Soon)
+                  Reload
                 </Button>
               </CardContent>
             </Card>
