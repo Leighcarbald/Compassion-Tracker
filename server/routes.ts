@@ -540,24 +540,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(`${apiPrefix}/meals`, async (req, res) => {
     try {
       const careRecipientId = req.query.careRecipientId as string;
-      let dateRange = null;
+      const all = req.query.all as string;
+      let dateRange = undefined;
       
       if (!careRecipientId) {
         return res.status(400).json({ message: 'Care recipient ID is required' });
       }
       
-      // If date range is provided, parse it
-      const startDate = req.query.startDate as string;
-      const endDate = req.query.endDate as string;
-      
-      if (startDate && endDate) {
-        dateRange = {
-          start: new Date(startDate),
-          end: new Date(endDate)
-        };
+      // If all=true is provided, set dateRange to null to get all meals
+      if (all === 'true') {
+        dateRange = null;
+      } else {
+        // If date range is provided, parse it
+        const startDate = req.query.startDate as string;
+        const endDate = req.query.endDate as string;
+        
+        if (startDate && endDate) {
+          dateRange = {
+            start: new Date(startDate),
+            end: new Date(endDate)
+          };
+        }
       }
       
+      console.log(`Fetching meals for care recipient ${careRecipientId}, all meals: ${all === 'true'}`);
       const meals = await storage.getMeals(parseInt(careRecipientId), dateRange);
+      console.log(`Found ${meals.length} meals`);
       res.json(meals);
     } catch (error) {
       console.error('Error fetching meals:', error);
