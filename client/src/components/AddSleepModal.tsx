@@ -93,13 +93,16 @@ export default function AddSleepModal({
       const postData = {
         quality: data.quality,
         notes: data.notes || "",
-        startTime: bedDateTime.toISOString(),
-        endTime: wakeDateTime ? wakeDateTime.toISOString() : null,
+        startTime: bedDateTime,
+        endTime: wakeDateTime,
         careRecipientId: data.careRecipientId
       };
       
       console.log("Submitting sleep data:", postData);
-      return await apiRequest("POST", "/api/sleep", postData);
+      const response = await apiRequest("POST", "/api/sleep", postData);
+      const responseData = await response.json();
+      console.log("Server response:", responseData);
+      return responseData;
     },
     onSuccess: () => {
       toast({
