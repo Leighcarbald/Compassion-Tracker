@@ -401,7 +401,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Name parameter is required' });
       }
       
-      const normalizedName = await medicationService.getNormalizedMedicationName(medicationName);
+      // Use the available functions to approximate medication name normalization
+      const suggestions = await medicationService.getMedicationNameSuggestions(medicationName);
+      const normalizedName = suggestions.length > 0 ? suggestions[0] : medicationName;
       res.json({ original: medicationName, normalized: normalizedName });
     } catch (error) {
       console.error('Error normalizing medication name:', error);
