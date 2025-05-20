@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import BottomNavigation from "@/components/BottomNavigation";
 import { TabType } from "@/lib/types";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Plus } from "lucide-react";
+import { ShieldAlert, Plus, Lock, Unlock, Eye, EyeOff } from "lucide-react";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { usePinAuth } from "@/hooks/use-pin-auth";
 import PageHeader from "@/components/PageHeader";
 
 interface EmergencyInfoProps {
@@ -17,8 +19,14 @@ interface EmergencyInfoProps {
 
 export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfoProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [pin, setPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const pinInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { activeCareRecipientId } = useCareRecipient();
+  const { isUnlocked: isPinUnlocked, unlockPin } = usePinAuth();
   
   // Fetch care recipients for dropdown
   const careRecipientsQuery = useQuery({
@@ -37,6 +45,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     },
     enabled: !!activeCareRecipientId
   });
+  
+  // Check if this emergency info is unlocked with PIN
+  const emergencyInfoId = data?.emergencyInfo?.id;
+  const isInfoUnlocked = emergencyInfoId ? isPinUnlocked(emergencyInfoId.toString()) : false;
   
   // Create emergency info mutation
   const createEmergencyInfoMutation = useMutation({
@@ -72,6 +84,63 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   
   // Emergency info exists if data has a success status
   const infoExists = data && data.status === 'success';
+  
+  // Handle PIN verification
+  const verifyPinMutation = useMutation({
+    mutationFn: async (params: { id: number, pin: string }) => {
+      const response = await apiRequest(
+        "POST", 
+        `/api/emergency-info/${params.id}/verify-pin`,
+        { pin: params.pin }
+      );
+      return await response.json();
+    },
+    onSuccess: (responseData) => {
+      if (responseData.success) {
+        toast({
+          title: "Access granted",
+          description: "PIN verified successfully"
+        });
+        
+        // Set as unlocked in pin storage
+        if (emergencyInfoId) {
+          unlockPin(emergencyInfoId.toString());
+          setIsUnlocked(true);
+        }
+        
+        setPin("");
+        setIsVerifying(false);
+      } else {
+        toast({
+          title: "Access denied",
+          description: "Incorrect PIN",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Verification failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const handleVerifyPin = () => {
+    if (!pin) {
+      toast({
+        title: "PIN required",
+        description: "Please enter a PIN to access emergency information",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (emergencyInfoId) {
+      verifyPinMutation.mutate({ id: emergencyInfoId, pin });
+    }
+  };
 
   // Handle starting the creation process
   const handleCreateEmergencyInfo = () => {
@@ -171,48 +240,167 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium">Allergies</h3>
-                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.allergies || "None"}</p>
+                {!isInfoUnlocked ? (
+                  <div className="space-y-4">
+                    <div className="bg-amber-50 p-3 rounded-md border border-amber-200 flex items-center mb-4">
+                      <Lock className="h-5 w-5 text-amber-600 mr-2 flex-shrink-0" />
+                      <p className="text-sm text-amber-800">This information is protected. Please enter the PIN to view.</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <Input
+                          type={showPin ? "text" : "password"}
+                          placeholder="Enter PIN"
+                          value={pin}
+                          onChange={(e) => setPin(e.target.value)}
+                          className="pr-10"
+                          ref={pinInputRef}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="ml-[-40px]"
+                          onClick={() => setShowPin(!showPin)}
+                        >
+                          {showPin ? (
+                            <EyeOff className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-500" />
+                          )}
+                        </Button>
+                      </div>
+                      
+                      <Button 
+                        onClick={handleVerifyPin}
+                        className="w-full"
+                        disabled={verifyPinMutation.isPending}
+                      >
+                        {verifyPinMutation.isPending ? "Verifying..." : "Unlock"}
+                      </Button>
+                      
+                      <p className="text-xs text-gray-500 mt-2">
+                        This PIN protects sensitive medical information.
+                      </p>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium">Medication Allergies</h3>
-                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.medicationAllergies || "None known"}</p>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-green-50 p-3 rounded-md border border-green-200 flex items-center mb-4">
+                      <Unlock className="h-5 w-5 text-green-600 mr-2 flex-shrink-0" />
+                      <p className="text-sm text-green-800">Information unlocked. Sensitive data is now visible.</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Date of Birth</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.dateOfBirth || "Not provided"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Social Security Number</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.socialSecurityNumber || "Not provided"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Allergies</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.allergies || "None"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Medication Allergies</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.medicationAllergies || "None known"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Blood Type</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.bloodType || "Unknown"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Insurance Provider</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.insuranceProvider || "Not provided"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Insurance Policy Number</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.insurancePolicyNumber || "Not provided"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Insurance Group Number</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.insuranceGroupNumber || "Not provided"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Emergency Contact 1</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.emergencyContact1Name 
+                            ? `${data?.emergencyInfo?.emergencyContact1Name} (${data?.emergencyInfo?.emergencyContact1Relation || 'Relation not specified'}) - ${data?.emergencyInfo?.emergencyContact1Phone || 'No phone'}`
+                            : "Not provided"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Emergency Contact 2</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.emergencyContact2Name 
+                            ? `${data?.emergencyInfo?.emergencyContact2Name} (${data?.emergencyInfo?.emergencyContact2Relation || 'Relation not specified'}) - ${data?.emergencyInfo?.emergencyContact2Phone || 'No phone'}`
+                            : "Not provided"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Advance Directives</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.advanceDirectives ? "Yes" : "No"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">DNR Order</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          {data?.emergencyInfo?.dnrOrder ? "Yes" : "No"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-sm font-medium mb-1">Additional Information</h3>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100 whitespace-pre-wrap">
+                          {data?.emergencyInfo?.additionalInfo || "None"}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        disabled={true}
+                      >
+                        Edit Emergency Information (Coming Soon)
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium">Blood Type</h3>
-                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.bloodType || "Unknown"}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium">Advance Directives</h3>
-                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.advanceDirectives ? "Yes" : "No"}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium">DNR Order</h3>
-                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.dnrOrder ? "Yes" : "No"}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium">Additional Information</h3>
-                    <p className="text-sm text-gray-600">{data?.emergencyInfo?.additionalInfo || "None"}</p>
-                  </div>
-                </div>
-                
-                <div className="mt-6">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    disabled={true}
-                  >
-                    Edit Emergency Information (Coming Soon)
-                  </Button>
-                </div>
+                )}
               </CardContent>
             </Card>
           ) : (
