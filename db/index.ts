@@ -12,5 +12,18 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Configure connection options with proper SSL handling for production environments
+const connectionOptions = {
+  connectionString: process.env.DATABASE_URL,
+  // Enable SSL for production environment (typically needed for Render and other cloud platforms)
+  ...(process.env.NODE_ENV === 'production' && {
+    ssl: {
+      rejectUnauthorized: false // Required for many cloud database providers
+    }
+  })
+};
+
+console.log(`Connecting to database in ${process.env.NODE_ENV || 'development'} mode`);
+
+export const pool = new Pool(connectionOptions);
 export const db = drizzle({ client: pool, schema });
