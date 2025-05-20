@@ -9,6 +9,11 @@ import { db } from "../db";
 import { eq, and } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add health check route for Render deployment
+  app.get('/', (req, res) => {
+    res.send('Compassion Tracker API is running');
+  });
+  
   // Set up authentication
   const { isAuthenticated } = setupAuth(app);
   

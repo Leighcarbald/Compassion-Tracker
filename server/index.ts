@@ -197,7 +197,7 @@ app.use((req, res, next) => {
 
   // Use the PORT environment variable if available, otherwise use 5000
   // This makes the app compatible with hosting platforms like Render
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
   
   // Ensure we log the environment to help with debugging
   log(`Starting server in ${app.get('env')} mode`);
@@ -208,10 +208,10 @@ app.use((req, res, next) => {
     .join(', ')}`);
   
   server.listen({
-    port,
+    port: PORT,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on port ${PORT}`);
   });
 })();
