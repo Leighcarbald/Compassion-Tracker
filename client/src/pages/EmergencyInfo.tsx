@@ -476,109 +476,58 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       </div>
                     ) : null}
                     
-                    <div className="grid grid-cols-1 gap-4 mb-4">
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Date of Birth</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.dateOfBirth || "Not provided"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Social Security Number</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.socialSecurityNumber || "Not provided"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Allergies</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.allergies || "None"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Medication Allergies</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.medicationAllergies || "None"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Blood Type</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.bloodType || "Unknown"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Insurance Provider</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.insuranceProvider || "Not provided"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Insurance Policy Number</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.insurancePolicyNumber || "Not provided"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Insurance Group Number</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.insuranceGroupNumber || "Not provided"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Primary Emergency Contact</h3>
-                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          <p><strong>Name:</strong> {data?.emergencyInfo?.emergencyContact1Name || "Not provided"}</p>
-                          {data?.emergencyInfo?.emergencyContact1Relation && (
-                            <p><strong>Relation:</strong> {data.emergencyInfo.emergencyContact1Relation}</p>
-                          )}
-                          {data?.emergencyInfo?.emergencyContact1Phone && (
-                            <p><strong>Phone:</strong> {data.emergencyInfo.emergencyContact1Phone}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Secondary Emergency Contact</h3>
-                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          <p><strong>Name:</strong> {data?.emergencyInfo?.emergencyContact2Name || "Not provided"}</p>
-                          {data?.emergencyInfo?.emergencyContact2Relation && (
-                            <p><strong>Relation:</strong> {data.emergencyInfo.emergencyContact2Relation}</p>
-                          )}
-                          {data?.emergencyInfo?.emergencyContact2Phone && (
-                            <p><strong>Phone:</strong> {data.emergencyInfo.emergencyContact2Phone}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Advance Directives</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.advanceDirectives ? "Yes" : "No"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">DNR Order</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.dnrOrder ? "Yes" : "No"}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium mb-1">Additional Information</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100 whitespace-pre-wrap">
-                          {data?.emergencyInfo?.additionalInfo || "None"}
-                        </p>
-                      </div>
+                    <div className="flex flex-col gap-1 mb-2 text-[10px]">
+                      <table className="w-full border-collapse">
+                        <tbody>
+                          <tr>
+                            <td className="py-1 px-2 font-medium w-1/3">Date of Birth:</td>
+                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.dateOfBirth || "Not provided"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">SSN:</td>
+                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.socialSecurityNumber || "Not provided"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">Blood Type:</td>
+                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.bloodType || "Unknown"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">Allergies:</td>
+                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.allergies || "None"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">Med Allergies:</td>
+                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.medicationAllergies || "None"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">Insurance:</td>
+                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.insuranceProvider || "Not provided"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">Policy/Group:</td>
+                            <td className="py-1 px-2 bg-gray-50">
+                              {data?.emergencyInfo?.insurancePolicyNumber ? `Policy: ${data.emergencyInfo.insurancePolicyNumber}` : ""}
+                              {data?.emergencyInfo?.insuranceGroupNumber ? `, Group: ${data.emergencyInfo.insuranceGroupNumber}` : ""}
+                              {!data?.emergencyInfo?.insurancePolicyNumber && !data?.emergencyInfo?.insuranceGroupNumber && "Not provided"}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">Primary Contact:</td>
+                            <td className="py-1 px-2 bg-gray-50">
+                              {data?.emergencyInfo?.emergencyContact1Name || "Not provided"}
+                              {data?.emergencyInfo?.emergencyContact1Phone ? ` • ${data.emergencyInfo.emergencyContact1Phone}` : ""}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-1 px-2 font-medium">DNR/Directives:</td>
+                            <td className="py-1 px-2 bg-gray-50">
+                              {data?.emergencyInfo?.dnrOrder ? "DNR: Yes" : "DNR: No"}
+                              {" • "}
+                              {data?.emergencyInfo?.advanceDirectives ? "Advance Directives: Yes" : "Advance Directives: No"}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                     
                     <div className="mt-6">
