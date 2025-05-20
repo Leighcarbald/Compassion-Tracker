@@ -34,9 +34,33 @@ if (!dbUrl || !dbUrl.includes('://')) {
 }
 
 // Log database connection attempt (without sensitive info)
-const dbUrlParts = new URL(dbUrl);
-console.log(`Attempting to connect to database at ${dbUrlParts.host} (${dbUrlParts.protocol})`);
+try {
+  const dbUrlParts = new URL(dbUrl);
+  console.log(`Attempting to connect to database at ${dbUrlParts.host} (${dbUrlParts.protocol})`);
+  
+  // Validate database host
+  if (!dbUrlParts.hostname || dbUrlParts.hostname.length < 3) {
+    console.error(`[DATABASE ERROR] Invalid hostname in DATABASE_URL: ${dbUrlParts.hostname}`);
+    throw new Error('DATABASE_URL contains an invalid hostname');
+  }
+  
+  // Validate other required parts
+  if (!dbUrlParts.pathname || dbUrlParts.pathname === '/') {
+    console.error('[DATABASE ERROR] No database name specified in DATABASE_URL');
+    throw new Error('DATABASE_URL must include a database name');
+  }
+  
+  // For Render specifically, check for common issues
+  if (dbUrlParts.hostname.includes('render.com') && !dbUrlParts.hostname.endsWith('.render.com')) {
+    console.error('[DATABASE ERROR] Incomplete Render database hostname. Make sure to use the full Internal Database URL from Render dashboard.');
+    throw new Error('Incomplete Render database hostname in DATABASE_URL');
+  }
+} catch (error) {
+  console.error('[DATABASE ERROR] Failed to parse DATABASE_URL:', error.message);
+  throw new Error('Invalid DATABASE_URL: ' + error.message);
+}
 
+// Configure connection options with proper error handling
 const connectionOptions = {
   connectionString: dbUrl,
   // Enable SSL for production environment (typically needed for Render and other cloud platforms)
@@ -44,7 +68,11 @@ const connectionOptions = {
     ssl: {
       rejectUnauthorized: false // Required for many cloud database providers
     }
-  })
+  }),
+  // Add longer connection timeout for cloud environments
+  connectionTimeoutMillis: 10000,
+  // Add connection retries
+  max: 5
 };
 
 console.log(`Connecting to database in ${process.env.NODE_ENV || 'development'} mode`);
