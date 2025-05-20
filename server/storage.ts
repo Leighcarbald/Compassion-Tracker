@@ -1501,17 +1501,28 @@ export const storage = {
   },
 
   async createEmergencyInfo(emergencyInfoData: any) {
-    const validatedData = insertEmergencyInfoSchema.parse(emergencyInfoData);
-    
-    // If pin is provided, hash it before saving
-    if (validatedData.pin) {
-      validatedData.pinHash = await this.hashPin(validatedData.pin);
-      // Remove the plain text pin from data going to database
-      delete validatedData.pin;
+    try {
+      // Handle PIN separately since it's not part of the actual database schema
+      let pinHash = null;
+      if (emergencyInfoData.pin) {
+        pinHash = await this.hashPin(emergencyInfoData.pin);
+        // Remove pin from data before validation
+        delete emergencyInfoData.pin;
+      }
+      
+      // Add pinHash back to data if it was created
+      if (pinHash) {
+        emergencyInfoData.pinHash = pinHash;
+      }
+      
+      console.log("Processing emergency info data");
+      const [newEmergencyInfo] = await db.insert(emergencyInfo).values(emergencyInfoData).returning();
+      console.log("Created emergency info record");
+      return newEmergencyInfo;
+    } catch (error) {
+      console.error("Error creating emergency info:", error);
+      throw error;
     }
-    
-    const [newEmergencyInfo] = await db.insert(emergencyInfo).values(validatedData).returning();
-    return newEmergencyInfo;
   },
 
   async updateEmergencyInfo(id: number, emergencyInfoData: any) {
@@ -1584,9 +1595,20 @@ export const storage = {
   },
 
   async createBloodPressureReading(readingData: any) {
-    const validatedData = insertBloodPressureSchema.parse(readingData);
-    const [newReading] = await db.insert(bloodPressure).values(validatedData).returning();
-    return newReading;
+    try {
+      // Process the timeRecorded field
+      if (typeof readingData.timeRecorded === 'string') {
+        readingData.timeRecorded = new Date(readingData.timeRecorded);
+      }
+      
+      console.log("Processing blood pressure data:", readingData);
+      const [newReading] = await db.insert(bloodPressure).values(readingData).returning();
+      console.log("Created blood pressure record:", newReading);
+      return newReading;
+    } catch (error) {
+      console.error("Error creating blood pressure record:", error);
+      throw error;
+    }
   },
 
   // Glucose Tracking
@@ -1604,9 +1626,20 @@ export const storage = {
   },
 
   async createGlucoseReading(readingData: any) {
-    const validatedData = insertGlucoseSchema.parse(readingData);
-    const [newReading] = await db.insert(glucose).values(validatedData).returning();
-    return newReading;
+    try {
+      // Process the timeRecorded field
+      if (typeof readingData.timeRecorded === 'string') {
+        readingData.timeRecorded = new Date(readingData.timeRecorded);
+      }
+      
+      console.log("Processing glucose data:", readingData);
+      const [newReading] = await db.insert(glucose).values(readingData).returning();
+      console.log("Created glucose record:", newReading);
+      return newReading;
+    } catch (error) {
+      console.error("Error creating glucose record:", error);
+      throw error;
+    }
   },
 
   async updateGlucoseReading(id: number, readingData: any) {
@@ -1665,9 +1698,20 @@ export const storage = {
   },
 
   async createInsulinRecord(recordData: any) {
-    const validatedData = insertInsulinSchema.parse(recordData);
-    const [newRecord] = await db.insert(insulin).values(validatedData).returning();
-    return newRecord;
+    try {
+      // Process the timeAdministered field
+      if (typeof recordData.timeAdministered === 'string') {
+        recordData.timeAdministered = new Date(recordData.timeAdministered);
+      }
+      
+      console.log("Processing insulin data:", recordData);
+      const [newRecord] = await db.insert(insulin).values(recordData).returning();
+      console.log("Created insulin record:", newRecord);
+      return newRecord;
+    } catch (error) {
+      console.error("Error creating insulin record:", error);
+      throw error;
+    }
   },
   
   async updateInsulinRecord(id: number, recordData: any) {
