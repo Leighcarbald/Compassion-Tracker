@@ -1031,14 +1031,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(`${apiPrefix}/emergency-info/:id/verify-pin`, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { pin } = req.body;
+      const { pin, careRecipientId } = req.body;
+      
+      console.log(`Verifying PIN for emergency info #${id}, with care recipient ID: ${careRecipientId}`);
       
       if (isNaN(id)) {
         return res.status(400).json({ message: 'Invalid ID format' });
       }
       
+      // Check if the emergency info record exists first
+      const emergencyInfo = await storage.getEmergencyInfoById(id);
+      
+      // If record doesn't exist at all, return a more helpful error
+      if (!emergencyInfo) {
+        console.log(`Emergency info #${id} not found, checking if we need to create a new record`);
+        
+        // Check if care recipient exists
+        if (careRecipientId) {
+          const allRecipients = await storage.getCareRecipients();
+          const careRecipient = allRecipients.find(r => r.id === parseInt(careRecipientId));
+          
+          if (careRecipient) {
+            return res.status(404).json({
+              verified: false,
+              needsCreation: true,
+              message: `No emergency information exists for ${careRecipient.name}. Please create a new record first.`,
+              careRecipient: { id: careRecipient.id, name: careRecipient.name }
+            });
+          }
+        }
+        
+        return res.status(404).json({ 
+          verified: false,
+          message: 'Emergency information not found. Please create a new record first.'
+        });
+      }
+      
+      // Now check if PIN is provided
       if (!pin) {
-        return res.status(400).json({ message: 'PIN is required' });
+        return res.status(400).json({ 
+          verified: false,
+          message: 'PIN is required' 
+        });
       }
       
       const isValid = await storage.verifyEmergencyInfoPin(id, pin);
