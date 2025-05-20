@@ -759,28 +759,52 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       
                       {isEditing && (
                         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                             <CardHeader>
-                              <CardTitle className="flex items-center">
-                                <ShieldAlert className="h-5 w-5 mr-2 text-orange-500" />
-                                Edit Emergency Information
-                              </CardTitle>
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center">
+                                  <ShieldAlert className="h-5 w-5 mr-2 text-orange-500" />
+                                  Edit Emergency Information
+                                </CardTitle>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => setIsEditing(false)}
+                                  className="h-8 w-8 p-0 rounded-full"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  <span className="sr-only">Close</span>
+                                </Button>
+                              </div>
                               <CardDescription>Update emergency information for {selectedCareRecipient?.name || "this care recipient"}</CardDescription>
                             </CardHeader>
                             <CardContent>
                               <form onSubmit={(e) => {
                                 e.preventDefault();
-                                // Simple form submission that doesn't crash
-                                if (data?.emergencyInfo?.id) {
-                                  updateEmergencyInfoMutation.mutate({
-                                    ...formData,
-                                    id: data.emergencyInfo.id,
-                                    careRecipientId: activeCareRecipientId
-                                  });
-                                } else {
-                                  createEmergencyInfoMutation.mutate({
-                                    ...formData,
-                                    careRecipientId: activeCareRecipientId
+                                try {
+                                  // Simple form submission that doesn't crash
+                                  if (data?.emergencyInfo?.id) {
+                                    console.log("Updating emergency info:", formData);
+                                    updateEmergencyInfoMutation.mutate({
+                                      ...formData,
+                                      id: data.emergencyInfo.id,
+                                      careRecipientId: activeCareRecipientId
+                                    });
+                                  } else {
+                                    console.log("Creating new emergency info:", formData);
+                                    createEmergencyInfoMutation.mutate({
+                                      ...formData,
+                                      careRecipientId: activeCareRecipientId
+                                    });
+                                  }
+                                  // Close the form regardless
+                                  setTimeout(() => setIsEditing(false), 500);
+                                } catch (error) {
+                                  console.error("Error submitting form:", error);
+                                  toast({
+                                    title: "Error",
+                                    description: "There was an error saving the information",
+                                    variant: "destructive"
                                   });
                                 }
                               }} className="space-y-4">
