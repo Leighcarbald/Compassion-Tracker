@@ -270,7 +270,12 @@ export const storage = {
   // Today's Stats
   async getTodayStats(careRecipientId: number) {
     const { start, end } = getTodayDateRange();
-    return this.getDateStats(careRecipientId, start, end);
+    const stats = await this.getDateStats(careRecipientId, start, end);
+    
+    // Log the stats to debug
+    console.log("Today's stats - glucose readings:", stats.glucose);
+    
+    return stats;
   },
   
   // Get stats for any specific date
