@@ -98,16 +98,52 @@ app.use((req, res, next) => {
       
       if (!tableExists) {
         log('Database tables missing - running initialization', 'setup');
-        const { execSync } = await import('child_process');
         
         try {
-          // Run drizzle push to create database schema
-          log('Creating database schema...', 'setup');
-          execSync('npm run db:push', { stdio: 'inherit' });
-          
-          // Run the seed script if tables were created successfully
-          log('Seeding database...', 'setup');
-          execSync('npm run db:seed', { stdio: 'inherit' });
+          // First try to create schema using SQL script (most reliable for deployment)
+          try {
+            log('Creating database tables using direct SQL...', 'setup');
+            const fs = await import('fs');
+            const path = await import('path');
+            
+            // Read the SQL file with table definitions
+            const sqlPath = path.join(process.cwd(), 'scripts', 'tables.sql');
+            if (fs.existsSync(sqlPath)) {
+              const sqlScript = fs.readFileSync(sqlPath, 'utf8');
+              
+              // Execute the SQL directly
+              await pool.query(sqlScript);
+              log('Database tables created successfully via SQL', 'setup');
+              
+              // Add default care recipient if needed
+              const recipientResult = await pool.query(`
+                SELECT EXISTS (SELECT 1 FROM care_recipients LIMIT 1);
+              `);
+              
+              if (!recipientResult.rows[0].exists) {
+                log('Adding default care recipient...', 'setup');
+                await pool.query(`
+                  INSERT INTO care_recipients (name, color) 
+                  VALUES ('Default Recipient', '#4F46E5');
+                `);
+              }
+            } else {
+              throw new Error('SQL schema file not found');
+            }
+          } catch (sqlError) {
+            // If SQL approach fails, try ORM-based approach as fallback
+            log(`SQL initialization failed, trying ORM approach: ${sqlError.message}`, 'setup');
+            
+            const { execSync } = await import('child_process');
+            
+            // Run drizzle push to create database schema
+            log('Creating database schema with drizzle-kit...', 'setup');
+            execSync('npm run db:push', { stdio: 'inherit' });
+            
+            // Run the seed script if tables were created successfully
+            log('Seeding database with drizzle-seed...', 'setup');
+            execSync('npm run db:seed', { stdio: 'inherit' });
+          }
           
           log('Database initialized successfully', 'setup');
         } catch (execError) {
