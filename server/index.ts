@@ -80,6 +80,49 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // In production mode, check if database tables exist and create them if needed
+  if (app.get('env') === 'production') {
+    log('Running in production mode - checking database tables', 'setup');
+    try {
+      // Check if care_recipients table exists
+      const { pool } = await import('../db/index.js');
+      const checkResult = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public'
+          AND table_name = 'care_recipients'
+        );
+      `);
+      
+      const tableExists = checkResult.rows[0].exists;
+      
+      if (!tableExists) {
+        log('Database tables missing - running initialization', 'setup');
+        const { execSync } = await import('child_process');
+        
+        try {
+          // Run drizzle push to create database schema
+          log('Creating database schema...', 'setup');
+          execSync('npm run db:push', { stdio: 'inherit' });
+          
+          // Run the seed script if tables were created successfully
+          log('Seeding database...', 'setup');
+          execSync('npm run db:seed', { stdio: 'inherit' });
+          
+          log('Database initialized successfully', 'setup');
+        } catch (execError) {
+          log(`Error initializing database: ${execError.message}`, 'error');
+          // Continue startup process even if initialization fails
+        }
+      } else {
+        log('Database tables already exist', 'setup');
+      }
+    } catch (error) {
+      log(`Database check failed: ${error.message}`, 'error');
+      // Continue startup process even if check fails
+    }
+  }
+
   const server = await registerRoutes(app);
 
   // Global error handler
