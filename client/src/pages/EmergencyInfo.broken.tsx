@@ -70,6 +70,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Extract emergency info from the response, accounting for our new response format
   const emergencyInfo = emergencyInfoResponse?.emergencyInfo?.[0] || null;
   const needsCreation = emergencyInfoResponse?.needsCreation || emergencyInfoResponse?.status === 'not_found';
+  
+  console.log("EmergencyInfo response:", emergencyInfoResponse);
+  console.log("Emergency info exists:", !!emergencyInfo);
+  console.log("Needs creation:", needsCreation);
 
   // Form state for emergency info
   const [formData, setFormData] = useState({

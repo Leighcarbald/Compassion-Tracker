@@ -1005,11 +1005,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(`${apiPrefix}/emergency-info`, async (req, res) => {
     try {
+      console.log("Creating new emergency info with data:", req.body);
+      
+      // Check if emergency info already exists for this care recipient
+      const existingInfo = await storage.getEmergencyInfo(req.body.careRecipientId);
+      
+      console.log("Existing emergency info:", existingInfo);
+      
+      // If it already exists, update it instead of creating a new one
+      if (existingInfo && (Array.isArray(existingInfo) ? existingInfo.length > 0 : true)) {
+        console.log("Emergency info already exists, updating instead...");
+        
+        const infoId = Array.isArray(existingInfo) ? existingInfo[0].id : existingInfo.id;
+        const updatedInfo = await storage.updateEmergencyInfo(infoId, req.body);
+        
+        console.log("Updated emergency info successfully");
+        return res.json({
+          status: 'success',
+          message: 'Emergency information updated successfully',
+          emergencyInfo: updatedInfo
+        });
+      }
+      
+      // Otherwise create new emergency info
+      console.log("No existing emergency info found, creating new record");
       const newEmergencyInfo = await storage.createEmergencyInfo(req.body);
-      res.status(201).json(newEmergencyInfo);
+      
+      console.log("Created new emergency info successfully:", newEmergencyInfo);
+      res.status(201).json({
+        status: 'success',
+        message: 'Emergency information created successfully',
+        emergencyInfo: newEmergencyInfo
+      });
     } catch (error) {
       console.error('Error creating emergency info:', error);
-      res.status(500).json({ message: 'Error creating emergency info' });
+      res.status(500).json({ 
+        status: 'error', 
+        message: 'Error creating emergency info',
+        errorDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
   

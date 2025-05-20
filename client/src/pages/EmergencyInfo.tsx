@@ -51,15 +51,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Use the global care recipient context
   const { activeCareRecipientId, setActiveCareRecipientId } = useCareRecipient();
   
-  // Debug effect - run whenever the component mounts or re-renders
-  useEffect(() => {
-    console.log('🔍 EmergencyInfo component mounted/rendered');
-    
-    // Component cleanup
-    return () => {
-      console.log('🔍 EmergencyInfo component unmounting');
-    };
-  }, []);
+  // Fetch care recipients for dropdown
+  const careRecipientsQuery = useQuery({
+    queryKey: ["/api/care-recipients"],
+  });
 
   // Fetch emergency info for selected care recipient
   const { data: emergencyInfoResponse, isLoading, error: emergencyInfoError } = useQuery({
@@ -70,6 +65,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Extract emergency info from the response, accounting for our new response format
   const emergencyInfo = emergencyInfoResponse?.emergencyInfo?.[0] || null;
   const needsCreation = emergencyInfoResponse?.needsCreation || emergencyInfoResponse?.status === 'not_found';
+  
+  console.log("EmergencyInfo response:", emergencyInfoResponse);
+  console.log("Emergency info exists:", !!emergencyInfo);
+  console.log("Needs creation:", needsCreation);
 
   // Form state for emergency info
   const [formData, setFormData] = useState({
@@ -116,64 +115,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         dnrOrder: emergencyInfo.dnrOrder || false,
         additionalInfo: emergencyInfo.additionalInfo || ""
       });
-      
-      // When isLocked is already false, we don't need to check verification status
-      // This helps prevent constant re-verification loops
-      if (!isLocked) {
-        console.log(`Emergency info is already unlocked, skipping verification check`);
-        return;
-      }
-      
-      // First check local PIN storage - this is using our enhanced security
-      // with automatic expiration after 15 minutes
-      const pinUnlockedLocally = emergencyInfo.id ? isUnlocked(emergencyInfo.id) : false;
-      console.log(`PIN ${emergencyInfo.id} IS UNLOCKED LOCALLY: ${pinUnlockedLocally}`);
-      
-      if (pinUnlockedLocally) {
-        console.log(`PIN ${emergencyInfo.id} is verified in local storage with security expiration, unlocking...`);
-        setIsLocked(false);
-        console.log(`VERIFICATION: PIN ${emergencyInfo.id} is now unlocked: ${!isLocked}`);
-        return;
-      } 
-      
-      // If we're here, the PIN isn't verified locally
-      // We'll check with the server once when the emergency info first loads
-      // but only when the component initially mounts (using initialLoadRef)
-      if (initialLoadRef.current && emergencyInfo.id) {
-        initialLoadRef.current = false;
-        
-        console.log(`Initial load check: checking server verification status for PIN ${emergencyInfo.id}...`);
-        fetch(`/api/emergency-info/${emergencyInfo.id}/check-verified`)
-          .then(response => response.json())
-          .then(data => {
-            console.log(`Server verification check for PIN ${emergencyInfo.id}:`, data);
-            if (data.verified) {
-              console.log('Emergency info is verified in server session, unlocking...');
-              setIsLocked(false);
-              // Also update local state to reflect this
-              unlockPin(emergencyInfo.id);
-            } else {
-              console.log('Emergency info not verified in current session, staying locked');
-              // We don't need to explicitly set isLocked to true here
-              // as it's already true (default state)
-            }
-          })
-          .catch(error => {
-            console.error('Error checking PIN verification status:', error);
-            // Keep locked on error for security (already locked by default)
-          });
-      }
     }
-  }, [emergencyInfo, isLocked, isUnlocked, unlockPin]);
+  }, [emergencyInfo]);
 
   // Handle care recipient selection
   const handleCareRecipientChange = (id: string) => {
     setActiveCareRecipientId(id);
     // Reset editing state when changing care recipient
     setIsEditing(false);
-    
-    // Reset to locked state initially - the useEffect will check
-    // localStorage after emergencyInfo loads and unlock if previously authenticated
+    // Reset to locked state initially
     setIsLocked(true);
   };
 
@@ -220,8 +170,6 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       });
       queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
       setIsEditing(false);
-      // Don't lock the information after saving - this would be frustrating for users
-      // who want to continue viewing the information after saving
     },
     onError: (error) => {
       toast({
@@ -240,17 +188,13 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     if (isLocked) {
       // Need to verify PIN before unlocking
       if (!emergencyInfo?.id) {
-        // Handle the case where emergency info isn't loaded yet
-        // We'll create it automatically later, but for now, show appropriate message
         toast({
           title: "Emergency Information",
-          description: "Loading emergency information or creating a new record. Please try again in a moment.",
+          description: "You need to create emergency information first",
           duration: 3000,
         });
-        // Try to trigger creation by refreshing the query
-        if (activeCareRecipientId) {
-          queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
-        }
+        // Try to trigger creation by setting edit mode
+        setIsEditing(true);
         return;
       }
       
@@ -265,67 +209,19 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         return;
       }
       
-      // First check if the server already has this PIN verified (via cookies)
-      console.log(`Checking if PIN ${emergencyInfo.id} is already verified on server before showing dialog...`);
-      fetch(`/api/emergency-info/${emergencyInfo.id}/check-verified`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.verified) {
-            // PIN is already verified via server cookie, unlock without prompting
-            console.log('Server already has this PIN verified, unlocking without prompting');
-            setIsLocked(false);
-            unlockPin(emergencyInfo.id);
-            toast({
-              title: "Authenticated",
-              description: "Emergency information unlocked via existing session",
-              duration: 2000,
-            });
-          } else {
-            // Not verified on server, show dialog for manual entry
-            console.log('PIN not verified in server session, showing verification dialog');
-            setShowPinDialog(true);
-            setPin("");
-            setPinError("");
-          }
-        })
-        .catch(error => {
-          console.error('Error checking PIN verification status:', error);
-          // Show verification dialog on error
-          setShowPinDialog(true);
-          setPin("");
-          setPinError("");
-        });
+      // Show PIN verification dialog
+      setShowPinDialog(true);
+      setPin("");
+      setPinError("");
     } else {
       // Lock the information (this is immediate)
       setIsLocked(true);
       setPin("");
       setPinError("");
       
-      // Clear the authenticated state on both client and server
+      // Clear the authenticated state
       if (emergencyInfo?.id) {
-        // Clear client-side PIN
         lockPin(emergencyInfo.id);
-        console.log(`Locked PIN access for emergency info #${emergencyInfo.id} (client-side)`);
-        
-        // Clear server-side cookie by calling the lock endpoint
-        fetch(`/api/emergency-info/${emergencyInfo.id}/lock`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Server-side lock response:', data);
-          if (data.success) {
-            console.log(`Successfully cleared server-side PIN verification cookie for ID ${emergencyInfo.id}`);
-          } else {
-            console.error(`Failed to clear server PIN verification: ${data.message}`);
-          }
-        })
-        .catch(error => {
-          console.error('Error clearing server PIN verification:', error);
-        });
         
         toast({
           title: "Information Locked",
@@ -342,7 +238,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       if (!emergencyInfo?.id || !pinToVerify) return null;
       try {
         console.log(`Verifying PIN for emergency info ID ${emergencyInfo.id}`);
-        const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/verify-pin`, { pin: pinToVerify });
+        const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfo.id}/verify-pin`, { 
+          pin: pinToVerify,
+          careRecipientId: activeCareRecipientId  
+        });
         const data = await response.json();
         console.log("PIN verification response:", data);
         return data;
@@ -351,7 +250,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         throw error;
       }
     },
-    onSuccess: (data: { message: string; verified: boolean } | null) => {
+    onSuccess: (data: any) => {
       if (data && data.verified) {
         console.log("PIN verification success response:", data);
         toast({
@@ -365,6 +264,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           console.log(`Unlocking PIN ${emergencyInfo.id}`);
         }
         setShowPinDialog(false);
+      } else if (data && data.needsCreation) {
+        toast({
+          title: "Not Found",
+          description: data.message || "No emergency information exists. Please create it first.",
+          variant: "destructive",
+        });
+        setShowPinDialog(false);
+        setIsEditing(true);
       } else {
         console.error("Invalid PIN", data);
         setPinError("Invalid PIN");
@@ -389,7 +296,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         throw error;
       }
     },
-    onSuccess: (data: { message: string; success: boolean } | null) => {
+    onSuccess: (data: any) => {
       if (data && data.success) {
         toast({
           title: "PIN Created",
@@ -414,49 +321,31 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       }
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create PIN",
-        variant: "destructive",
-      });
+      console.error("Error setting PIN:", error);
+      setConfirmPinError("Failed to create PIN");
     }
   });
-  
-  const validatePin = () => {
-    if (pin.length !== 6) {
-      setPinError("PIN must be 6 digits");
-      return false;
-    }
-    return true;
-  };
-  
-  const validateSetPin = () => {
-    if (pin.length !== 6) {
-      setPinError("PIN must be 6 digits");
-      return false;
+
+  const handleCreatePin = () => {
+    // Validate the PIN
+    if (pin.length < 4) {
+      setConfirmPinError("PIN must be at least 4 characters");
+      return;
     }
     
     if (pin !== confirmPin) {
       setConfirmPinError("PINs do not match");
-      return false;
-    }
-    
-    return true;
-  };
-  
-  const handleSetPin = () => {
-    if (validateSetPin()) {
-      setPinMutation.mutate(pin);
-    }
-  };
-  
-  const handlePinSubmit = () => {
-    if (pin.length !== 6) {
-      setPinError('PIN must be 6 digits');
       return;
     }
     
-    if (!emergencyInfo?.id) return;
+    setPinMutation.mutate(pin);
+  };
+
+  const handleVerifyPin = () => {
+    if (!pin) {
+      setPinError("PIN is required");
+      return;
+    }
     
     verifyPinMutation.mutate(pin);
   };
@@ -469,23 +358,42 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           icon={<ShieldAlert className="h-6 w-6 text-red-500" />}
         />
         
-        <div className="flex justify-end gap-2 mt-2 mb-4">
-            <Button 
-              size="sm" 
-              variant={isLocked ? "outline" : "destructive"} 
-              onClick={toggleLock}
-            >
-              {isLocked ? <Lock className="h-4 w-4 mr-1" /> : <Unlock className="h-4 w-4 mr-1" />}
-              {isLocked ? "Unlock" : "Lock"}
-            </Button>
-            {!isLocked && (
-              <Button 
-                size="sm" 
-                variant={isEditing ? "destructive" : "outline"} 
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <Select value={activeCareRecipientId || ""} onValueChange={handleCareRecipientChange}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Select care recipient" />
+                </SelectTrigger>
+                <SelectContent>
+                  <Select.Group>
+                    {careRecipientsQuery.data?.map((recipient) => (
+                      <SelectItem key={recipient.id} value={recipient.id.toString()}>
+                        <div className="flex items-center">
+                          <div
+                            className="w-3 h-3 rounded-full mr-2"
+                            style={{ backgroundColor: recipient.color || "#9CA3AF" }}
+                          ></div>
+                          {recipient.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </Select.Group>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {emergencyInfo && !isLocked && (
+              <Button
+                size="sm"
+                variant={isEditing ? "default" : "outline"}
                 onClick={() => setIsEditing(!isEditing)}
               >
                 {isEditing ? (
-                  <>Cancel</>
+                  <>
+                    <Trash2 className="h-4 w-4 mr-1 text-red-500" />
+                    Cancel
+                  </>
                 ) : (
                   <>
                     <Edit className="h-4 w-4 mr-1" />
@@ -494,465 +402,306 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 )}
               </Button>
             )}
-        </div>
-        
-        {isLoading ? (
-          <div className="flex items-center justify-center h-40">
-            <p className="text-gray-500">Loading emergency information...</p>
           </div>
-        ) : emergencyInfoError ? (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-md text-red-700">
-            Error loading emergency information
-          </div>
-        ) : needsCreation ? (
-          <Card className="mb-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <ShieldAlert className="h-5 w-5 mr-2 text-orange-500" /> 
-                No Emergency Information
-              </CardTitle>
-              <CardDescription>
-                You need to create emergency information for this care recipient
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                No emergency information has been created yet. Emergency information 
-                contains critical details that may be needed in case of an emergency.
-              </p>
-              <Button 
-                variant="default" 
-                size="sm" 
-                className="w-full" 
-                onClick={() => setIsEditing(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" /> Create Emergency Information
-              </Button>
-            </CardContent>
-          </Card>
-        ) : isLocked ? (
-          <Card className="mb-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Lock className="h-5 w-5 mr-2 text-gray-400" /> 
-                Secured Emergency Information
-              </CardTitle>
-              <CardDescription>
-                This information is PIN protected for privacy
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Personal emergency information is secured for privacy reasons. 
-                Only caregivers with the correct PIN can access this data.
-              </p>
-              <Button variant="outline" size="sm" className="w-full" onClick={toggleLock}>
-                <Key className="h-4 w-4 mr-2" /> Unlock with PIN
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-              <>
-                {/* Personal Info Section */}
-                <Card className="mb-4">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Personal Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className={!isEditing ? "grid gap-2" : ""}>
-                    {isEditing ? (
-                      <div className="grid gap-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                            <Input 
-                              id="dateOfBirth" 
-                              name="dateOfBirth" 
-                              type="date" 
-                              value={formData.dateOfBirth} 
-                              onChange={handleInputChange}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="bloodType">Blood Type</Label>
-                            <Select 
-                              value={formData.bloodType} 
-                              onValueChange={(value) => handleSelectChange("bloodType", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="A+">A+</SelectItem>
-                                <SelectItem value="A-">A-</SelectItem>
-                                <SelectItem value="B+">B+</SelectItem>
-                                <SelectItem value="B-">B-</SelectItem>
-                                <SelectItem value="AB+">AB+</SelectItem>
-                                <SelectItem value="AB-">AB-</SelectItem>
-                                <SelectItem value="O+">O+</SelectItem>
-                                <SelectItem value="O-">O-</SelectItem>
-                                <SelectItem value="Unknown">Unknown</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="ssn">Social Security Number</Label>
-                          <Input 
-                            id="ssn" 
-                            name="socialSecurityNumber" 
-                            value={formData.socialSecurityNumber} 
-                            onChange={handleInputChange}
-                            placeholder="XXX-XX-XXXX"
-                          />
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="flex items-center space-x-2">
-                            <Switch 
-                              id="advanceDirectives" 
-                              checked={formData.advanceDirectives} 
-                              onCheckedChange={(checked) => handleSwitchChange("advanceDirectives", checked)}
-                            />
-                            <Label htmlFor="advanceDirectives">Advance Directives</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch 
-                              id="dnrOrder" 
-                              checked={formData.dnrOrder} 
-                              onCheckedChange={(checked) => handleSwitchChange("dnrOrder", checked)}
-                            />
-                            <Label htmlFor="dnrOrder">DNR Order</Label>
-                          </div>
-                        </div>
+          
+          {isLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <p className="text-gray-500">Loading emergency information...</p>
+            </div>
+          ) : emergencyInfoError ? (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-md text-red-700">
+              Error loading emergency information
+            </div>
+          ) : needsCreation ? (
+            <Card className="mb-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <ShieldAlert className="h-5 w-5 mr-2 text-orange-500" /> 
+                  No Emergency Information
+                </CardTitle>
+                <CardDescription>
+                  You need to create emergency information for this care recipient
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">
+                  No emergency information has been created yet. Emergency information 
+                  contains critical details that may be needed in case of an emergency.
+                </p>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Create Emergency Information
+                </Button>
+              </CardContent>
+            </Card>
+          ) : isLocked ? (
+            <Card className="mb-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <Lock className="h-5 w-5 mr-2 text-gray-400" /> 
+                  Secured Emergency Information
+                </CardTitle>
+                <CardDescription>
+                  This information is PIN protected for privacy
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">
+                  Personal emergency information is secured for privacy reasons. 
+                  Only caregivers with the correct PIN can access this data.
+                </p>
+                <Button variant="outline" size="sm" className="w-full" onClick={toggleLock}>
+                  <Key className="h-4 w-4 mr-2" /> Unlock with PIN
+                </Button>
+              </CardContent>
+            </Card>
+          ) : isEditing ? (
+            // Form for editing emergency information
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Personal Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                      <Input
+                        id="dateOfBirth"
+                        name="dateOfBirth"
+                        type="date"
+                        value={formData.dateOfBirth}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="socialSecurityNumber">Social Security Number</Label>
+                      <Input
+                        id="socialSecurityNumber"
+                        name="socialSecurityNumber"
+                        value={formData.socialSecurityNumber}
+                        onChange={handleInputChange}
+                        placeholder="XXX-XX-XXXX"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="bloodType">Blood Type</Label>
+                    <Select
+                      value={formData.bloodType}
+                      onValueChange={(value) => handleSelectChange("bloodType", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select blood type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A+">A+</SelectItem>
+                        <SelectItem value="A-">A-</SelectItem>
+                        <SelectItem value="B+">B+</SelectItem>
+                        <SelectItem value="B-">B-</SelectItem>
+                        <SelectItem value="AB+">AB+</SelectItem>
+                        <SelectItem value="AB-">AB-</SelectItem>
+                        <SelectItem value="O+">O+</SelectItem>
+                        <SelectItem value="O-">O-</SelectItem>
+                        <SelectItem value="Unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Insurance Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="insuranceProvider">Insurance Provider</Label>
+                    <Input
+                      id="insuranceProvider"
+                      name="insuranceProvider"
+                      value={formData.insuranceProvider}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="insurancePolicyNumber">Policy Number</Label>
+                      <Input
+                        id="insurancePolicyNumber"
+                        name="insurancePolicyNumber"
+                        value={formData.insurancePolicyNumber}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="insuranceGroupNumber">Group Number</Label>
+                      <Input
+                        id="insuranceGroupNumber"
+                        name="insuranceGroupNumber"
+                        value={formData.insuranceGroupNumber}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="insurancePhone">Insurance Phone</Label>
+                    <Input
+                      id="insurancePhone"
+                      name="insurancePhone"
+                      value={formData.insurancePhone}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Emergency Contacts</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-md font-medium">Primary Contact</h3>
+                    <div>
+                      <Label htmlFor="emergencyContact1Name">Name</Label>
+                      <Input
+                        id="emergencyContact1Name"
+                        name="emergencyContact1Name"
+                        value={formData.emergencyContact1Name}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="emergencyContact1Phone">Phone</Label>
+                        <Input
+                          id="emergencyContact1Phone"
+                          name="emergencyContact1Phone"
+                          value={formData.emergencyContact1Phone}
+                          onChange={handleInputChange}
+                        />
                       </div>
-                    ) : (
-                      <>
-                        {formData.dateOfBirth && (
-                          <div className="flex justify-between py-1 border-b border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">Date of Birth</span>
-                            <span className="text-sm">{formData.dateOfBirth}</span>
-                          </div>
-                        )}
-                        
-                        {formData.socialSecurityNumber && (
-                          <div className="flex justify-between py-1 border-b border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">SSN</span>
-                            <span className="text-sm">
-                              {maskSSN(formData.socialSecurityNumber)}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {formData.bloodType && (
-                          <div className="flex justify-between py-1 border-b border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">Blood Type</span>
-                            <span className="text-sm">{formData.bloodType}</span>
-                          </div>
-                        )}
-                        
-                        <div className="flex justify-between py-1 border-b border-gray-100">
-                          <span className="text-sm font-medium text-gray-500">Advance Directives</span>
-                          <span className="text-sm">{formData.advanceDirectives ? "Yes" : "No"}</span>
-                        </div>
-                        
-                        <div className="flex justify-between py-1 border-b border-gray-100">
-                          <span className="text-sm font-medium text-gray-500">DNR Order</span>
-                          <span className="text-sm">{formData.dnrOrder ? "Yes" : "No"}</span>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                {/* Insurance Section */}
-                <Card className="mb-4">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Insurance Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className={!isEditing ? "grid gap-2" : ""}>
-                    {isEditing ? (
-                      <div className="grid gap-4">
-                        <div>
-                          <Label htmlFor="insuranceProvider">Insurance Provider</Label>
-                          <Input 
-                            id="insuranceProvider" 
-                            name="insuranceProvider" 
-                            value={formData.insuranceProvider} 
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="insurancePolicyNumber">Policy Number</Label>
-                            <Input 
-                              id="insurancePolicyNumber" 
-                              name="insurancePolicyNumber" 
-                              value={formData.insurancePolicyNumber} 
-                              onChange={handleInputChange}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="insuranceGroupNumber">Group Number</Label>
-                            <Input 
-                              id="insuranceGroupNumber" 
-                              name="insuranceGroupNumber" 
-                              value={formData.insuranceGroupNumber} 
-                              onChange={handleInputChange}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="insurancePhone">Insurance Phone</Label>
-                          <Input 
-                            id="insurancePhone" 
-                            name="insurancePhone" 
-                            value={formData.insurancePhone} 
-                            onChange={handleInputChange}
-                            placeholder="XXX-XXX-XXXX"
-                          />
-                        </div>
+                      <div>
+                        <Label htmlFor="emergencyContact1Relation">Relationship</Label>
+                        <Input
+                          id="emergencyContact1Relation"
+                          name="emergencyContact1Relation"
+                          value={formData.emergencyContact1Relation}
+                          onChange={handleInputChange}
+                        />
                       </div>
-                    ) : (
-                      <>
-                        {formData.insuranceProvider && (
-                          <div className="flex justify-between py-1 border-b border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">Provider</span>
-                            <span className="text-sm">{formData.insuranceProvider}</span>
-                          </div>
-                        )}
-                        
-                        {formData.insurancePolicyNumber && (
-                          <div className="flex justify-between py-1 border-b border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">Policy #</span>
-                            <span className="text-sm">{formData.insurancePolicyNumber}</span>
-                          </div>
-                        )}
-                        
-                        {formData.insuranceGroupNumber && (
-                          <div className="flex justify-between py-1 border-b border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">Group #</span>
-                            <span className="text-sm">{formData.insuranceGroupNumber}</span>
-                          </div>
-                        )}
-                        
-                        {formData.insurancePhone && (
-                          <div className="flex justify-between py-1 border-b border-gray-100">
-                            <span className="text-sm font-medium text-gray-500">Phone</span>
-                            <span className="text-sm">{formData.insurancePhone}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                {/* Emergency Contacts Section */}
-                <Card className="mb-4">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Emergency Contacts</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isEditing ? (
-                      <div className="grid gap-6">
-                        <div>
-                          <h3 className="text-sm font-medium mb-2">Primary Contact</h3>
-                          <div className="grid gap-4">
-                            <div>
-                              <Label htmlFor="emergencyContact1Name">Name</Label>
-                              <Input 
-                                id="emergencyContact1Name" 
-                                name="emergencyContact1Name" 
-                                value={formData.emergencyContact1Name} 
-                                onChange={handleInputChange}
-                              />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="emergencyContact1Phone">Phone</Label>
-                                <Input 
-                                  id="emergencyContact1Phone" 
-                                  name="emergencyContact1Phone" 
-                                  value={formData.emergencyContact1Phone} 
-                                  onChange={handleInputChange}
-                                  placeholder="XXX-XXX-XXXX"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="emergencyContact1Relation">Relation</Label>
-                                <Input 
-                                  id="emergencyContact1Relation" 
-                                  name="emergencyContact1Relation" 
-                                  value={formData.emergencyContact1Relation} 
-                                  onChange={handleInputChange}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="text-sm font-medium mb-2">Secondary Contact</h3>
-                          <div className="grid gap-4">
-                            <div>
-                              <Label htmlFor="emergencyContact2Name">Name</Label>
-                              <Input 
-                                id="emergencyContact2Name" 
-                                name="emergencyContact2Name" 
-                                value={formData.emergencyContact2Name} 
-                                onChange={handleInputChange}
-                              />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="emergencyContact2Phone">Phone</Label>
-                                <Input 
-                                  id="emergencyContact2Phone" 
-                                  name="emergencyContact2Phone" 
-                                  value={formData.emergencyContact2Phone} 
-                                  onChange={handleInputChange}
-                                  placeholder="XXX-XXX-XXXX"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="emergencyContact2Relation">Relation</Label>
-                                <Input 
-                                  id="emergencyContact2Relation" 
-                                  name="emergencyContact2Relation" 
-                                  value={formData.emergencyContact2Relation} 
-                                  onChange={handleInputChange}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-md font-medium">Secondary Contact</h3>
+                    <div>
+                      <Label htmlFor="emergencyContact2Name">Name</Label>
+                      <Input
+                        id="emergencyContact2Name"
+                        name="emergencyContact2Name"
+                        value={formData.emergencyContact2Name}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="emergencyContact2Phone">Phone</Label>
+                        <Input
+                          id="emergencyContact2Phone"
+                          name="emergencyContact2Phone"
+                          value={formData.emergencyContact2Phone}
+                          onChange={handleInputChange}
+                        />
                       </div>
-                    ) : (
-                      <>
-                        {/* First Contact */}
-                        {formData.emergencyContact1Name && (
-                          <div className="mb-4">
-                            <h3 className="text-sm font-medium border-b border-gray-100 pb-1 mb-1">Primary Contact</h3>
-                            <div className="pl-2">
-                              <div className="py-1">
-                                <span className="block text-sm">{formData.emergencyContact1Name}</span>
-                                {formData.emergencyContact1Relation && (
-                                  <span className="text-xs text-gray-500">({formData.emergencyContact1Relation})</span>
-                                )}
-                              </div>
-                              {formData.emergencyContact1Phone && (
-                                <div className="py-1 text-sm">{formData.emergencyContact1Phone}</div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Second Contact */}
-                        {formData.emergencyContact2Name && (
-                          <div>
-                            <h3 className="text-sm font-medium border-b border-gray-100 pb-1 mb-1">Secondary Contact</h3>
-                            <div className="pl-2">
-                              <div className="py-1">
-                                <span className="block text-sm">{formData.emergencyContact2Name}</span>
-                                {formData.emergencyContact2Relation && (
-                                  <span className="text-xs text-gray-500">({formData.emergencyContact2Relation})</span>
-                                )}
-                              </div>
-                              {formData.emergencyContact2Phone && (
-                                <div className="py-1 text-sm">{formData.emergencyContact2Phone}</div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {!formData.emergencyContact1Name && !formData.emergencyContact2Name && (
-                          <div className="text-gray-500 text-sm py-2">No emergency contacts added</div>
-                        )}
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                {/* Allergies Section */}
-                <Card className="mb-4">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Allergies & Additional Info</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isEditing ? (
-                      <div className="grid gap-4">
-                        <div>
-                          <Label htmlFor="allergies">Allergies</Label>
-                          <Textarea 
-                            id="allergies" 
-                            name="allergies" 
-                            value={formData.allergies} 
-                            onChange={handleInputChange}
-                            placeholder="Food, environmental, or other allergies"
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="medicationAllergies">Medication Allergies</Label>
-                          <Textarea 
-                            id="medicationAllergies" 
-                            name="medicationAllergies" 
-                            value={formData.medicationAllergies} 
-                            onChange={handleInputChange}
-                            placeholder="List all drug allergies"
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="additionalInfo">Additional Information</Label>
-                          <Textarea 
-                            id="additionalInfo" 
-                            name="additionalInfo" 
-                            value={formData.additionalInfo} 
-                            onChange={handleInputChange}
-                            placeholder="Other important medical history or notes"
-                          />
-                        </div>
+                      <div>
+                        <Label htmlFor="emergencyContact2Relation">Relationship</Label>
+                        <Input
+                          id="emergencyContact2Relation"
+                          name="emergencyContact2Relation"
+                          value={formData.emergencyContact2Relation}
+                          onChange={handleInputChange}
+                        />
                       </div>
-                    ) : (
-                      <>
-                        <div className="mb-3">
-                          <h3 className="text-sm font-medium mb-1">Allergies</h3>
-                          <div className="p-2 bg-gray-50 rounded text-sm min-h-[40px]">
-                            {formData.allergies || "None listed"}
-                          </div>
-                        </div>
-                        
-                        <div className="mb-3">
-                          <h3 className="text-sm font-medium mb-1">Medication Allergies</h3>
-                          <div className="p-2 bg-gray-50 rounded text-sm min-h-[40px]">
-                            {formData.medicationAllergies || "None listed"}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="text-sm font-medium mb-1">Additional Information</h3>
-                          <div className="p-2 bg-gray-50 rounded text-sm min-h-[40px]">
-                            {formData.additionalInfo || "No additional information"}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                {isEditing && (
-                  <div className="flex justify-end gap-2 mt-6 mb-10">
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      Return
-                    </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Medical Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="allergies">Allergies</Label>
+                    <Textarea
+                      id="allergies"
+                      name="allergies"
+                      value={formData.allergies}
+                      onChange={handleInputChange}
+                      placeholder="List any allergies"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="medicationAllergies">Medication Allergies</Label>
+                    <Textarea
+                      id="medicationAllergies"
+                      name="medicationAllergies"
+                      value={formData.medicationAllergies}
+                      onChange={handleInputChange}
+                      placeholder="List any medication allergies"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="advanceDirectives"
+                        checked={formData.advanceDirectives}
+                        onCheckedChange={(checked) => handleSwitchChange("advanceDirectives", checked)}
+                      />
+                      <Label htmlFor="advanceDirectives">Advance Directives</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="dnrOrder"
+                        checked={formData.dnrOrder}
+                        onCheckedChange={(checked) => handleSwitchChange("dnrOrder", checked)}
+                      />
+                      <Label htmlFor="dnrOrder">DNR Order</Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label htmlFor="additionalInfo">Additional Notes</Label>
+                    <Textarea
+                      id="additionalInfo"
+                      name="additionalInfo"
+                      value={formData.additionalInfo}
+                      onChange={handleInputChange}
+                      className="min-h-[100px]"
+                      placeholder="Add any other important information"
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <div className="w-full flex justify-end">
                     <Button onClick={handleSave} disabled={saveEmergencyInfoMutation.isPending}>
                       {saveEmergencyInfoMutation.isPending ? (
                         <>
-                          <span className="animate-spin mr-2">⏳</span>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                           Saving...
                         </>
                       ) : (
@@ -963,33 +712,175 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       )}
                     </Button>
                   </div>
-                )}
-              </>
-            )}
-          </>
-        )}
+                </CardFooter>
+              </Card>
+            </div>
+          ) : (
+            // Display emergency information
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Personal Information</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-2">
+                  <div className="flex justify-between py-1">
+                    <span className="font-medium">Date of Birth:</span>
+                    <span>
+                      {emergencyInfo?.dateOfBirth ? 
+                        new Date(emergencyInfo.dateOfBirth).toLocaleDateString() : 
+                        "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="font-medium">Social Security Number:</span>
+                    <span>
+                      {emergencyInfo?.socialSecurityNumber ? 
+                        maskSSN(emergencyInfo.socialSecurityNumber) : 
+                        "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="font-medium">Blood Type:</span>
+                    <span>{emergencyInfo?.bloodType || "Not specified"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Insurance Information</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-2">
+                  <div className="flex justify-between py-1">
+                    <span className="font-medium">Insurance Provider:</span>
+                    <span>{emergencyInfo?.insuranceProvider || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="font-medium">Policy Number:</span>
+                    <span>{emergencyInfo?.insurancePolicyNumber || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="font-medium">Group Number:</span>
+                    <span>{emergencyInfo?.insuranceGroupNumber || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="font-medium">Insurance Phone:</span>
+                    <span>{emergencyInfo?.insurancePhone || "Not specified"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Emergency Contacts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Primary Contact</h3>
+                      <div className="grid gap-1">
+                        <div className="flex justify-between py-1">
+                          <span className="font-medium">Name:</span>
+                          <span>{emergencyInfo?.emergencyContact1Name || "Not specified"}</span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="font-medium">Phone:</span>
+                          <span>{emergencyInfo?.emergencyContact1Phone || "Not specified"}</span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="font-medium">Relationship:</span>
+                          <span>{emergencyInfo?.emergencyContact1Relation || "Not specified"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Secondary Contact</h3>
+                      <div className="grid gap-1">
+                        <div className="flex justify-between py-1">
+                          <span className="font-medium">Name:</span>
+                          <span>{emergencyInfo?.emergencyContact2Name || "Not specified"}</span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="font-medium">Phone:</span>
+                          <span>{emergencyInfo?.emergencyContact2Phone || "Not specified"}</span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="font-medium">Relationship:</span>
+                          <span>{emergencyInfo?.emergencyContact2Relation || "Not specified"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Medical Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Allergies</h3>
+                      <p className="text-sm">
+                        {emergencyInfo?.allergies || "None specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Medication Allergies</h3>
+                      <p className="text-sm">
+                        {emergencyInfo?.medicationAllergies || "None specified"}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="font-medium">Advance Directives:</span>
+                        <span className="ml-2">{emergencyInfo?.advanceDirectives ? "Yes" : "No"}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">DNR Order:</span>
+                        <span className="ml-2">{emergencyInfo?.dnrOrder ? "Yes" : "No"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">
+                    {emergencyInfo?.additionalInfo || "No additional information provided"}
+                  </p>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="ml-auto" onClick={toggleLock}>
+                    <Lock className="h-4 w-4 mr-2" /> Lock Information
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          )}
+        </div>
       </main>
       
       <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
       
-      {/* Add Event Modal */}
-      <AddCareEventModal
-        isOpen={isAddEventModalOpen}
-        onClose={() => setIsAddEventModalOpen(false)}
-        careRecipientId={activeCareRecipientId}
-      />
-      
       {/* PIN Verification Dialog */}
       <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enter PIN</DialogTitle>
+            <DialogTitle>Verify PIN</DialogTitle>
+            <DialogDescription>
+              Enter your PIN to access emergency information
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="pin" className="text-left">
-                PIN (6 digits)
-              </Label>
+          <div className="py-4">
+            <div className="space-y-2">
+              <Label htmlFor="pin">PIN</Label>
               <Input
                 id="pin"
                 type="password"
@@ -1010,11 +901,24 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
           <DialogFooter className="sm:justify-end">
             <Button
               type="button"
-              variant="default"
-              onClick={handlePinSubmit}
+              variant="secondary"
+              onClick={() => setShowPinDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleVerifyPin}
               disabled={verifyPinMutation.isPending}
             >
-              {verifyPinMutation.isPending ? "Verifying..." : "Verify PIN"}
+              {verifyPinMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Verifying...
+                </>
+              ) : (
+                "Verify"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1022,67 +926,75 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       
       {/* Set PIN Dialog */}
       <Dialog open={showSetPinDialog} onOpenChange={setShowSetPinDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Security PIN</DialogTitle>
+            <DialogTitle>Create PIN</DialogTitle>
             <DialogDescription>
-              This PIN will protect sensitive emergency information
+              Create a PIN to secure your emergency information
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="new-pin" className="text-left">
-                Create PIN (6 digits)
-              </Label>
-              <Input
-                id="new-pin"
-                type="password"
-                maxLength={6}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                autoComplete="new-password"
-                value={pin}
-                onChange={(e) => {
-                  setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 6));
-                  setPinError("");
-                }}
-                className={pinError ? "border-red-500" : ""}
-              />
-              {pinError && <p className="text-sm text-red-500">{pinError}</p>}
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="confirm-pin" className="text-left">
-                Confirm PIN
-              </Label>
-              <Input
-                id="confirm-pin"
-                type="password"
-                maxLength={6}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                autoComplete="new-password"
-                value={confirmPin}
-                onChange={(e) => {
-                  setConfirmPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 6));
-                  setConfirmPinError("");
-                }}
-                className={confirmPinError ? "border-red-500" : ""}
-              />
-              {confirmPinError && <p className="text-sm text-red-500">{confirmPinError}</p>}
+          <div className="py-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="createPin">PIN</Label>
+                <Input
+                  id="createPin"
+                  type="password"
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="new-password"
+                  value={pin}
+                  onChange={(e) => {
+                    setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 6));
+                    setPinError("");
+                  }}
+                />
+                <p className="text-xs text-gray-500">Enter a 4-6 digit PIN</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPin">Confirm PIN</Label>
+                <Input
+                  id="confirmPin"
+                  type="password"
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="new-password"
+                  value={confirmPin}
+                  onChange={(e) => {
+                    setConfirmPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 6));
+                    setConfirmPinError("");
+                  }}
+                  className={confirmPinError ? "border-red-500" : ""}
+                />
+                {confirmPinError && (
+                  <p className="text-sm text-red-500">{confirmPinError}</p>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter className="sm:justify-end">
-            <Button variant="outline" onClick={() => setShowSetPinDialog(false)}>
-              Cancel
-            </Button>
             <Button
               type="button"
-              variant="default"
-              onClick={handleSetPin}
+              variant="secondary"
+              onClick={() => setShowSetPinDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleCreatePin}
               disabled={setPinMutation.isPending}
             >
-              {setPinMutation.isPending ? "Creating..." : "Create PIN"}
+              {setPinMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                "Create PIN"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
