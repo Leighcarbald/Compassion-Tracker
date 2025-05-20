@@ -255,6 +255,11 @@ CREATE TABLE IF NOT EXISTS "session" (
   "expire" TIMESTAMP(6) NOT NULL
 );
 
+-- Create default user for foreign key references
+INSERT INTO "users" ("username", "password", "email", "created_at", "updated_at") VALUES
+('default_admin', '$2b$10$K.8SV73w7FjKLCvuHX1gUehhwTTxlQAp.J4B9UHaIHGcTY5FJcX/m', 'admin@example.com', NOW(), NOW())
+ON CONFLICT (username) DO NOTHING;
+
 -- Basic seed data for inspiration messages
 INSERT INTO "inspiration_messages" ("message", "author") VALUES
 ('Caregiving often calls us to lean into love we didn''t know possible.', 'Tia Walker'),
