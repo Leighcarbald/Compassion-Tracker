@@ -588,30 +588,118 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                           size="sm" 
                           className="w-full"
                           onClick={() => {
-                            // Simple update without the form modal
-                            if (data?.emergencyInfo?.id) {
-                              const updatedInfo = {
-                                id: data.emergencyInfo.id,
-                                careRecipientId: activeCareRecipientId,
-                                allergies: "Updated allergies info",
-                                medicationAllergies: "Updated medication allergies",
-                                bloodType: data.emergencyInfo.bloodType || "Unknown",
-                                advanceDirectives: data.emergencyInfo.advanceDirectives || false,
-                                dnrOrder: data.emergencyInfo.dnrOrder || false,
-                                additionalInfo: "Updated via quick edit button"
-                              };
-                              
-                              updateEmergencyInfoMutation.mutate(updatedInfo);
-                              
-                              toast({
-                                title: "Updating information",
-                                description: "Emergency information is being updated"
-                              });
-                            }
+                            // Open a simplified edit form
+                            setIsEditing(true);
                           }}
                         >
-                          Quick Update Information
+                          Edit Information
                         </Button>
+                        
+                        {isEditing && (
+                          <div className="mt-4 p-3 border border-gray-200 rounded-md bg-gray-50">
+                            <div className="flex justify-between items-center mb-3">
+                              <h3 className="text-sm font-medium">Edit Emergency Information</h3>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsEditing(false)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <span className="sr-only">Close</span>
+                              </Button>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Allergies</label>
+                                <Input
+                                  placeholder="Enter allergies"
+                                  defaultValue={data?.emergencyInfo?.allergies || ""}
+                                  className="text-sm"
+                                  onChange={(e) => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      allergies: e.target.value
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Medication Allergies</label>
+                                <Input
+                                  placeholder="Enter medication allergies"
+                                  defaultValue={data?.emergencyInfo?.medicationAllergies || ""}
+                                  className="text-sm"
+                                  onChange={(e) => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      medicationAllergies: e.target.value
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Blood Type</label>
+                                <Input
+                                  placeholder="Enter blood type"
+                                  defaultValue={data?.emergencyInfo?.bloodType || ""}
+                                  className="text-sm"
+                                  onChange={(e) => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      bloodType: e.target.value
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              
+                              <div className="flex justify-end gap-2 mt-3">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setIsEditing(false)}
+                                >
+                                  Cancel
+                                </Button>
+                                
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => {
+                                    // Only update with changed fields
+                                    if (data?.emergencyInfo?.id) {
+                                      const updatedInfo = {
+                                        id: data.emergencyInfo.id,
+                                        careRecipientId: activeCareRecipientId,
+                                        ...(formData.allergies !== undefined && { allergies: formData.allergies }),
+                                        ...(formData.medicationAllergies !== undefined && { medicationAllergies: formData.medicationAllergies }),
+                                        ...(formData.bloodType !== undefined && { bloodType: formData.bloodType })
+                                      };
+                                      
+                                      updateEmergencyInfoMutation.mutate(updatedInfo);
+                                      
+                                      toast({
+                                        title: "Saving changes",
+                                        description: "Emergency information is being updated"
+                                      });
+                                      
+                                      // Reset form and close edit panel
+                                      setTimeout(() => {
+                                        setIsEditing(false);
+                                      }, 500);
+                                    }
+                                  }}
+                                  disabled={updateEmergencyInfoMutation.isPending}
+                                >
+                                  {updateEmergencyInfoMutation.isPending ? "Saving..." : "Save Changes"}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
