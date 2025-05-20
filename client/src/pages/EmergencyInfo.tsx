@@ -20,9 +20,13 @@ interface EmergencyInfoProps {
 export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfoProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [pin, setPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
   const [showPin, setShowPin] = useState(false);
+  const [showNewPin, setShowNewPin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isSettingPin, setIsSettingPin] = useState(false);
   const pinInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { activeCareRecipientId } = useCareRecipient();
@@ -139,6 +143,76 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     
     if (emergencyInfoId) {
       verifyPinMutation.mutate({ id: emergencyInfoId, pin });
+    }
+  };
+  
+  // Set PIN mutation
+  const setPinMutation = useMutation({
+    mutationFn: async (params: { id: number, pin: string }) => {
+      const response = await apiRequest(
+        "POST", 
+        `/api/emergency-info/${params.id}/set-pin`,
+        { pin: params.pin }
+      );
+      return await response.json();
+    },
+    onSuccess: (responseData) => {
+      if (responseData.success) {
+        toast({
+          title: "PIN set successfully",
+          description: "Your emergency information is now protected"
+        });
+        
+        // Set as unlocked in pin storage and update UI state
+        if (emergencyInfoId) {
+          unlockPin(emergencyInfoId.toString());
+          setIsUnlocked(true);
+        }
+        
+        setNewPin("");
+        setConfirmPin("");
+        setIsSettingPin(false);
+      } else {
+        toast({
+          title: "Error setting PIN",
+          description: responseData.message || "An error occurred",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error setting PIN",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const handleSetPin = () => {
+    // Validate PIN format - must be 6 digits
+    if (!/^\d{6}$/.test(newPin)) {
+      toast({
+        title: "Invalid PIN format",
+        description: "PIN must be exactly 6 digits",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Confirm PIN matches
+    if (newPin !== confirmPin) {
+      toast({
+        title: "PINs don't match",
+        description: "The confirmation PIN doesn't match",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Set the PIN
+    if (emergencyInfoId) {
+      setPinMutation.mutate({ id: emergencyInfoId, pin: newPin });
     }
   };
 
@@ -283,7 +357,105 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       <p className="text-xs text-gray-500 mt-2">
                         This PIN protects sensitive medical information.
                       </p>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-4"
+                        onClick={() => setIsSettingPin(true)}
+                      >
+                        Set New PIN
+                      </Button>
                     </div>
+                    
+                    {isSettingPin && (
+                      <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+                        <h3 className="text-sm font-medium mb-3">Set 6-Digit PIN</h3>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label htmlFor="new-pin" className="text-xs text-gray-700 mb-1 block">
+                              New PIN (6 digits)
+                            </label>
+                            <div className="flex items-center">
+                              <Input
+                                id="new-pin"
+                                type={showNewPin ? "text" : "password"}
+                                placeholder="Enter new 6-digit PIN"
+                                value={newPin}
+                                onChange={(e) => {
+                                  // Only allow digits and limit to 6 characters
+                                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                  setNewPin(value);
+                                }}
+                                className="pr-10"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="ml-[-40px]"
+                                onClick={() => setShowNewPin(!showNewPin)}
+                              >
+                                {showNewPin ? (
+                                  <EyeOff className="h-4 w-4 text-gray-500" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-gray-500" />
+                                )}
+                              </Button>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              PIN must be exactly 6 digits
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label htmlFor="confirm-pin" className="text-xs text-gray-700 mb-1 block">
+                              Confirm PIN
+                            </label>
+                            <Input
+                              id="confirm-pin"
+                              type={showNewPin ? "text" : "password"}
+                              placeholder="Confirm 6-digit PIN"
+                              value={confirmPin}
+                              onChange={(e) => {
+                                // Only allow digits and limit to 6 characters
+                                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                setConfirmPin(value);
+                              }}
+                              className="pr-10"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                            />
+                          </div>
+                          
+                          <div className="flex space-x-2 mt-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="flex-1"
+                              onClick={handleSetPin}
+                              disabled={setPinMutation.isPending || newPin.length !== 6 || confirmPin.length !== 6}
+                            >
+                              {setPinMutation.isPending ? "Setting PIN..." : "Save PIN"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setIsSettingPin(false);
+                                setNewPin("");
+                                setConfirmPin("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
