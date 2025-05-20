@@ -275,26 +275,51 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   // Load data into form when editing
   useEffect(() => {
     if (isEditing && data?.emergencyInfo) {
-      const info = data.emergencyInfo;
-      setFormData({
-        dateOfBirth: info.dateOfBirth || "",
-        socialSecurityNumber: info.socialSecurityNumber || "",
-        allergies: info.allergies || "",
-        medicationAllergies: info.medicationAllergies || "",
-        bloodType: info.bloodType || "",
-        insuranceProvider: info.insuranceProvider || "",
-        insurancePolicyNumber: info.insurancePolicyNumber || "",
-        insuranceGroupNumber: info.insuranceGroupNumber || "",
-        emergencyContact1Name: info.emergencyContact1Name || "",
-        emergencyContact1Relation: info.emergencyContact1Relation || "",
-        emergencyContact1Phone: info.emergencyContact1Phone || "",
-        emergencyContact2Name: info.emergencyContact2Name || "",
-        emergencyContact2Relation: info.emergencyContact2Relation || "",
-        emergencyContact2Phone: info.emergencyContact2Phone || "",
-        advanceDirectives: !!info.advanceDirectives,
-        dnrOrder: !!info.dnrOrder,
-        additionalInfo: info.additionalInfo || ""
-      });
+      try {
+        const info = data.emergencyInfo;
+        console.log("Loading emergency info into form:", info);
+        setFormData({
+          dateOfBirth: info.dateOfBirth || "",
+          socialSecurityNumber: info.socialSecurityNumber || "",
+          allergies: info.allergies || "",
+          medicationAllergies: info.medicationAllergies || "",
+          bloodType: info.bloodType || "",
+          insuranceProvider: info.insuranceProvider || "",
+          insurancePolicyNumber: info.insurancePolicyNumber || "",
+          insuranceGroupNumber: info.insuranceGroupNumber || "",
+          emergencyContact1Name: info.emergencyContact1Name || "",
+          emergencyContact1Relation: info.emergencyContact1Relation || "",
+          emergencyContact1Phone: info.emergencyContact1Phone || "",
+          emergencyContact2Name: info.emergencyContact2Name || "",
+          emergencyContact2Relation: info.emergencyContact2Relation || "",
+          emergencyContact2Phone: info.emergencyContact2Phone || "",
+          advanceDirectives: !!info.advanceDirectives,
+          dnrOrder: !!info.dnrOrder,
+          additionalInfo: info.additionalInfo || ""
+        });
+      } catch (error) {
+        console.error("Error loading emergency info into form:", error);
+        // Reset to empty form rather than crashing
+        setFormData({
+          dateOfBirth: "",
+          socialSecurityNumber: "",
+          allergies: "None",
+          medicationAllergies: "None known",
+          bloodType: "",
+          insuranceProvider: "",
+          insurancePolicyNumber: "",
+          insuranceGroupNumber: "",
+          emergencyContact1Name: "",
+          emergencyContact1Relation: "",
+          emergencyContact1Phone: "",
+          emergencyContact2Name: "",
+          emergencyContact2Relation: "",
+          emergencyContact2Phone: "",
+          advanceDirectives: false,
+          dnrOrder: false,
+          additionalInfo: ""
+        });
+      }
     }
   }, [isEditing, data]);
   
@@ -402,9 +427,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   };
 
   // Find the current care recipient's name
-  const selectedCareRecipient = careRecipientsQuery.data?.find(
-    (recipient: any) => recipient.id === activeCareRecipientId
-  );
+  const selectedCareRecipient = careRecipientsQuery.data ? 
+    careRecipientsQuery.data.find(
+      (recipient: any) => recipient.id === activeCareRecipientId
+    ) : null;
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
