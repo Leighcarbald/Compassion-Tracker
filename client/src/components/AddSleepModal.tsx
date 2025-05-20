@@ -90,11 +90,12 @@ export default function AddSleepModal({
         wakeDateTime = new Date(`${data.wakeDate}T${data.wakeTime}`);
       }
       
+      // Convert dates to ISO strings since that's what the server expects
       const postData = {
         quality: data.quality,
         notes: data.notes || "",
-        startTime: bedDateTime,
-        endTime: wakeDateTime,
+        startTime: bedDateTime.toISOString(),
+        endTime: wakeDateTime ? wakeDateTime.toISOString() : null,
         careRecipientId: data.careRecipientId
       };
       

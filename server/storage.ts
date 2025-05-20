@@ -1322,7 +1322,16 @@ export const storage = {
   },
 
   async createSleepRecord(sleepData: any) {
-    const validatedData = insertSleepSchema.parse(sleepData);
+    // Convert date strings to actual Date objects
+    const processedData = {
+      ...sleepData,
+      startTime: sleepData.startTime ? new Date(sleepData.startTime) : undefined,
+      endTime: sleepData.endTime ? new Date(sleepData.endTime) : undefined
+    };
+    
+    console.log("Processing sleep data:", processedData);
+    const validatedData = insertSleepSchema.parse(processedData);
+    console.log("Validated sleep data:", validatedData);
     const [newSleep] = await db.insert(sleep).values(validatedData).returning();
     return newSleep;
   },
