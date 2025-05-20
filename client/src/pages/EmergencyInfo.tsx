@@ -123,7 +123,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       const response = await apiRequest(
         "POST", 
         `/api/emergency-info/${params.id}/verify-pin`,
-        { pin: params.pin }
+        { 
+          pin: params.pin,
+          careRecipientId: activeCareRecipientId 
+        }
       );
       return await response.json();
     },
@@ -180,7 +183,10 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       const response = await apiRequest(
         "POST", 
         `/api/emergency-info/${params.id}/set-pin`,
-        { pin: params.pin }
+        { 
+          pin: params.pin,
+          careRecipientId: activeCareRecipientId
+        }
       );
       return await response.json();
     },

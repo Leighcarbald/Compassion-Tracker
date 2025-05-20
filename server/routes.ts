@@ -1069,6 +1069,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Verifying PIN for emergency info #${id}, with care recipient ID: ${careRecipientId}`);
       
+      // Add validation warning for careRecipientId
+      if (!careRecipientId) {
+        console.warn(`Warning: Missing careRecipientId when verifying PIN for emergency info #${id}`);
+        // Continue anyway as the backend can still verify the PIN
+      }
+      
       if (isNaN(id)) {
         return res.status(400).json({ message: 'Invalid ID format' });
       }
@@ -1153,7 +1159,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { pin } = req.body;
       
+      const { careRecipientId } = req.body;
       console.log(`Setting PIN for emergency info #${id}`);
+      
+      // Add validation warning for careRecipientId
+      if (!careRecipientId) {
+        console.warn(`Warning: Missing careRecipientId when setting PIN for emergency info #${id}`);
+        // Continue anyway as the backend can still set the PIN
+      }
       
       if (isNaN(id)) {
         return res.status(400).json({ 
