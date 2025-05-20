@@ -1088,6 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (careRecipient) {
             return res.status(404).json({
               verified: false,
+              success: false,
               needsCreation: true,
               message: `No emergency information exists for ${careRecipient.name}. Please create a new record first.`,
               careRecipient: { id: careRecipient.id, name: careRecipient.name }
@@ -1097,6 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return res.status(404).json({ 
           verified: false,
+          success: false,
           message: 'Emergency information not found. Please create a new record first.'
         });
       }
@@ -1105,6 +1107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!pin) {
         return res.status(400).json({ 
           verified: false,
+          success: false,
           message: 'PIN is required' 
         });
       }
@@ -1122,10 +1125,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.session.verifiedEmergencyInfos.push(id);
         }
         
-        return res.json({ verified: true });
+        return res.json({ 
+          verified: true,
+          success: true,
+          message: 'PIN verified successfully'
+        });
       } else {
         return res.status(401).json({ 
           verified: false, 
+          success: false,
           message: 'Invalid PIN' 
         });
       }
@@ -1133,32 +1141,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error verifying emergency info PIN:', error);
       res.status(500).json({ 
         verified: false,
+        success: false,
         message: 'Error verifying emergency info PIN' 
       });
     }
   });
   
+  // Set PIN for emergency info
   app.post(`${apiPrefix}/emergency-info/:id/set-pin`, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { pin } = req.body;
       
+      console.log(`Setting PIN for emergency info #${id}`);
+      
       if (isNaN(id)) {
-        return res.status(400).json({ message: 'Invalid ID format' });
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid ID format' 
+        });
       }
       
-      if (!pin || pin.length < 4) {
-        return res.status(400).json({ message: 'PIN must be at least 4 characters' });
+      // Check if record exists
+      const emergencyInfo = await storage.getEmergencyInfoById(id);
+      if (!emergencyInfo) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Emergency info not found' 
+        });
       }
       
-      await storage.setEmergencyInfoPin(id, pin);
-      res.json({ success: true });
+      // Validate PIN
+      if (!pin) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'PIN is required' 
+        });
+      }
+      
+      // Validate PIN format - must be 6 digits
+      if (!/^\d{6}$/.test(pin)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'PIN must be exactly 6 digits' 
+        });
+      }
+      
+      // Set the PIN
+      const result = await storage.setEmergencyInfoPin(id, pin);
+      
+      if (result) {
+        // Add to verified list in session
+        if (!req.session.verifiedEmergencyInfos) {
+          req.session.verifiedEmergencyInfos = [];
+        }
+        
+        if (!req.session.verifiedEmergencyInfos.includes(id)) {
+          req.session.verifiedEmergencyInfos.push(id);
+        }
+        
+        return res.json({ 
+          success: true, 
+          message: 'PIN set successfully' 
+        });
+      } else {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to set PIN' 
+        });
+      }
     } catch (error) {
       console.error('Error setting emergency info PIN:', error);
-      res.status(500).json({ message: 'Error setting emergency info PIN' });
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error setting PIN' 
+      });
     }
   });
-  
   // Blood Pressure
   app.get(`${apiPrefix}/blood-pressure`, async (req, res) => {
     try {
