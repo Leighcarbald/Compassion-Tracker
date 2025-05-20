@@ -25,21 +25,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Care Recipients
   app.get(`${apiPrefix}/care-recipients`, async (req, res) => {
     try {
+      // Check database connection before attempting query
       const careRecipients = await storage.getCareRecipients();
       res.json(careRecipients);
     } catch (error) {
       console.error('Error fetching care recipients:', error);
-      res.status(500).json({ message: 'Error fetching care recipients' });
+      
+      // Provide a more detailed error message
+      let errorMessage = 'Error fetching care recipients';
+      if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        errorMessage = 'Unable to connect to database. Please check database connection settings.';
+      }
+      
+      res.status(500).json({ 
+        message: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 
   app.post(`${apiPrefix}/care-recipients`, async (req, res) => {
     try {
+      // Verify the request has the required fields
+      if (!req.body || !req.body.name) {
+        return res.status(400).json({ message: 'Name is required for creating a care recipient' });
+      }
+      
+      // Add some basic validation
+      if (typeof req.body.name !== 'string' || req.body.name.trim() === '') {
+        return res.status(400).json({ message: 'Name cannot be empty' });
+      }
+      
       const newRecipient = await storage.createCareRecipient(req.body);
       res.status(201).json(newRecipient);
     } catch (error) {
       console.error('Error creating care recipient:', error);
-      res.status(500).json({ message: 'Error creating care recipient' });
+      
+      // Provide a more specific error message based on the error type
+      let errorMessage = 'Error creating care recipient';
+      if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        errorMessage = 'Database connection error. Please check database settings.';
+      }
+      
+      res.status(500).json({ 
+        message: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
   

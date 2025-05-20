@@ -77,5 +77,35 @@ const connectionOptions = {
 
 console.log(`Connecting to database in ${process.env.NODE_ENV || 'development'} mode`);
 
+// Create pool with error handling
 export const pool = new Pool(connectionOptions);
+
+// Add error listeners to handle connection issues
+pool.on('error', (err) => {
+  console.error('[DATABASE ERROR] Unexpected error on idle client', err);
+  // Don't crash the server on connection errors
+  // Just log the error and let the request fail gracefully
+});
+
+// Export the database client with connection status tracking
+let isConnected = false;
+const checkConnection = async () => {
+  if (!isConnected) {
+    try {
+      const client = await pool.connect();
+      client.release();
+      isConnected = true;
+      console.log('[DATABASE] Successfully connected to the database');
+    } catch (error) {
+      console.error('[DATABASE ERROR] Failed to connect to database:', error.message);
+      // Don't throw here, let individual queries handle errors
+    }
+  }
+  return isConnected;
+};
+
+// Schedule periodic connection checks
+setInterval(checkConnection, 60000); // Check connection every minute
+checkConnection(); // Check connection immediately
+
 export const db = drizzle({ client: pool, schema });
