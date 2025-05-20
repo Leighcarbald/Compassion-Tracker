@@ -922,6 +922,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const careRecipientId = req.query.careRecipientId as string;
       
+      console.log(`Emergency info requested with query params:`, req.query);
+      
+      // List all care recipients to help diagnose the issue
+      const allRecipients = await storage.getCareRecipients();
+      console.log(`Available care recipients:`, allRecipients.map(r => ({ id: r.id, name: r.name })));
+      
       if (!careRecipientId) {
         return res.status(400).json({ 
           message: 'Care recipient ID is required',
@@ -929,23 +935,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log(`Looking up emergency info for care recipient ID: ${careRecipientId}`);
+      
+      // First check if the care recipient exists
+      const careRecipient = allRecipients.find(r => r.id === parseInt(careRecipientId));
+      if (!careRecipient) {
+        console.log(`Care recipient with ID ${careRecipientId} does not exist`);
+        return res.json({
+          status: 'error',
+          message: `Care recipient with ID ${careRecipientId} not found. Please select a valid care recipient.`,
+          needsCreation: false,
+          validRecipients: allRecipients.map(r => ({ id: r.id, name: r.name }))
+        });
+      }
+      
       const emergencyInfo = await storage.getEmergencyInfo(parseInt(careRecipientId));
       
       // If no emergency info exists, return a helpful response that indicates
       // the client should create a new emergency info record
-      if (!emergencyInfo || emergencyInfo.length === 0) {
-        console.log(`No emergency info found for care recipient ${careRecipientId}, returning empty object with status`);
+      if (!emergencyInfo || (Array.isArray(emergencyInfo) && emergencyInfo.length === 0)) {
+        console.log(`No emergency info found for care recipient ${careRecipientId} (${careRecipient.name}), returning empty object with status`);
         return res.json({ 
           status: 'not_found',
-          message: 'No emergency information has been created for this care recipient yet. Please create a new record.',
+          message: `No emergency information has been created for ${careRecipient.name} yet. Please create a new record.`,
+          careRecipient: { id: careRecipient.id, name: careRecipient.name },
           needsCreation: true,
           emergencyInfo: []
         });
       }
       
       // Return success with the emergency info
+      console.log(`Found emergency info for ${careRecipient.name}, returning data`);
       res.json({
         status: 'success',
+        careRecipient: { id: careRecipient.id, name: careRecipient.name },
         needsCreation: false,
         emergencyInfo: emergencyInfo
       });
