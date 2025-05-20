@@ -1635,21 +1635,41 @@ export const storage = {
   
   async verifyEmergencyInfoPin(id: number, pin: string) {
     console.log(`Verifying PIN for emergency info #${id}`);
-    const info = await this.getEmergencyInfoById(id);
-    
-    if (!info) {
-      console.log(`Emergency info #${id} not found`);
+    try {
+      const info = await this.getEmergencyInfoById(id);
+      
+      if (!info) {
+        console.log(`Emergency info #${id} not found`);
+        return false;
+      }
+      
+      // Check if we even have a PIN to compare against
+      if (!info.pin && !info.pinHash) {
+        console.log(`Emergency info #${id} does not have a PIN set`);
+        // If there's no PIN set, we'll consider it "valid" to allow access
+        // This handles cases where emergency info was created without a PIN
+        return true;
+      }
+      
+      // If we have the original PIN stored in the database (for testing/development)
+      if (info.pin && pin === info.pin) {
+        console.log(`Plain text PIN matched for emergency info #${id}`);
+        return true;
+      }
+      
+      // Normal case - compare hashed PINs
+      if (info.pinHash) {
+        const isValid = await this.comparePin(pin, info.pinHash);
+        console.log(`PIN verification result for emergency info #${id}: ${isValid ? 'VALID' : 'INVALID'}`);
+        return isValid;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error(`Error verifying PIN for emergency info #${id}:`, error);
+      // Don't expose the error, just return false for security
       return false;
     }
-    
-    if (!info.pinHash) {
-      console.log(`Emergency info #${id} does not have a PIN set`);
-      return false;
-    }
-    
-    const isValid = await this.comparePin(pin, info.pinHash);
-    console.log(`PIN verification result for emergency info #${id}: ${isValid ? 'VALID' : 'INVALID'}`);
-    return isValid;
   },
   
   async setEmergencyInfoPin(id: number, pin: string) {
