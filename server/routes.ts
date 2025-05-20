@@ -923,14 +923,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const careRecipientId = req.query.careRecipientId as string;
       
       if (!careRecipientId) {
-        return res.status(400).json({ message: 'Care recipient ID is required' });
+        return res.status(400).json({ 
+          message: 'Care recipient ID is required',
+          success: false 
+        });
       }
       
       const emergencyInfo = await storage.getEmergencyInfo(parseInt(careRecipientId));
+      
+      // If no emergency info exists, return an empty object instead of null
+      // This helps the client handle the response better
+      if (!emergencyInfo || emergencyInfo.length === 0) {
+        console.log(`No emergency info found for care recipient ${careRecipientId}, returning empty array`);
+        return res.json([]);
+      }
+      
       res.json(emergencyInfo);
     } catch (error) {
       console.error('Error fetching emergency info:', error);
-      res.status(500).json({ message: 'Error fetching emergency info' });
+      res.status(500).json({ 
+        message: 'Error fetching emergency info',
+        success: false,
+        errorDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
   
