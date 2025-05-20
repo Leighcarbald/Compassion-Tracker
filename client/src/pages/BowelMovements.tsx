@@ -37,13 +37,18 @@ export default function BowelMovements({ activeTab, setActiveTab }: BowelMovemen
     queryKey: ['/api/bowel-movements', activeCareRecipientId],
     queryFn: async () => {
       if (!activeCareRecipientId) return [];
+      console.log(`Fetching bowel movements for recipient ID: ${activeCareRecipientId}`);
       const res = await fetch(`/api/bowel-movements?careRecipientId=${activeCareRecipientId}`);
       if (!res.ok) throw new Error('Failed to fetch bowel movements');
-      return res.json();
+      const data = await res.json();
+      console.log(`Received ${data.length} bowel movement records`);
+      return data;
     },
     enabled: !!activeCareRecipientId,
     // Ensure we always get fresh data by setting staleTime to 0
-    staleTime: 0
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   // Delete bowel movement

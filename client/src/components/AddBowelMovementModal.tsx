@@ -85,20 +85,22 @@ export default function AddBowelMovementModal({
   }
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (formData: any) => {
       // Convert the date and time fields to a combined ISO date string
-      const dateTime = new Date(`${data.date}T${data.time}`);
+      const dateTime = new Date(`${formData.date}T${formData.time}`);
       
       const postData = {
-        type: data.type,
-        notes: data.notes || "",
+        type: formData.type,
+        notes: formData.notes || "",
         occuredAt: dateTime.toISOString(),
-        careRecipientId: data.careRecipientId
+        careRecipientId: formData.careRecipientId
       };
       
       console.log("Submitting bowel movement data:", postData);
       const response = await apiRequest("POST", "/api/bowel-movements", postData);
-      return response.json(); // Parse the JSON response to get the created record
+      const responseData = await response.json(); // Parse the JSON response to get the created record
+      console.log("Server response:", responseData);
+      return responseData;
     },
     onSuccess: (newBowelMovement) => {
       // First invalidate queries to refresh data
@@ -237,9 +239,10 @@ export default function AddBowelMovementModal({
                       className="resize-none overflow-y-auto"
                       maxLength={500}
                       {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
-                  <CharacterCount value={notesValue} maxLength={500} />
+                  <CharacterCount value={notesValue || ""} maxLength={500} />
                   <FormMessage />
                 </FormItem>
               )}
