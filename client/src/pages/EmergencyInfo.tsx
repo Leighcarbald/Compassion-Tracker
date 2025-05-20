@@ -6,12 +6,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Plus, Lock, Unlock, Eye, EyeOff, XCircle, Save } from "lucide-react";
+import { ShieldAlert, Plus, Lock, Unlock, Eye, EyeOff } from "lucide-react";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
 import { usePinAuth } from "@/hooks/use-pin-auth";
 import PageHeader from "@/components/PageHeader";
@@ -22,7 +18,6 @@ interface EmergencyInfoProps {
 }
 
 export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfoProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [pin, setPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -32,26 +27,6 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isSettingPin, setIsSettingPin] = useState(false);
   
-  // Form state for emergency info editing
-  const [formData, setFormData] = useState({
-    dateOfBirth: "",
-    socialSecurityNumber: "",
-    allergies: "",
-    medicationAllergies: "",
-    bloodType: "",
-    insuranceProvider: "",
-    insurancePolicyNumber: "",
-    insuranceGroupNumber: "",
-    emergencyContact1Name: "",
-    emergencyContact1Relation: "",
-    emergencyContact1Phone: "",
-    emergencyContact2Name: "",
-    emergencyContact2Relation: "",
-    emergencyContact2Phone: "",
-    advanceDirectives: false,
-    dnrOrder: false,
-    additionalInfo: ""
-  });
   const pinInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { activeCareRecipientId } = useCareRecipient();
@@ -99,6 +74,34 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         title: "Error creating emergency information",
         description: error.message,
         variant: "destructive",
+      });
+    }
+  });
+  
+  // Update existing emergency info
+  const updateEmergencyInfoMutation = useMutation({
+    mutationFn: async (formData: any) => {
+      const response = await apiRequest("PATCH", `/api/emergency-info/${formData.id}`, formData);
+      const data = await response.json();
+      console.log("Emergency info update response:", data);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Emergency info updated",
+        description: "Emergency information was updated successfully"
+      });
+      
+      // Refetch emergency info
+      queryClient.invalidateQueries({
+        queryKey: ["/api/emergency-info", activeCareRecipientId]
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating emergency info",
+        description: error.message,
+        variant: "destructive"
       });
     }
   });
@@ -240,146 +243,6 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       setPinMutation.mutate({ id: emergencyInfoId, pin: newPin });
     }
   };
-  
-  // Update existing emergency info
-  const updateEmergencyInfoMutation = useMutation({
-    mutationFn: async (formData: any) => {
-      const response = await apiRequest("PATCH", `/api/emergency-info/${formData.id}`, formData);
-      const data = await response.json();
-      console.log("Emergency info update response:", data);
-      return data;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Emergency info updated",
-        description: "Emergency information was updated successfully"
-      });
-      
-      // Refetch emergency info
-      queryClient.invalidateQueries({
-        queryKey: ["/api/emergency-info", activeCareRecipientId]
-      });
-      
-      // Reset form
-      setIsEditing(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error updating emergency info",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-  
-  // Load data into form when editing
-  useEffect(() => {
-    if (isEditing && data?.emergencyInfo) {
-      try {
-        const info = data.emergencyInfo;
-        console.log("Loading emergency info into form:", info);
-        setFormData({
-          dateOfBirth: info.dateOfBirth || "",
-          socialSecurityNumber: info.socialSecurityNumber || "",
-          allergies: info.allergies || "",
-          medicationAllergies: info.medicationAllergies || "",
-          bloodType: info.bloodType || "",
-          insuranceProvider: info.insuranceProvider || "",
-          insurancePolicyNumber: info.insurancePolicyNumber || "",
-          insuranceGroupNumber: info.insuranceGroupNumber || "",
-          emergencyContact1Name: info.emergencyContact1Name || "",
-          emergencyContact1Relation: info.emergencyContact1Relation || "",
-          emergencyContact1Phone: info.emergencyContact1Phone || "",
-          emergencyContact2Name: info.emergencyContact2Name || "",
-          emergencyContact2Relation: info.emergencyContact2Relation || "",
-          emergencyContact2Phone: info.emergencyContact2Phone || "",
-          advanceDirectives: !!info.advanceDirectives,
-          dnrOrder: !!info.dnrOrder,
-          additionalInfo: info.additionalInfo || ""
-        });
-      } catch (error) {
-        console.error("Error loading emergency info into form:", error);
-        // Reset to empty form rather than crashing
-        setFormData({
-          dateOfBirth: "",
-          socialSecurityNumber: "",
-          allergies: "None",
-          medicationAllergies: "None known",
-          bloodType: "",
-          insuranceProvider: "",
-          insurancePolicyNumber: "",
-          insuranceGroupNumber: "",
-          emergencyContact1Name: "",
-          emergencyContact1Relation: "",
-          emergencyContact1Phone: "",
-          emergencyContact2Name: "",
-          emergencyContact2Relation: "",
-          emergencyContact2Phone: "",
-          advanceDirectives: false,
-          dnrOrder: false,
-          additionalInfo: ""
-        });
-      }
-    }
-  }, [isEditing, data]);
-  
-  // Handle form field changes
-  const handleFormChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-  
-  // Handle form submission for editing
-  const handleSubmitEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!data?.emergencyInfo?.id) {
-      toast({
-        title: "Error",
-        description: "No emergency information ID found for updating",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Include care recipient ID and existing record ID
-    updateEmergencyInfoMutation.mutate({
-      ...formData,
-      id: data.emergencyInfo.id,
-      careRecipientId: activeCareRecipientId
-    });
-  };
-  
-  // Handle form submission for both creating and editing
-  const handleSubmitForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!activeCareRecipientId) {
-      toast({
-        title: "Error",
-        description: "Please select a care recipient first",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (data?.emergencyInfo?.id) {
-      // Update existing record
-      updateEmergencyInfoMutation.mutate({
-        ...formData,
-        id: data.emergencyInfo.id,
-        careRecipientId: activeCareRecipientId
-      });
-    } else {
-      // Create new record
-      createEmergencyInfoMutation.mutate({
-        ...formData,
-        careRecipientId: activeCareRecipientId
-      });
-    }
-  };
 
   // Handle starting the creation process
   const handleCreateEmergencyInfo = () => {
@@ -512,103 +375,85 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       </div>
                       
                       <Button 
-                        onClick={handleVerifyPin}
+                        variant="default" 
+                        size="sm" 
                         className="w-full"
+                        onClick={handleVerifyPin}
                         disabled={verifyPinMutation.isPending}
                       >
-                        {verifyPinMutation.isPending ? "Verifying..." : "Unlock"}
-                      </Button>
-                      
-                      <p className="text-xs text-gray-500 mt-2">
-                        This PIN protects sensitive medical information.
-                      </p>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-4"
-                        onClick={() => setIsSettingPin(true)}
-                      >
-                        Set New PIN
+                        {verifyPinMutation.isPending ? (
+                          "Verifying..."
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4 mr-2" /> Unlock Information
+                          </>
+                        )}
                       </Button>
                     </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="mb-4 flex justify-between items-center">
+                      <p className="text-sm text-green-600 flex items-center">
+                        <Unlock className="h-4 w-4 mr-1" /> 
+                        Information unlocked
+                      </p>
+                      
+                      {!isSettingPin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsSettingPin(true)}
+                          className="text-xs px-2 h-7"
+                        >
+                          Change PIN
+                        </Button>
+                      )}
+                    </div>
                     
-                    {isSettingPin && (
-                      <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-                        <h3 className="text-sm font-medium mb-3">Set 6-Digit PIN</h3>
+                    {isSettingPin ? (
+                      <div className="space-y-3 mb-6 p-3 border border-gray-200 rounded-md bg-gray-50">
+                        <h3 className="text-sm font-medium">Set New PIN</h3>
+                        <p className="text-xs text-gray-600 mb-2">PIN must be exactly 6 digits</p>
                         
-                        <div className="space-y-3">
-                          <div>
-                            <label htmlFor="new-pin" className="text-xs text-gray-700 mb-1 block">
-                              New PIN (6 digits)
-                            </label>
-                            <div className="flex items-center">
-                              <Input
-                                id="new-pin"
-                                type={showNewPin ? "text" : "password"}
-                                placeholder="Enter new 6-digit PIN"
-                                value={newPin}
-                                onChange={(e) => {
-                                  // Only allow digits and limit to 6 characters
-                                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                                  setNewPin(value);
-                                }}
-                                className="pr-10"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="ml-[-40px]"
-                                onClick={() => setShowNewPin(!showNewPin)}
-                              >
-                                {showNewPin ? (
-                                  <EyeOff className="h-4 w-4 text-gray-500" />
-                                ) : (
-                                  <Eye className="h-4 w-4 text-gray-500" />
-                                )}
-                              </Button>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              PIN must be exactly 6 digits
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <label htmlFor="confirm-pin" className="text-xs text-gray-700 mb-1 block">
-                              Confirm PIN
-                            </label>
+                        <div className="space-y-2">
+                          <div className="flex items-center">
                             <Input
-                              id="confirm-pin"
                               type={showNewPin ? "text" : "password"}
-                              placeholder="Confirm 6-digit PIN"
-                              value={confirmPin}
-                              onChange={(e) => {
-                                // Only allow digits and limit to 6 characters
-                                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                                setConfirmPin(value);
-                              }}
+                              placeholder="New PIN (6 digits)"
+                              value={newPin}
+                              onChange={(e) => setNewPin(e.target.value)}
+                              maxLength={6}
                               className="pr-10"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
                             />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="ml-[-40px]"
+                              onClick={() => setShowNewPin(!showNewPin)}
+                            >
+                              {showNewPin ? (
+                                <EyeOff className="h-4 w-4 text-gray-500" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-500" />
+                              )}
+                            </Button>
                           </div>
                           
-                          <div className="flex space-x-2 mt-2">
-                            <Button
-                              variant="default"
-                              size="sm"
+                          <Input
+                            type={showNewPin ? "text" : "password"}
+                            placeholder="Confirm PIN"
+                            value={confirmPin}
+                            onChange={(e) => setConfirmPin(e.target.value)}
+                            maxLength={6}
+                          />
+                          
+                          <div className="flex gap-2 pt-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
                               className="flex-1"
-                              onClick={handleSetPin}
-                              disabled={setPinMutation.isPending || newPin.length !== 6 || confirmPin.length !== 6}
-                            >
-                              {setPinMutation.isPending ? "Setting PIN..." : "Save PIN"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
                               onClick={() => {
                                 setIsSettingPin(false);
                                 setNewPin("");
@@ -617,19 +462,21 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                             >
                               Cancel
                             </Button>
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={handleSetPin}
+                              disabled={setPinMutation.isPending}
+                            >
+                              {setPinMutation.isPending ? "Saving..." : "Save PIN"}
+                            </Button>
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 p-3 rounded-md border border-green-200 flex items-center mb-4">
-                      <Unlock className="h-5 w-5 text-green-600 mr-2 flex-shrink-0" />
-                      <p className="text-sm text-green-800">Information unlocked. Sensitive data is now visible.</p>
-                    </div>
+                    ) : null}
                     
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-4 mb-4">
                       <div>
                         <h3 className="text-sm font-medium mb-1">Date of Birth</h3>
                         <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
@@ -654,7 +501,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       <div>
                         <h3 className="text-sm font-medium mb-1">Medication Allergies</h3>
                         <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.medicationAllergies || "None known"}
+                          {data?.emergencyInfo?.medicationAllergies || "None"}
                         </p>
                       </div>
                       
@@ -687,21 +534,29 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       </div>
                       
                       <div>
-                        <h3 className="text-sm font-medium mb-1">Emergency Contact 1</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.emergencyContact1Name 
-                            ? `${data?.emergencyInfo?.emergencyContact1Name} (${data?.emergencyInfo?.emergencyContact1Relation || 'Relation not specified'}) - ${data?.emergencyInfo?.emergencyContact1Phone || 'No phone'}`
-                            : "Not provided"}
-                        </p>
+                        <h3 className="text-sm font-medium mb-1">Primary Emergency Contact</h3>
+                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          <p><strong>Name:</strong> {data?.emergencyInfo?.emergencyContact1Name || "Not provided"}</p>
+                          {data?.emergencyInfo?.emergencyContact1Relation && (
+                            <p><strong>Relation:</strong> {data.emergencyInfo.emergencyContact1Relation}</p>
+                          )}
+                          {data?.emergencyInfo?.emergencyContact1Phone && (
+                            <p><strong>Phone:</strong> {data.emergencyInfo.emergencyContact1Phone}</p>
+                          )}
+                        </div>
                       </div>
                       
                       <div>
-                        <h3 className="text-sm font-medium mb-1">Emergency Contact 2</h3>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                          {data?.emergencyInfo?.emergencyContact2Name 
-                            ? `${data?.emergencyInfo?.emergencyContact2Name} (${data?.emergencyInfo?.emergencyContact2Relation || 'Relation not specified'}) - ${data?.emergencyInfo?.emergencyContact2Phone || 'No phone'}`
-                            : "Not provided"}
-                        </p>
+                        <h3 className="text-sm font-medium mb-1">Secondary Emergency Contact</h3>
+                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                          <p><strong>Name:</strong> {data?.emergencyInfo?.emergencyContact2Name || "Not provided"}</p>
+                          {data?.emergencyInfo?.emergencyContact2Relation && (
+                            <p><strong>Relation:</strong> {data.emergencyInfo.emergencyContact2Relation}</p>
+                          )}
+                          {data?.emergencyInfo?.emergencyContact2Phone && (
+                            <p><strong>Phone:</strong> {data.emergencyInfo.emergencyContact2Phone}</p>
+                          )}
+                        </div>
                       </div>
                       
                       <div>
@@ -758,249 +613,16 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                           Quick Update Information
                         </Button>
                       </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                                    <Input
-                                      id="dateOfBirth"
-                                      type="date"
-                                      value={formData.dateOfBirth} 
-                                      onChange={(e) => handleFormChange('dateOfBirth', e.target.value)}
-                                      placeholder="YYYY-MM-DD"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="socialSecurityNumber">Social Security Number</Label>
-                                    <Input
-                                      id="socialSecurityNumber"
-                                      value={formData.socialSecurityNumber}
-                                      onChange={(e) => handleFormChange('socialSecurityNumber', e.target.value)}
-                                      placeholder="XXX-XX-XXXX"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="allergies">Allergies</Label>
-                                    <Textarea
-                                      id="allergies"
-                                      value={formData.allergies}
-                                      onChange={(e) => handleFormChange('allergies', e.target.value)}
-                                      placeholder="Enter allergies"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="medicationAllergies">Medication Allergies</Label>
-                                    <Textarea
-                                      id="medicationAllergies"
-                                      value={formData.medicationAllergies}
-                                      onChange={(e) => handleFormChange('medicationAllergies', e.target.value)}
-                                      placeholder="Enter medication allergies"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="bloodType">Blood Type</Label>
-                                    <Select 
-                                      value={formData.bloodType} 
-                                      onValueChange={(value) => handleFormChange('bloodType', value)}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select Blood Type" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="">Unknown</SelectItem>
-                                        <SelectItem value="A+">A+</SelectItem>
-                                        <SelectItem value="A-">A-</SelectItem>
-                                        <SelectItem value="B+">B+</SelectItem>
-                                        <SelectItem value="B-">B-</SelectItem>
-                                        <SelectItem value="AB+">AB+</SelectItem>
-                                        <SelectItem value="AB-">AB-</SelectItem>
-                                        <SelectItem value="O+">O+</SelectItem>
-                                        <SelectItem value="O-">O-</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="insuranceProvider">Insurance Provider</Label>
-                                    <Input
-                                      id="insuranceProvider"
-                                      value={formData.insuranceProvider}
-                                      onChange={(e) => handleFormChange('insuranceProvider', e.target.value)}
-                                      placeholder="Enter insurance provider"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="insurancePolicyNumber">Policy Number</Label>
-                                    <Input
-                                      id="insurancePolicyNumber"
-                                      value={formData.insurancePolicyNumber}
-                                      onChange={(e) => handleFormChange('insurancePolicyNumber', e.target.value)}
-                                      placeholder="Enter policy number"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="insuranceGroupNumber">Group Number</Label>
-                                    <Input
-                                      id="insuranceGroupNumber"
-                                      value={formData.insuranceGroupNumber}
-                                      onChange={(e) => handleFormChange('insuranceGroupNumber', e.target.value)}
-                                      placeholder="Enter group number"
-                                    />
-                                  </div>
-                                
-                                  <div className="space-y-2">
-                                    <Label htmlFor="emergencyContact1Name">Emergency Contact 1 Name</Label>
-                                    <Input
-                                      id="emergencyContact1Name"
-                                      value={formData.emergencyContact1Name}
-                                      onChange={(e) => handleFormChange('emergencyContact1Name', e.target.value)}
-                                      placeholder="Enter name"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="emergencyContact1Relation">Relation</Label>
-                                    <Input
-                                      id="emergencyContact1Relation"
-                                      value={formData.emergencyContact1Relation}
-                                      onChange={(e) => handleFormChange('emergencyContact1Relation', e.target.value)}
-                                      placeholder="e.g. Spouse, Child"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="emergencyContact1Phone">Phone</Label>
-                                    <Input
-                                      id="emergencyContact1Phone"
-                                      value={formData.emergencyContact1Phone}
-                                      onChange={(e) => handleFormChange('emergencyContact1Phone', e.target.value)}
-                                      placeholder="(XXX) XXX-XXXX"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="emergencyContact2Name">Emergency Contact 2 Name</Label>
-                                    <Input
-                                      id="emergencyContact2Name"
-                                      value={formData.emergencyContact2Name}
-                                      onChange={(e) => handleFormChange('emergencyContact2Name', e.target.value)}
-                                      placeholder="Enter name"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="emergencyContact2Relation">Relation</Label>
-                                    <Input
-                                      id="emergencyContact2Relation"
-                                      value={formData.emergencyContact2Relation}
-                                      onChange={(e) => handleFormChange('emergencyContact2Relation', e.target.value)}
-                                      placeholder="e.g. Sibling, Friend"
-                                    />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label htmlFor="emergencyContact2Phone">Phone</Label>
-                                    <Input
-                                      id="emergencyContact2Phone"
-                                      value={formData.emergencyContact2Phone}
-                                      onChange={(e) => handleFormChange('emergencyContact2Phone', e.target.value)}
-                                      placeholder="(XXX) XXX-XXXX"
-                                    />
-                                  </div>
-                                  
-                                  <div className="flex items-center space-x-2">
-                                    <Switch
-                                      id="advanceDirectives"
-                                      checked={formData.advanceDirectives}
-                                      onCheckedChange={(checked) => handleFormChange('advanceDirectives', checked)}
-                                    />
-                                    <Label htmlFor="advanceDirectives">Has Advance Directives</Label>
-                                  </div>
-                                  
-                                  <div className="flex items-center space-x-2">
-                                    <Switch
-                                      id="dnrOrder"
-                                      checked={formData.dnrOrder}
-                                      onCheckedChange={(checked) => handleFormChange('dnrOrder', checked)}
-                                    />
-                                    <Label htmlFor="dnrOrder">Has DNR Order</Label>
-                                  </div>
-                                </div>
-                                
-                                <div className="space-y-2 col-span-2">
-                                  <Label htmlFor="additionalInfo">Additional Information</Label>
-                                  <Textarea
-                                    id="additionalInfo"
-                                    value={formData.additionalInfo}
-                                    onChange={(e) => handleFormChange('additionalInfo', e.target.value)}
-                                    placeholder="Enter additional information"
-                                    rows={4}
-                                  />
-                                </div>
-                                
-                                <div className="flex justify-end space-x-3 pt-4">
-                                  <Button 
-                                    type="button" 
-                                    variant="outline" 
-                                    onClick={() => setIsEditing(false)}
-                                    className="flex items-center"
-                                  >
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                    Cancel
-                                  </Button>
-                                  <Button 
-                                    type="submit"
-                                    className="flex items-center"
-                                    disabled={updateEmergencyInfoMutation.isPending}
-                                  >
-                                    <Save className="h-4 w-4 mr-2" />
-                                    {updateEmergencyInfoMutation.isPending ? "Saving..." : "Save Changes"}
-                                  </Button>
-                                </div>
-                              </form>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <ShieldAlert className="h-5 w-5 mr-2 text-red-500" /> 
-                  Error Loading Emergency Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
-                  There was a problem loading the emergency information. Please try again.
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => {
-                    queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
-                  }}
-                >
-                  Reload
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          ) : null}
         </div>
       </main>
       
-      <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
