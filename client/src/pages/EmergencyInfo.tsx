@@ -768,7 +768,22 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                               <CardDescription>Update emergency information for {selectedCareRecipient?.name || "this care recipient"}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                              <form onSubmit={handleSubmitForm} className="space-y-4">
+                              <form onSubmit={(e) => {
+                                e.preventDefault();
+                                // Simple form submission that doesn't crash
+                                if (data?.emergencyInfo?.id) {
+                                  updateEmergencyInfoMutation.mutate({
+                                    ...formData,
+                                    id: data.emergencyInfo.id,
+                                    careRecipientId: activeCareRecipientId
+                                  });
+                                } else {
+                                  createEmergencyInfoMutation.mutate({
+                                    ...formData,
+                                    careRecipientId: activeCareRecipientId
+                                  });
+                                }
+                              }} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="space-y-2">
                                     <Label htmlFor="dateOfBirth">Date of Birth</Label>
