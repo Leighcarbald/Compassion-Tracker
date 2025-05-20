@@ -681,6 +681,228 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       >
                         Edit Emergency Information
                       </Button>
+                      
+                      {isEditing && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <CardHeader>
+                              <CardTitle className="flex items-center">
+                                <ShieldAlert className="h-5 w-5 mr-2 text-orange-500" />
+                                Edit Emergency Information
+                              </CardTitle>
+                              <CardDescription>Update emergency information for {selectedCareRecipient?.name || "this care recipient"}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <form onSubmit={handleSubmitEdit} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                                    <Input
+                                      id="dateOfBirth"
+                                      type="date"
+                                      value={formData.dateOfBirth} 
+                                      onChange={(e) => handleFormChange('dateOfBirth', e.target.value)}
+                                      placeholder="YYYY-MM-DD"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="socialSecurityNumber">Social Security Number</Label>
+                                    <Input
+                                      id="socialSecurityNumber"
+                                      value={formData.socialSecurityNumber}
+                                      onChange={(e) => handleFormChange('socialSecurityNumber', e.target.value)}
+                                      placeholder="XXX-XX-XXXX"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="allergies">Allergies</Label>
+                                    <Textarea
+                                      id="allergies"
+                                      value={formData.allergies}
+                                      onChange={(e) => handleFormChange('allergies', e.target.value)}
+                                      placeholder="Enter allergies"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="medicationAllergies">Medication Allergies</Label>
+                                    <Textarea
+                                      id="medicationAllergies"
+                                      value={formData.medicationAllergies}
+                                      onChange={(e) => handleFormChange('medicationAllergies', e.target.value)}
+                                      placeholder="Enter medication allergies"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="bloodType">Blood Type</Label>
+                                    <Select 
+                                      value={formData.bloodType} 
+                                      onValueChange={(value) => handleFormChange('bloodType', value)}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select Blood Type" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="">Unknown</SelectItem>
+                                        <SelectItem value="A+">A+</SelectItem>
+                                        <SelectItem value="A-">A-</SelectItem>
+                                        <SelectItem value="B+">B+</SelectItem>
+                                        <SelectItem value="B-">B-</SelectItem>
+                                        <SelectItem value="AB+">AB+</SelectItem>
+                                        <SelectItem value="AB-">AB-</SelectItem>
+                                        <SelectItem value="O+">O+</SelectItem>
+                                        <SelectItem value="O-">O-</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="insuranceProvider">Insurance Provider</Label>
+                                    <Input
+                                      id="insuranceProvider"
+                                      value={formData.insuranceProvider}
+                                      onChange={(e) => handleFormChange('insuranceProvider', e.target.value)}
+                                      placeholder="Enter insurance provider"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="insurancePolicyNumber">Policy Number</Label>
+                                    <Input
+                                      id="insurancePolicyNumber"
+                                      value={formData.insurancePolicyNumber}
+                                      onChange={(e) => handleFormChange('insurancePolicyNumber', e.target.value)}
+                                      placeholder="Enter policy number"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="insuranceGroupNumber">Group Number</Label>
+                                    <Input
+                                      id="insuranceGroupNumber"
+                                      value={formData.insuranceGroupNumber}
+                                      onChange={(e) => handleFormChange('insuranceGroupNumber', e.target.value)}
+                                      placeholder="Enter group number"
+                                    />
+                                  </div>
+                                
+                                  <div className="space-y-2">
+                                    <Label htmlFor="emergencyContact1Name">Emergency Contact 1 Name</Label>
+                                    <Input
+                                      id="emergencyContact1Name"
+                                      value={formData.emergencyContact1Name}
+                                      onChange={(e) => handleFormChange('emergencyContact1Name', e.target.value)}
+                                      placeholder="Enter name"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="emergencyContact1Relation">Relation</Label>
+                                    <Input
+                                      id="emergencyContact1Relation"
+                                      value={formData.emergencyContact1Relation}
+                                      onChange={(e) => handleFormChange('emergencyContact1Relation', e.target.value)}
+                                      placeholder="e.g. Spouse, Child"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="emergencyContact1Phone">Phone</Label>
+                                    <Input
+                                      id="emergencyContact1Phone"
+                                      value={formData.emergencyContact1Phone}
+                                      onChange={(e) => handleFormChange('emergencyContact1Phone', e.target.value)}
+                                      placeholder="(XXX) XXX-XXXX"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="emergencyContact2Name">Emergency Contact 2 Name</Label>
+                                    <Input
+                                      id="emergencyContact2Name"
+                                      value={formData.emergencyContact2Name}
+                                      onChange={(e) => handleFormChange('emergencyContact2Name', e.target.value)}
+                                      placeholder="Enter name"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="emergencyContact2Relation">Relation</Label>
+                                    <Input
+                                      id="emergencyContact2Relation"
+                                      value={formData.emergencyContact2Relation}
+                                      onChange={(e) => handleFormChange('emergencyContact2Relation', e.target.value)}
+                                      placeholder="e.g. Sibling, Friend"
+                                    />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label htmlFor="emergencyContact2Phone">Phone</Label>
+                                    <Input
+                                      id="emergencyContact2Phone"
+                                      value={formData.emergencyContact2Phone}
+                                      onChange={(e) => handleFormChange('emergencyContact2Phone', e.target.value)}
+                                      placeholder="(XXX) XXX-XXXX"
+                                    />
+                                  </div>
+                                  
+                                  <div className="flex items-center space-x-2">
+                                    <Switch
+                                      id="advanceDirectives"
+                                      checked={formData.advanceDirectives}
+                                      onCheckedChange={(checked) => handleFormChange('advanceDirectives', checked)}
+                                    />
+                                    <Label htmlFor="advanceDirectives">Has Advance Directives</Label>
+                                  </div>
+                                  
+                                  <div className="flex items-center space-x-2">
+                                    <Switch
+                                      id="dnrOrder"
+                                      checked={formData.dnrOrder}
+                                      onCheckedChange={(checked) => handleFormChange('dnrOrder', checked)}
+                                    />
+                                    <Label htmlFor="dnrOrder">Has DNR Order</Label>
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-2 col-span-2">
+                                  <Label htmlFor="additionalInfo">Additional Information</Label>
+                                  <Textarea
+                                    id="additionalInfo"
+                                    value={formData.additionalInfo}
+                                    onChange={(e) => handleFormChange('additionalInfo', e.target.value)}
+                                    placeholder="Enter additional information"
+                                    rows={4}
+                                  />
+                                </div>
+                                
+                                <div className="flex justify-end space-x-3 pt-4">
+                                  <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={() => setIsEditing(false)}
+                                    className="flex items-center"
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Cancel
+                                  </Button>
+                                  <Button 
+                                    type="submit"
+                                    className="flex items-center"
+                                    disabled={updateEmergencyInfoMutation.isPending}
+                                  >
+                                    <Save className="h-4 w-4 mr-2" />
+                                    {updateEmergencyInfoMutation.isPending ? "Saving..." : "Save Changes"}
+                                  </Button>
+                                </div>
+                              </form>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
