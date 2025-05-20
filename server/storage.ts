@@ -1322,18 +1322,30 @@ export const storage = {
   },
 
   async createSleepRecord(sleepData: any) {
-    // Convert date strings to actual Date objects
-    const processedData = {
-      ...sleepData,
-      startTime: sleepData.startTime ? new Date(sleepData.startTime) : undefined,
-      endTime: sleepData.endTime ? new Date(sleepData.endTime) : undefined
-    };
-    
-    console.log("Processing sleep data:", processedData);
-    const validatedData = insertSleepSchema.parse(processedData);
-    console.log("Validated sleep data:", validatedData);
-    const [newSleep] = await db.insert(sleep).values(validatedData).returning();
-    return newSleep;
+    try {
+      // Process the startTime field
+      if (typeof sleepData.startTime === 'string') {
+        sleepData.startTime = new Date(sleepData.startTime);
+      }
+      
+      // Process the endTime field if present
+      if (sleepData.endTime && typeof sleepData.endTime === 'string') {
+        sleepData.endTime = new Date(sleepData.endTime);
+      } else if (sleepData.endTime === null) {
+        // If endTime is explicitly null, keep it as null
+        delete sleepData.endTime;
+      }
+      
+      console.log("Processing sleep data:", sleepData);
+      
+      // First attempt validation
+      const [newSleep] = await db.insert(sleep).values(sleepData).returning();
+      console.log("Created sleep record:", newSleep);
+      return newSleep;
+    } catch (error) {
+      console.error("Error creating sleep record:", error);
+      throw error;
+    }
   },
 
   // Notes
