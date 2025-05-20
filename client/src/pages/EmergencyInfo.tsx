@@ -26,28 +26,73 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   });
 
   // Fetch emergency info for selected care recipient
-  const { data: emergencyInfoResponse, isLoading, error: emergencyInfoError } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["/api/emergency-info", activeCareRecipientId],
+    queryFn: async () => {
+      if (!activeCareRecipientId) return null;
+      const response = await apiRequest("GET", `/api/emergency-info?careRecipientId=${activeCareRecipientId}`);
+      const data = await response.json();
+      console.log("Emergency info response:", data);
+      return data;
+    },
     enabled: !!activeCareRecipientId
   });
   
-  console.log("EmergencyInfo response:", emergencyInfoResponse);
+  // Create emergency info mutation
+  const createEmergencyInfoMutation = useMutation({
+    mutationFn: async (formData: any) => {
+      const response = await apiRequest("POST", "/api/emergency-info", formData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Emergency information created",
+        description: "The emergency information has been created successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating emergency information",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
   
-  // We have to determine if we need to create a new record
-  const needsCreation = emergencyInfoResponse?.needsCreation || 
-                        emergencyInfoResponse?.status === 'not_found' ||
-                        (Array.isArray(emergencyInfoResponse?.emergencyInfo) && 
-                         emergencyInfoResponse?.emergencyInfo.length === 0);
+  // Check if we need to create a new record
+  const needsCreation = 
+    !data || 
+    data.status === 'not_found' || 
+    (data.needsCreation === true) ||
+    (data.emergencyInfo && Array.isArray(data.emergencyInfo) && data.emergencyInfo.length === 0);
 
   // Handle starting the creation process
   const handleCreateEmergencyInfo = () => {
-    toast({
-      title: "Create Emergency Information",
-      description: "This feature will be implemented soon",
-      duration: 3000,
+    if (!activeCareRecipientId) {
+      toast({
+        title: "No care recipient selected",
+        description: "Please select a care recipient first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create basic emergency info
+    createEmergencyInfoMutation.mutate({
+      careRecipientId: activeCareRecipientId,
+      allergies: "",
+      bloodType: "",
+      emergencyContacts: "",
+      advanceDirectives: "",
+      additionalNotes: ""
     });
-    setIsEditing(true);
   };
+
+  // Find the current care recipient's name
+  const selectedCareRecipient = careRecipientsQuery.data?.find(
+    (recipient: any) => recipient.id === activeCareRecipientId
+  );
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
@@ -58,11 +103,20 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         />
         
         <div className="p-4">
-          {isLoading ? (
+          {!activeCareRecipientId ? (
+            <Card className="mb-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">No Care Recipient Selected</CardTitle>
+                <CardDescription>
+                  Please select a care recipient first
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ) : isLoading ? (
             <div className="flex items-center justify-center h-40">
               <p className="text-gray-500">Loading emergency information...</p>
             </div>
-          ) : emergencyInfoError ? (
+          ) : error ? (
             <div className="bg-red-50 border border-red-200 p-4 rounded-md text-red-700">
               Error loading emergency information
             </div>
@@ -74,7 +128,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                   No Emergency Information
                 </CardTitle>
                 <CardDescription>
-                  You need to create emergency information for this care recipient
+                  Create emergency information for {selectedCareRecipient?.name || "this care recipient"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -87,14 +141,18 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                   size="sm" 
                   className="w-full" 
                   onClick={handleCreateEmergencyInfo}
+                  disabled={createEmergencyInfoMutation.isPending}
                 >
-                  <Plus className="h-4 w-4 mr-2" /> Create Emergency Information
+                  <Plus className="h-4 w-4 mr-2" /> 
+                  {createEmergencyInfoMutation.isPending 
+                    ? "Creating..." 
+                    : "Create Emergency Information"}
                 </Button>
               </CardContent>
             </Card>
           ) : (
             <div className="bg-green-50 border border-green-200 p-4 rounded-md text-green-700">
-              Emergency information exists! This view will be enhanced soon.
+              Emergency information exists! You will be able to securely view and edit it in an upcoming update.
             </div>
           )}
         </div>
