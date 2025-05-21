@@ -26,6 +26,12 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const [isVerifying, setIsVerifying] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isSettingPin, setIsSettingPin] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<{
+    allergies?: string;
+    medicationAllergies?: string;
+    bloodType?: string;
+  }>({});
   
   const pinInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -665,7 +671,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         </div>
       </main>
       
-      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
     </div>
   );
 }
