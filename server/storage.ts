@@ -641,12 +641,10 @@ export const storage = {
       'saturday': 6
     };
     
-    // Get upcoming days to check for scheduled medications (today + next 3 days)
+    // Get upcoming days to check for scheduled medications (only today + next day)
     const daysToCheck = [
       { date: now, dayNumber: dayToNumber[format(now, 'EEEE').toLowerCase()] },
-      { date: addDays(now, 1), dayNumber: dayToNumber[format(addDays(now, 1), 'EEEE').toLowerCase()] },
-      { date: addDays(now, 2), dayNumber: dayToNumber[format(addDays(now, 2), 'EEEE').toLowerCase()] },
-      { date: addDays(now, 3), dayNumber: dayToNumber[format(addDays(now, 3), 'EEEE').toLowerCase()] }
+      { date: addDays(now, 1), dayNumber: dayToNumber[format(addDays(now, 1), 'EEEE').toLowerCase()] }
     ];
     
     for (const schedule of medSchedules) {
