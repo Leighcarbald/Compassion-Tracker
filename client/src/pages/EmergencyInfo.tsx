@@ -602,7 +602,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                   </div>
                                   
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Social Security Number</label>
+                                    <label className="block text-base font-medium mb-1">Social Security Number</label>
                                     <Input
                                       placeholder="XXX-XX-XXXX"
                                       defaultValue={data?.emergencyInfo?.socialSecurityNumber || ""}
@@ -617,7 +617,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                   </div>
                                   
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Blood Type</label>
+                                    <label className="block text-base font-medium mb-1">Blood Type</label>
                                     <Input
                                       placeholder="A+, B-, O+, etc."
                                       defaultValue={data?.emergencyInfo?.bloodType || ""}
@@ -639,7 +639,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                 
                                 <div className="grid grid-cols-1 gap-3">
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Allergies</label>
+                                    <label className="block text-base font-medium mb-1">Allergies</label>
                                     <Input
                                       placeholder="Enter allergies"
                                       defaultValue={data?.emergencyInfo?.allergies || ""}
@@ -654,7 +654,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                   </div>
                                   
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Medication Allergies</label>
+                                    <label className="block text-base font-medium mb-1">Medication Allergies</label>
                                     <Input
                                       placeholder="Enter medication allergies"
                                       defaultValue={data?.emergencyInfo?.medicationAllergies || ""}
@@ -682,7 +682,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                           }));
                                         }}
                                       />
-                                      <label htmlFor="dnrOrder" className="ml-2 block text-sm font-medium">
+                                      <label htmlFor="dnrOrder" className="ml-2 block text-base font-medium">
                                         DNR Order
                                       </label>
                                     </div>
@@ -700,7 +700,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                           }));
                                         }}
                                       />
-                                      <label htmlFor="advanceDirectives" className="ml-2 block text-sm font-medium">
+                                      <label htmlFor="advanceDirectives" className="ml-2 block text-base font-medium">
                                         Advance Directives
                                       </label>
                                     </div>
@@ -714,7 +714,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Insurance Provider</label>
+                                    <label className="block text-base font-medium mb-1">Insurance Provider</label>
                                     <Input
                                       placeholder="Enter insurance provider"
                                       defaultValue={data?.emergencyInfo?.insuranceProvider || ""}
@@ -729,7 +729,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                   </div>
                                   
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Policy/Group Number</label>
+                                    <label className="block text-base font-medium mb-1">Policy/Group Number</label>
                                     <Input
                                       placeholder="Enter policy or group number"
                                       defaultValue={data?.emergencyInfo?.insurancePolicyNumber || ""}
@@ -751,7 +751,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Contact Name</label>
+                                    <label className="block text-base font-medium mb-1">Contact Name</label>
                                     <Input
                                       placeholder="Enter contact name"
                                       defaultValue={data?.emergencyInfo?.emergencyContact1Name || ""}
@@ -766,7 +766,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                   </div>
                                   
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Contact Phone</label>
+                                    <label className="block text-base font-medium mb-1">Contact Phone</label>
                                     <Input
                                       placeholder="Enter contact phone"
                                       defaultValue={data?.emergencyInfo?.emergencyContact1Phone || ""}
