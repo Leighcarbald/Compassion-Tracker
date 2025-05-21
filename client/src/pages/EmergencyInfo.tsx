@@ -586,7 +586,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div>
-                                    <label className="block text-sm font-medium mb-1">Date of Birth</label>
+                                    <label className="block text-base font-medium mb-1">Date of Birth</label>
                                     <Input
                                       type="date"
                                       placeholder="YYYY-MM-DD"
