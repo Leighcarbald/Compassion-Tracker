@@ -14,7 +14,7 @@ export default function PageHeader({ title, icon, showHomeButton = true }: PageH
 
   return (
     <div className="flex items-center justify-between mb-6">
-      <h1 className="text-2xl font-bold flex items-center">
+      <h1 className="text-3xl font-bold flex items-center">
         {icon && <span className="mr-2">{icon}</span>}
         {title}
       </h1>

@@ -433,8 +433,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     
                     {isSettingPin ? (
                       <div className="space-y-3 mb-6 p-3 border border-gray-200 rounded-md bg-gray-50">
-                        <h3 className="text-sm font-medium">Set New PIN</h3>
-                        <p className="text-xs text-gray-600 mb-2">PIN must be exactly 6 digits</p>
+                        <h3 className="text-lg font-medium">Set New PIN</h3>
+                        <p className="text-base text-gray-600 mb-2">PIN must be exactly 6 digits</p>
                         
                         <div className="space-y-2">
                           <div className="flex items-center">
@@ -497,50 +497,50 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     ) : null}
                     
                     <div className="flex flex-col gap-1 mb-2 text-[10px]">
-                      <table className="w-full border-collapse">
+                      <table className="w-full border-collapse text-lg">
                         <tbody>
                           <tr>
-                            <td className="py-1 px-2 font-medium w-1/3">Date of Birth:</td>
-                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.dateOfBirth || "Not provided"}</td>
+                            <td className="py-2 px-3 font-medium w-1/3">Date of Birth:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.dateOfBirth || "Not provided"}</td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">SSN:</td>
-                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.socialSecurityNumber || "Not provided"}</td>
+                            <td className="py-2 px-3 font-medium">SSN:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.socialSecurityNumber || "Not provided"}</td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">Blood Type:</td>
-                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.bloodType || "Unknown"}</td>
+                            <td className="py-2 px-3 font-medium">Blood Type:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.bloodType || "Unknown"}</td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">Allergies:</td>
-                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.allergies || "None"}</td>
+                            <td className="py-2 px-3 font-medium">Allergies:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.allergies || "None"}</td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">Med Allergies:</td>
-                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.medicationAllergies || "None"}</td>
+                            <td className="py-2 px-3 font-medium">Med Allergies:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.medicationAllergies || "None"}</td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">Insurance:</td>
-                            <td className="py-1 px-2 bg-gray-50">{data?.emergencyInfo?.insuranceProvider || "Not provided"}</td>
+                            <td className="py-2 px-3 font-medium">Insurance:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.insuranceProvider || "Not provided"}</td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">Policy/Group:</td>
-                            <td className="py-1 px-2 bg-gray-50">
+                            <td className="py-2 px-3 font-medium">Policy/Group:</td>
+                            <td className="py-2 px-3 bg-gray-50">
                               {data?.emergencyInfo?.insurancePolicyNumber ? `Policy: ${data.emergencyInfo.insurancePolicyNumber}` : ""}
                               {data?.emergencyInfo?.insuranceGroupNumber ? `, Group: ${data.emergencyInfo.insuranceGroupNumber}` : ""}
                               {!data?.emergencyInfo?.insurancePolicyNumber && !data?.emergencyInfo?.insuranceGroupNumber && "Not provided"}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">Primary Contact:</td>
-                            <td className="py-1 px-2 bg-gray-50">
+                            <td className="py-2 px-3 font-medium">Primary Contact:</td>
+                            <td className="py-2 px-3 bg-gray-50">
                               {data?.emergencyInfo?.emergencyContact1Name || "Not provided"}
                               {data?.emergencyInfo?.emergencyContact1Phone ? ` • ${data.emergencyInfo.emergencyContact1Phone}` : ""}
                             </td>
                           </tr>
                           <tr>
-                            <td className="py-1 px-2 font-medium">DNR/Directives:</td>
-                            <td className="py-1 px-2 bg-gray-50">
+                            <td className="py-2 px-3 font-medium">DNR/Directives:</td>
+                            <td className="py-2 px-3 bg-gray-50">
                               {data?.emergencyInfo?.dnrOrder ? "DNR: Yes" : "DNR: No"}
                               {" • "}
                               {data?.emergencyInfo?.advanceDirectives ? "Advance Directives: Yes" : "Advance Directives: No"}
