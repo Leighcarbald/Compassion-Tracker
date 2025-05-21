@@ -65,6 +65,7 @@ export interface DailyStats {
     units: number;
     timeAdministered: string;
     insulinType?: string;
+    timeOfAdministration?: string; // Alternate property name that might be used in the API
   }>;
   notes?: any[];
 }
