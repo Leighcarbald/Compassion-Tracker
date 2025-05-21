@@ -547,9 +547,9 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="w-full"
+                          className="w-full text-base"
                           onClick={() => {
-                            // Open a simplified edit form
+                            // Open a comprehensive edit form
                             setIsEditing(true);
                           }}
                         >
@@ -557,70 +557,228 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                         </Button>
                         
                         {isEditing && (
-                          <div className="mt-4 p-3 border border-gray-200 rounded-md bg-gray-50">
-                            <div className="flex justify-between items-center mb-3">
-                              <h3 className="text-sm font-medium">Edit Emergency Information</h3>
+                          <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+                            <div className="flex justify-between items-center mb-4">
+                              <h3 className="text-lg font-medium">Edit Emergency Information</h3>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setIsEditing(false)}
-                                className="h-6 w-6 p-0"
+                                className="h-8 w-8 p-0"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                 <span className="sr-only">Close</span>
                               </Button>
                             </div>
                             
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-xs font-medium mb-1">Allergies</label>
-                                <Input
-                                  placeholder="Enter allergies"
-                                  defaultValue={data?.emergencyInfo?.allergies || ""}
-                                  className="text-sm"
-                                  onChange={(e) => {
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      allergies: e.target.value
-                                    }));
-                                  }}
-                                />
+                            <div className="space-y-4">
+                              {/* Personal Information Section */}
+                              <div className="border-b border-gray-200 pb-3">
+                                <h4 className="text-base font-medium mb-2">Personal Information</h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Date of Birth</label>
+                                    <Input
+                                      type="date"
+                                      placeholder="YYYY-MM-DD"
+                                      defaultValue={data?.emergencyInfo?.dateOfBirth || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          dateOfBirth: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Social Security Number</label>
+                                    <Input
+                                      placeholder="XXX-XX-XXXX"
+                                      defaultValue={data?.emergencyInfo?.socialSecurityNumber || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          socialSecurityNumber: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Blood Type</label>
+                                    <Input
+                                      placeholder="A+, B-, O+, etc."
+                                      defaultValue={data?.emergencyInfo?.bloodType || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          bloodType: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                </div>
                               </div>
                               
-                              <div>
-                                <label className="block text-xs font-medium mb-1">Medication Allergies</label>
-                                <Input
-                                  placeholder="Enter medication allergies"
-                                  defaultValue={data?.emergencyInfo?.medicationAllergies || ""}
-                                  className="text-sm"
-                                  onChange={(e) => {
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      medicationAllergies: e.target.value
-                                    }));
-                                  }}
-                                />
+                              {/* Medical Information Section */}
+                              <div className="border-b border-gray-200 pb-3">
+                                <h4 className="text-base font-medium mb-2">Medical Information</h4>
+                                
+                                <div className="grid grid-cols-1 gap-3">
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Allergies</label>
+                                    <Input
+                                      placeholder="Enter allergies"
+                                      defaultValue={data?.emergencyInfo?.allergies || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          allergies: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Medication Allergies</label>
+                                    <Input
+                                      placeholder="Enter medication allergies"
+                                      defaultValue={data?.emergencyInfo?.medicationAllergies || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          medicationAllergies: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        id="dnrOrder"
+                                        defaultChecked={data?.emergencyInfo?.dnrOrder || false}
+                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                        onChange={(e) => {
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            dnrOrder: e.target.checked
+                                          }));
+                                        }}
+                                      />
+                                      <label htmlFor="dnrOrder" className="ml-2 block text-sm font-medium">
+                                        DNR Order
+                                      </label>
+                                    </div>
+                                    
+                                    <div className="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        id="advanceDirectives"
+                                        defaultChecked={data?.emergencyInfo?.advanceDirectives || false}
+                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                        onChange={(e) => {
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            advanceDirectives: e.target.checked
+                                          }));
+                                        }}
+                                      />
+                                      <label htmlFor="advanceDirectives" className="ml-2 block text-sm font-medium">
+                                        Advance Directives
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                               
-                              <div>
-                                <label className="block text-xs font-medium mb-1">Blood Type</label>
-                                <Input
-                                  placeholder="Enter blood type"
-                                  defaultValue={data?.emergencyInfo?.bloodType || ""}
-                                  className="text-sm"
-                                  onChange={(e) => {
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      bloodType: e.target.value
-                                    }));
-                                  }}
-                                />
+                              {/* Insurance Section */}
+                              <div className="border-b border-gray-200 pb-3">
+                                <h4 className="text-base font-medium mb-2">Insurance Information</h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Insurance Provider</label>
+                                    <Input
+                                      placeholder="Enter insurance provider"
+                                      defaultValue={data?.emergencyInfo?.insuranceProvider || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          insuranceProvider: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Policy/Group Number</label>
+                                    <Input
+                                      placeholder="Enter policy or group number"
+                                      defaultValue={data?.emergencyInfo?.insurancePolicyNumber || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          insurancePolicyNumber: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                </div>
                               </div>
                               
-                              <div className="flex justify-end gap-2 mt-3">
+                              {/* Emergency Contact Section */}
+                              <div>
+                                <h4 className="text-base font-medium mb-2">Emergency Contact</h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Contact Name</label>
+                                    <Input
+                                      placeholder="Enter contact name"
+                                      defaultValue={data?.emergencyInfo?.emergencyContact1Name || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          emergencyContact1Name: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">Contact Phone</label>
+                                    <Input
+                                      placeholder="Enter contact phone"
+                                      defaultValue={data?.emergencyInfo?.emergencyContact1Phone || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          emergencyContact1Phone: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex justify-end gap-3 mt-4 pt-2 border-t border-gray-200">
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  className="text-base px-4"
                                   onClick={() => setIsEditing(false)}
                                 >
                                   Cancel
@@ -629,6 +787,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                 <Button
                                   variant="default"
                                   size="sm"
+                                  className="text-base px-4"
                                   onClick={() => {
                                     // Only update with changed fields
                                     if (data?.emergencyInfo?.id) {
@@ -637,7 +796,15 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                         careRecipientId: activeCareRecipientId,
                                         ...(formData.allergies !== undefined && { allergies: formData.allergies }),
                                         ...(formData.medicationAllergies !== undefined && { medicationAllergies: formData.medicationAllergies }),
-                                        ...(formData.bloodType !== undefined && { bloodType: formData.bloodType })
+                                        ...(formData.bloodType !== undefined && { bloodType: formData.bloodType }),
+                                        ...(formData.dateOfBirth !== undefined && { dateOfBirth: formData.dateOfBirth }),
+                                        ...(formData.socialSecurityNumber !== undefined && { socialSecurityNumber: formData.socialSecurityNumber }),
+                                        ...(formData.dnrOrder !== undefined && { dnrOrder: formData.dnrOrder }),
+                                        ...(formData.advanceDirectives !== undefined && { advanceDirectives: formData.advanceDirectives }),
+                                        ...(formData.insuranceProvider !== undefined && { insuranceProvider: formData.insuranceProvider }),
+                                        ...(formData.insurancePolicyNumber !== undefined && { insurancePolicyNumber: formData.insurancePolicyNumber }),
+                                        ...(formData.emergencyContact1Name !== undefined && { emergencyContact1Name: formData.emergencyContact1Name }),
+                                        ...(formData.emergencyContact1Phone !== undefined && { emergencyContact1Phone: formData.emergencyContact1Phone })
                                       };
                                       
                                       updateEmergencyInfoMutation.mutate(updatedInfo);
