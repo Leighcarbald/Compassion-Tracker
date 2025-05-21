@@ -31,6 +31,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     allergies?: string;
     medicationAllergies?: string;
     bloodType?: string;
+    dateOfBirth?: string;
+    socialSecurityNumber?: string;
+    dnrOrder?: boolean;
+    advanceDirectives?: boolean;
+    insuranceProvider?: string;
+    insurancePolicyNumber?: string;
+    emergencyContact1Name?: string;
+    emergencyContact1Phone?: string;
   }>({});
   
   const pinInputRef = useRef<HTMLInputElement>(null);
@@ -559,7 +567,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                         {isEditing && (
                           <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
                             <div className="flex justify-between items-center mb-4">
-                              <h3 className="text-lg font-medium">Edit Emergency Information</h3>
+                              <h3 className="text-xl font-medium">Edit Emergency Information</h3>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -574,7 +582,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                             <div className="space-y-4">
                               {/* Personal Information Section */}
                               <div className="border-b border-gray-200 pb-3">
-                                <h4 className="text-base font-medium mb-2">Personal Information</h4>
+                                <h4 className="text-lg font-semibold mb-3">Personal Information</h4>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div>
@@ -627,7 +635,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                               
                               {/* Medical Information Section */}
                               <div className="border-b border-gray-200 pb-3">
-                                <h4 className="text-base font-medium mb-2">Medical Information</h4>
+                                <h4 className="text-lg font-semibold mb-3">Medical Information</h4>
                                 
                                 <div className="grid grid-cols-1 gap-3">
                                   <div>
@@ -702,7 +710,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                               
                               {/* Insurance Section */}
                               <div className="border-b border-gray-200 pb-3">
-                                <h4 className="text-base font-medium mb-2">Insurance Information</h4>
+                                <h4 className="text-lg font-semibold mb-3">Insurance Information</h4>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div>
@@ -739,7 +747,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                               
                               {/* Emergency Contact Section */}
                               <div>
-                                <h4 className="text-base font-medium mb-2">Emergency Contact</h4>
+                                <h4 className="text-lg font-semibold mb-3">Emergency Contact</h4>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <div>
