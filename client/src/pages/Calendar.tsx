@@ -55,8 +55,13 @@ export function UpcomingMedicationDoses({ careRecipientId }: { careRecipientId: 
     enabled: !!careRecipientId,
   });
   
-  // Filter to only show medication events
-  const medicationEvents = upcomingEvents?.filter(event => event.type === 'medication') || [];
+  // Filter to only show medication events for today
+  const today = new Date();
+  const todayFormatted = format(today, 'yyyy-MM-dd');
+  
+  const medicationEvents = upcomingEvents?.filter(event => 
+    event.type === 'medication' && event.date === todayFormatted
+  ) || [];
   
   if (isLoading) {
     return (
