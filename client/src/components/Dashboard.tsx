@@ -4,7 +4,7 @@ import { formatTime } from "@/lib/utils";
 import StatusCard from "./StatusCard";
 import { Pill, Utensils, Toilet, Moon, Heart, Activity, Droplets, Calendar, Clock } from "lucide-react";
 import { useLocation } from "wouter";
-import { EventData } from "@/lib/types";
+import { EventData, DailyStats } from "@/lib/types";
 import { format } from "date-fns";
 
 interface DashboardProps {
@@ -14,30 +14,7 @@ interface DashboardProps {
 
 export default function Dashboard({ careRecipientId, inspirationMessage }: DashboardProps) {
   // Fetch today's stats
-  const { data: todayStats } = useQuery<{
-    medications: { completed: number; total: number; progress: number };
-    meals: { completed: number; total: number; progress: number };
-    bowelMovement: { lastTime: string };
-    supplies: { depends: number };
-    sleep: { duration: string; quality: string };
-    bloodPressure: Array<{
-      systolic: number;
-      diastolic: number;
-      pulse: number;
-      timeOfReading: string;
-    }>;
-    glucose: Array<{
-      level: number;
-      timeOfReading: string;
-      whenTaken: string;
-      readingType?: string;
-    }>;
-    insulin?: Array<{
-      units: number;
-      timeOfAdministration: string;
-      insulinType?: string;
-    }>;
-  }>({
+  const { data: todayStats } = useQuery<DailyStats>({
     queryKey: ['/api/care-stats/today', careRecipientId],
     enabled: !!careRecipientId,
   });

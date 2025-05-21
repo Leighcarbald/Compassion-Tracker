@@ -28,15 +28,18 @@ export interface DailyStats {
     completed: number;
     total: number;
     progress: number;
+    logs?: any[];
   };
   meals: {
     completed: number;
     total: number;
     progress: number;
+    logs?: any[];
   };
   bowelMovement: {
     lastTime: string;
   };
+  bowelMovements?: any[];
   supplies: {
     depends: number;
   };
@@ -44,4 +47,24 @@ export interface DailyStats {
     duration: string;
     quality: string;
   };
+  sleepRecords?: any[];
+  bloodPressure?: Array<{
+    systolic: number;
+    diastolic: number;
+    pulse: number;
+    timeOfReading: string;
+    oxygenLevel?: number;
+  }>;
+  glucose?: Array<{
+    level: number;
+    timeOfReading: string;
+    whenTaken: string;
+    readingType?: string;
+  }>;
+  insulin?: Array<{
+    units: number;
+    timeAdministered: string;
+    insulinType?: string;
+  }>;
+  notes?: any[];
 }
