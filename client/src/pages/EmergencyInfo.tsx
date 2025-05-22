@@ -68,15 +68,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const emergencyInfoId = data?.emergencyInfo?.id;
   const isInfoUnlocked = emergencyInfoId ? isPinUnlocked(emergencyInfoId) : false;
   
-  // Debug logging
-  console.log("Emergency Info Debug:", {
-    emergencyInfoId,
-    isInfoUnlocked,
-    dataStatus: data?.status,
-    needsCreation,
-    isLoading,
-    error: !!error
-  });
+  // Check if we need to create a new emergency info record
+  const needsCreation = data?.status === "not_found" || data?.needsCreation;
   
   // Create emergency info mutation
   const createEmergencyInfoMutation = useMutation({
@@ -221,9 +214,6 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       });
     }
   });
-  
-  // Check if we need to create a new emergency info record
-  const needsCreation = data?.status === "not_found" || data?.needsCreation;
   
   // Focus the PIN input when it becomes visible
   useEffect(() => {
