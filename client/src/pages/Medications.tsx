@@ -603,7 +603,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                             setIsModalOpen(true);
                           }}
                         >
-                          Record Taken <Plus className="ml-1 h-4 w-4" />
+                          Record Taken
                         </Button>
                       )}
                       <Button 
