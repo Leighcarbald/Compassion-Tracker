@@ -271,12 +271,20 @@ export default function AddCareEventModal({
       console.log(`Sending request to ${endpoint} with data:`, postData);
       
       try {
-        const response = await apiRequest("POST", endpoint, postData);
-        const result = await response.json();
-        console.log(`${data.type} created:`, result);
-        return result;
+        // If editing an appointment, use PUT instead of POST
+        if (editingAppointment && data.type === "appointment") {
+          const response = await apiRequest("PUT", `${endpoint}/${editingAppointment.id}`, postData);
+          const result = await response.json();
+          console.log(`${data.type} updated:`, result);
+          return result;
+        } else {
+          const response = await apiRequest("POST", endpoint, postData);
+          const result = await response.json();
+          console.log(`${data.type} created:`, result);
+          return result;
+        }
       } catch (error) {
-        console.error(`Error creating ${data.type}:`, error);
+        console.error(`Error creating/updating ${data.type}:`, error);
         throw error;
       }
     },
