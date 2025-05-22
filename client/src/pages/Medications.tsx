@@ -498,7 +498,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                   setIsModalOpen(true);
                 }}
               >
-                Log Dose <Plus className="ml-1 h-4 w-4" />
+                Record Taken <Plus className="ml-1 h-4 w-4" />
               </Button>
             </div>
           </div>
