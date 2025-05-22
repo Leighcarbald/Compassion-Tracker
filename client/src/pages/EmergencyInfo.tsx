@@ -58,7 +58,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       if (!activeCareRecipientId) return null;
       const response = await apiRequest("GET", `/api/emergency-info?careRecipientId=${activeCareRecipientId}`);
       const data = await response.json();
-      console.log("Emergency info response:", data);
+      console.log("Emergency data status:", data);
       return data;
     },
     enabled: !!activeCareRecipientId
@@ -100,146 +100,145 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
       console.log("Emergency info update response:", data);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
-        title: "Emergency info updated",
-        description: "Emergency information was updated successfully"
+        title: "Emergency information updated",
+        description: "The emergency information has been updated successfully.",
       });
-      
-      // Refetch emergency info
-      queryClient.invalidateQueries({
-        queryKey: ["/api/emergency-info", activeCareRecipientId]
-      });
+      setIsEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
     },
     onError: (error: Error) => {
+      console.error("Error updating emergency info:", error);
       toast({
-        title: "Error updating emergency info",
+        title: "Error updating emergency information",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   });
   
-  // Check if we need to create a new record
-  console.log("Emergency data status:", data);
-  const needsCreation = 
-    !data || 
-    data.status === 'not_found' || 
-    (data.needsCreation === true) ||
-    (data.emergencyInfo && Array.isArray(data.emergencyInfo) && data.emergencyInfo.length === 0);
-  
-  // Emergency info exists if data has a success status
-  const infoExists = data && data.status === 'success';
-  
-  // Handle PIN verification
-  const verifyPinMutation = useMutation({
-    mutationFn: async (params: { id: number, pin: string }) => {
-      const response = await apiRequest(
-        "POST", 
-        `/api/emergency-info/${params.id}/verify-pin`,
-        { 
-          pin: params.pin,
-          careRecipientId: activeCareRecipientId 
-        }
-      );
-      return await response.json();
+  // Set PIN mutation
+  const setPinMutation = useMutation({
+    mutationFn: async ({ id, pin }: { id: number; pin: string }) => {
+      const response = await apiRequest("POST", `/api/emergency-info/${id}/set-pin`, { 
+        pin,
+        careRecipientId: activeCareRecipientId 
+      });
+      return response.json();
     },
-    onSuccess: (responseData) => {
-      if (responseData.success) {
+    onSuccess: (data) => {
+      if (data.success) {
         toast({
-          title: "Access granted",
-          description: "PIN verified successfully"
+          title: "PIN set successfully",
+          description: "Your PIN has been set and will be required for future access.",
         });
-        
-        // Set as unlocked in pin storage
-        if (emergencyInfoId) {
-          unlockPin(emergencyInfoId.toString());
-          setIsUnlocked(true);
-        }
-        
-        setPin("");
-        setIsVerifying(false);
+        setIsSettingPin(false);
+        setNewPin("");
+        setConfirmPin("");
       } else {
         toast({
-          title: "Access denied",
-          description: "Incorrect PIN",
-          variant: "destructive"
+          title: "Error setting PIN",
+          description: data.message || "There was an error setting your PIN",
+          variant: "destructive",
         });
       }
     },
     onError: (error: Error) => {
+      console.error("Error setting PIN:", error);
       toast({
-        title: "Verification failed",
+        title: "Error setting PIN",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   });
   
-  const handleVerifyPin = () => {
-    if (!pin) {
+  // Verify PIN mutation
+  const verifyPinMutation = useMutation({
+    mutationFn: async () => {
+      if (!emergencyInfoId) {
+        throw new Error("No emergency information ID found");
+      }
+      
+      // Log all parameters for debugging
+      console.log("API Request: POST /api/emergency-info/" + emergencyInfoId + "/verify-pin", {
+        pin,
+        careRecipientId: activeCareRecipientId
+      });
+      console.log("Request body:", JSON.stringify({
+        pin,
+        careRecipientId: activeCareRecipientId
+      }));
+      
+      const response = await apiRequest("POST", `/api/emergency-info/${emergencyInfoId}/verify-pin`, {
+        pin,
+        careRecipientId: activeCareRecipientId
+      });
+      
+      console.log("API Response:", response.status + " " + response.statusText);
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log("Unlocking PIN", emergencyInfoId);
+      
+      if (data.verified) {
+        // Temporarily store the PIN as authenticated
+        if (emergencyInfoId) {
+          unlockPin(emergencyInfoId.toString());
+        }
+        
+        setPin("");
+        toast({
+          title: "Access granted",
+          description: "You can now view the emergency information.",
+        });
+      } else {
+        toast({
+          title: "Invalid PIN",
+          description: "The PIN you entered is incorrect.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Failed to verify PIN:", error);
       toast({
-        title: "PIN required",
-        description: "Please enter a PIN to access emergency information",
+        title: "Error verifying PIN",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Check if we need to create a new emergency info record
+  const needsCreation = data?.status === "not_found" || data?.needsCreation;
+  
+  // Focus the PIN input when it becomes visible
+  useEffect(() => {
+    if (!isInfoUnlocked && pinInputRef.current) {
+      pinInputRef.current.focus();
+    }
+  }, [isInfoUnlocked, data]);
+  
+  // Handle verification of PIN
+  const handleVerifyPin = () => {
+    if (!pin || pin.length !== 6 || !/^\d+$/.test(pin)) {
+      toast({
+        title: "Invalid PIN format",
+        description: "PIN must be exactly 6 digits",
         variant: "destructive"
       });
       return;
     }
     
-    if (emergencyInfoId) {
-      verifyPinMutation.mutate({ id: emergencyInfoId, pin });
-    }
+    verifyPinMutation.mutate();
   };
   
-  // Set PIN mutation
-  const setPinMutation = useMutation({
-    mutationFn: async (params: { id: number, pin: string }) => {
-      const response = await apiRequest(
-        "POST", 
-        `/api/emergency-info/${params.id}/set-pin`,
-        { 
-          pin: params.pin,
-          careRecipientId: activeCareRecipientId
-        }
-      );
-      return await response.json();
-    },
-    onSuccess: (responseData) => {
-      if (responseData.success) {
-        toast({
-          title: "PIN set successfully",
-          description: "Your emergency information is now protected"
-        });
-        
-        // Set as unlocked in pin storage and update UI state
-        if (emergencyInfoId) {
-          unlockPin(emergencyInfoId.toString());
-          setIsUnlocked(true);
-        }
-        
-        setNewPin("");
-        setConfirmPin("");
-        setIsSettingPin(false);
-      } else {
-        toast({
-          title: "Error setting PIN",
-          description: responseData.message || "An error occurred",
-          variant: "destructive"
-        });
-      }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error setting PIN",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-  
+  // Handle setting a new PIN
   const handleSetPin = () => {
-    // Validate PIN format - must be 6 digits
-    if (!/^\d{6}$/.test(newPin)) {
+    if (!newPin || newPin.length !== 6 || !/^\d+$/.test(newPin)) {
       toast({
         title: "Invalid PIN format",
         description: "PIN must be exactly 6 digits",
@@ -295,14 +294,14 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     ) : null;
 
   return (
-    <div className="flex flex-col h-full max-w-md mx-auto bg-gray-50">
+    <div className="flex flex-col h-full w-full bg-gray-50">
       <main className="flex-1 pb-16 overflow-y-auto">
         <PageHeader 
           title="Emergency Information" 
           icon={<ShieldAlert className="h-6 w-6 text-red-500" />}
         />
         
-        <div className="p-4">
+        <div className="px-2 py-4">
           {!activeCareRecipientId ? (
             <Card className="mb-4">
               <CardHeader className="pb-2">
@@ -351,17 +350,17 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
               </CardContent>
             </Card>
           ) : data?.status === "success" ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
+            <div className="w-full">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold flex items-center">
                   <ShieldAlert className="h-5 w-5 mr-2 text-green-500" /> 
                   Emergency Information
-                </CardTitle>
-                <CardDescription>
+                </h2>
+                <p className="text-gray-500">
                   Emergency info for {selectedCareRecipient?.name || "this care recipient"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </p>
+              </div>
+              <div>
                 {!isInfoUnlocked ? (
                   <div className="space-y-4">
                     <div className="bg-amber-50 p-3 rounded-md border border-amber-200 flex items-center mb-4">
@@ -496,7 +495,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                       </div>
                     ) : null}
                     
-                    <div className="flex flex-col gap-1 mb-2 text-[10px]">
+                    <div className="flex flex-col gap-1 mb-2">
                       <table className="w-full border-collapse text-lg">
                         <tbody>
                           <tr>
@@ -524,27 +523,24 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                             <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.insuranceProvider || "Not provided"}</td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">Policy/Group:</td>
-                            <td className="py-2 px-3 bg-gray-50">
-                              {data?.emergencyInfo?.insurancePolicyNumber ? `Policy: ${data.emergencyInfo.insurancePolicyNumber}` : ""}
-                              {data?.emergencyInfo?.insuranceGroupNumber ? `, Group: ${data.emergencyInfo.insuranceGroupNumber}` : ""}
-                              {!data?.emergencyInfo?.insurancePolicyNumber && !data?.emergencyInfo?.insuranceGroupNumber && "Not provided"}
-                            </td>
+                            <td className="py-2 px-3 font-medium">Policy #:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.insurancePolicyNumber || "Not provided"}</td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">Primary Contact:</td>
-                            <td className="py-2 px-3 bg-gray-50">
-                              {data?.emergencyInfo?.emergencyContact1Name || "Not provided"}
-                              {data?.emergencyInfo?.emergencyContact1Phone ? ` • ${data.emergencyInfo.emergencyContact1Phone}` : ""}
-                            </td>
+                            <td className="py-2 px-3 font-medium">Group #:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.insuranceGroupNumber || "Not provided"}</td>
                           </tr>
                           <tr>
-                            <td className="py-2 px-3 font-medium">DNR/Directives:</td>
-                            <td className="py-2 px-3 bg-gray-50">
-                              {data?.emergencyInfo?.dnrOrder ? "DNR: Yes" : "DNR: No"}
-                              {" • "}
-                              {data?.emergencyInfo?.advanceDirectives ? "Advance Directives: Yes" : "Advance Directives: No"}
-                            </td>
+                            <td className="py-2 px-3 font-medium">Insurance Phone:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.insurancePhone || "Not provided"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">DNR Order:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.dnrOrder ? "Yes" : "No"}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 px-3 font-medium">Advance Directives:</td>
+                            <td className="py-2 px-3 bg-gray-50">{data?.emergencyInfo?.advanceDirectives ? "Yes" : "No"}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -667,165 +663,24 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                       }}
                                     />
                                   </div>
-                                  
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="flex items-center">
-                                      <input
-                                        type="checkbox"
-                                        id="dnrOrder"
-                                        defaultChecked={data?.emergencyInfo?.dnrOrder || false}
-                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                                        onChange={(e) => {
-                                          setFormData(prev => ({
-                                            ...prev,
-                                            dnrOrder: e.target.checked
-                                          }));
-                                        }}
-                                      />
-                                      <label htmlFor="dnrOrder" className="ml-2 block text-base font-medium">
-                                        DNR Order
-                                      </label>
-                                    </div>
-                                    
-                                    <div className="flex items-center">
-                                      <input
-                                        type="checkbox"
-                                        id="advanceDirectives"
-                                        defaultChecked={data?.emergencyInfo?.advanceDirectives || false}
-                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                                        onChange={(e) => {
-                                          setFormData(prev => ({
-                                            ...prev,
-                                            advanceDirectives: e.target.checked
-                                          }));
-                                        }}
-                                      />
-                                      <label htmlFor="advanceDirectives" className="ml-2 block text-base font-medium">
-                                        Advance Directives
-                                      </label>
-                                    </div>
-                                  </div>
                                 </div>
                               </div>
                               
-                              {/* Insurance Section */}
-                              <div className="border-b border-gray-200 pb-3">
-                                <h4 className="text-lg font-semibold mb-3">Insurance Information</h4>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-base font-medium mb-1">Insurance Provider</label>
-                                    <Input
-                                      placeholder="Enter insurance provider"
-                                      defaultValue={data?.emergencyInfo?.insuranceProvider || ""}
-                                      className="text-base"
-                                      onChange={(e) => {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          insuranceProvider: e.target.value
-                                        }));
-                                      }}
-                                    />
-                                  </div>
-                                  
-                                  <div>
-                                    <label className="block text-base font-medium mb-1">Policy/Group Number</label>
-                                    <Input
-                                      placeholder="Enter policy or group number"
-                                      defaultValue={data?.emergencyInfo?.insurancePolicyNumber || ""}
-                                      className="text-base"
-                                      onChange={(e) => {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          insurancePolicyNumber: e.target.value
-                                        }));
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Emergency Contact Section */}
-                              <div>
-                                <h4 className="text-lg font-semibold mb-3">Emergency Contact</h4>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-base font-medium mb-1">Contact Name</label>
-                                    <Input
-                                      placeholder="Enter contact name"
-                                      defaultValue={data?.emergencyInfo?.emergencyContact1Name || ""}
-                                      className="text-base"
-                                      onChange={(e) => {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          emergencyContact1Name: e.target.value
-                                        }));
-                                      }}
-                                    />
-                                  </div>
-                                  
-                                  <div>
-                                    <label className="block text-base font-medium mb-1">Contact Phone</label>
-                                    <Input
-                                      placeholder="Enter contact phone"
-                                      defaultValue={data?.emergencyInfo?.emergencyContact1Phone || ""}
-                                      className="text-base"
-                                      onChange={(e) => {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          emergencyContact1Phone: e.target.value
-                                        }));
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex justify-end gap-3 mt-4 pt-2 border-t border-gray-200">
+                              <div className="mt-4 flex justify-end gap-2">
                                 <Button
                                   variant="outline"
-                                  size="sm"
-                                  className="text-base px-4"
                                   onClick={() => setIsEditing(false)}
                                 >
                                   Cancel
                                 </Button>
-                                
                                 <Button
                                   variant="default"
-                                  size="sm"
-                                  className="text-base px-4"
                                   onClick={() => {
-                                    // Only update with changed fields
-                                    if (data?.emergencyInfo?.id) {
-                                      const updatedInfo = {
-                                        id: data.emergencyInfo.id,
-                                        careRecipientId: activeCareRecipientId,
-                                        ...(formData.allergies !== undefined && { allergies: formData.allergies }),
-                                        ...(formData.medicationAllergies !== undefined && { medicationAllergies: formData.medicationAllergies }),
-                                        ...(formData.bloodType !== undefined && { bloodType: formData.bloodType }),
-                                        ...(formData.dateOfBirth !== undefined && { dateOfBirth: formData.dateOfBirth }),
-                                        ...(formData.socialSecurityNumber !== undefined && { socialSecurityNumber: formData.socialSecurityNumber }),
-                                        ...(formData.dnrOrder !== undefined && { dnrOrder: formData.dnrOrder }),
-                                        ...(formData.advanceDirectives !== undefined && { advanceDirectives: formData.advanceDirectives }),
-                                        ...(formData.insuranceProvider !== undefined && { insuranceProvider: formData.insuranceProvider }),
-                                        ...(formData.insurancePolicyNumber !== undefined && { insurancePolicyNumber: formData.insurancePolicyNumber }),
-                                        ...(formData.emergencyContact1Name !== undefined && { emergencyContact1Name: formData.emergencyContact1Name }),
-                                        ...(formData.emergencyContact1Phone !== undefined && { emergencyContact1Phone: formData.emergencyContact1Phone })
-                                      };
-                                      
-                                      updateEmergencyInfoMutation.mutate(updatedInfo);
-                                      
-                                      toast({
-                                        title: "Saving changes",
-                                        description: "Emergency information is being updated"
+                                    if (emergencyInfoId) {
+                                      updateEmergencyInfoMutation.mutate({
+                                        ...formData,
+                                        id: emergencyInfoId
                                       });
-                                      
-                                      // Reset form and close edit panel
-                                      setTimeout(() => {
-                                        setIsEditing(false);
-                                      }, 500);
                                     }
                                   }}
                                   disabled={updateEmergencyInfoMutation.isPending}
@@ -840,13 +695,13 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ) : null}
         </div>
       </main>
       
-      <BottomNavigation activeTab={activeTab} onChangeTab={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
