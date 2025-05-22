@@ -29,7 +29,9 @@ import {
   Moon,
   FileText,
   AlignLeft,
-  AlertCircle
+  AlertCircle,
+  Edit,
+  Trash2
 } from "lucide-react";
 
 interface UpcomingEvent {
@@ -127,6 +129,7 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("meds"); // Tab for the health data sections
   const [modalEventType, setModalEventType] = useState<string>("appointment");
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   
   // Use global care recipient state
   const { 
@@ -218,9 +221,33 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
       queryClient.invalidateQueries({ 
         queryKey: ['/api/care-stats/date', activeCareRecipient, formattedDate] 
       });
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/appointments/month', activeCareRecipient] 
+      });
     },
     onError: (error: Error) => {
       console.error('Error deleting appointment:', error);
+    }
+  });
+
+  // Update appointment mutation
+  const { mutate: updateAppointment } = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      await apiRequest('PUT', `/api/appointments/${id}`, data);
+    },
+    onSuccess: () => {
+      refetchAppointments();
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/care-stats/date', activeCareRecipient, formattedDate] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/appointments/month', activeCareRecipient] 
+      });
+      setEditingAppointment(null);
+      setIsModalOpen(false);
+    },
+    onError: (error: Error) => {
+      console.error('Error updating appointment:', error);
     }
   });
 
@@ -348,7 +375,92 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
               </Card>
             ) : (
               <div className="space-y-4">
-
+                {/* Appointments for Selected Date */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="text-md font-medium mb-3 text-primary flex items-center">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      Appointments
+                    </h3>
+                    {isLoadingAppointments ? (
+                      <div className="text-center py-4">
+                        <div className="animate-pulse h-4 bg-gray-200 rounded mb-2 w-3/4 mx-auto"></div>
+                        <div className="animate-pulse h-4 bg-gray-200 rounded mb-2 w-1/2 mx-auto"></div>
+                      </div>
+                    ) : !appointments || appointments.length === 0 ? (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500">No appointments scheduled</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="mt-3" 
+                          onClick={() => {
+                            setModalEventType("appointment");
+                            handleAddEvent();
+                          }}
+                        >
+                          <CalendarIcon className="h-4 w-4 mr-2" />
+                          Add Appointment
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {appointments.map((appointment) => (
+                          <Card key={appointment.id} className="overflow-hidden border-l-4 border-l-blue-500">
+                            <CardContent className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <CalendarIcon className="h-5 w-5 text-blue-500" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">{appointment.title}</p>
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{formatTime(appointment.date + 'T' + appointment.time)}</span>
+                                      {appointment.location && (
+                                        <>
+                                          <MapPin className="h-3 w-3 ml-2" />
+                                          <span>{appointment.location}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                    {appointment.notes && (
+                                      <p className="text-sm text-gray-600 mt-1">{appointment.notes}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      // TODO: Add edit functionality
+                                      console.log('Edit appointment:', appointment.id);
+                                    }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (confirm('Are you sure you want to delete this appointment?')) {
+                                        deleteAppointment(appointment.id);
+                                      }
+                                    }}
+                                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Daily Health Details */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
