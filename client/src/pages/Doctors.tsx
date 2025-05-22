@@ -137,7 +137,7 @@ export default function Doctors({ activeTab, setActiveTab }: DoctorsProps) {
     
     try {
       await apiRequest(
-        "PUT", 
+        "PATCH", 
         `/api/doctors/${editingDoctorId}`, 
         {
           ...formData,
