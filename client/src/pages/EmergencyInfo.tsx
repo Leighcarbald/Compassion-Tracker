@@ -66,7 +66,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   
   // Check if this emergency info is unlocked with PIN
   const emergencyInfoId = data?.emergencyInfo?.id;
-  const isInfoUnlocked = emergencyInfoId ? isPinUnlocked(emergencyInfoId.toString()) : false;
+  const isInfoUnlocked = emergencyInfoId ? isPinUnlocked(emergencyInfoId) : false;
   
   // Create emergency info mutation
   const createEmergencyInfoMutation = useMutation({
