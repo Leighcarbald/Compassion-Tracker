@@ -68,6 +68,16 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
   const emergencyInfoId = data?.emergencyInfo?.id;
   const isInfoUnlocked = emergencyInfoId ? isPinUnlocked(emergencyInfoId) : false;
   
+  // Debug logging
+  console.log("Emergency Info Debug:", {
+    emergencyInfoId,
+    isInfoUnlocked,
+    dataStatus: data?.status,
+    needsCreation,
+    isLoading,
+    error: !!error
+  });
+  
   // Create emergency info mutation
   const createEmergencyInfoMutation = useMutation({
     mutationFn: async (formData: any) => {
