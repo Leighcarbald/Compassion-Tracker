@@ -106,12 +106,7 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
       );
       
       // Reset form and close dialog
-      setFormData({
-        name: "",
-        address: "",
-        phoneNumber: "",
-        notes: ""
-      });
+      resetForm();
       setIsAddPharmacyOpen(false);
       
       // Invalidate pharmacies query to refresh the list
@@ -127,6 +122,39 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
       toast({
         title: "Failed to add pharmacy",
         description: "There was an error adding the pharmacy. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Handle edit pharmacy
+  const handleEditPharmacy = async () => {
+    if (!editingPharmacyId) return;
+    
+    try {
+      await apiRequest(
+        "PATCH", 
+        `/api/pharmacies/${editingPharmacyId}`, 
+        formData
+      );
+      
+      // Reset form and close dialog
+      resetForm();
+      setIsEditPharmacyOpen(false);
+      
+      // Invalidate pharmacies query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/pharmacies", activeCareRecipientId] });
+      
+      toast({
+        title: "Pharmacy updated successfully",
+        description: `${formData.name} has been updated.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error updating pharmacy:", error);
+      toast({
+        title: "Failed to update pharmacy",
+        description: "There was an error updating the pharmacy. Please try again.",
         variant: "destructive",
       });
     }
@@ -236,9 +264,21 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
           {pharmacies.map((pharmacy: Pharmacy) => (
             <Card key={pharmacy.id} className="overflow-hidden">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5 text-primary" />
-                  {pharmacy.name}
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-5 w-5 text-primary" />
+                    {pharmacy.name}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openEditPharmacyDialog(pharmacy.id);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                 </CardTitle>
                 <CardDescription>
                   {pharmacy.address}
@@ -298,6 +338,90 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
         </div>
       )}
       
+      {/* Edit Pharmacy Dialog */}
+      <Dialog open={isEditPharmacyOpen} onOpenChange={setIsEditPharmacyOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Pharmacy</DialogTitle>
+            <DialogDescription>
+              Make changes to the pharmacy details below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-name" className="text-right">
+                Name *
+              </Label>
+              <Input
+                id="edit-name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-address" className="text-right">
+                Address *
+              </Label>
+              <Input
+                id="edit-address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-phoneNumber" className="text-right">
+                Phone Number *
+              </Label>
+              <Input
+                id="edit-phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-notes" className="text-right">
+                Notes
+              </Label>
+              <Textarea
+                id="edit-notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                resetForm();
+                setIsEditPharmacyOpen(false);
+              }}
+              className="mr-2"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              onClick={handleEditPharmacy} 
+              disabled={!formData.name || !formData.address || !formData.phoneNumber}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Bottom Navigation */}
       <BottomNavigation 
         activeTab={activeTab} 
