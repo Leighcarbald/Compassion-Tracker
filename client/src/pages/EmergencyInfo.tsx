@@ -295,8 +295,8 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
     ) : null;
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
-      <main className="flex-1 pb-16">
+    <div className="flex flex-col h-full max-w-md mx-auto bg-gray-50">
+      <main className="flex-1 pb-16 overflow-y-auto">
         <PageHeader 
           title="Emergency Information" 
           icon={<ShieldAlert className="h-6 w-6 text-red-500" />}
