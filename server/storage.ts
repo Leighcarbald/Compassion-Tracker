@@ -1122,6 +1122,23 @@ export const storage = {
     return newAppointment;
   },
   
+  async updateAppointment(id: number, appointmentData: any) {
+    const [updatedAppointment] = await db.update(appointments)
+      .set({
+        title: appointmentData.title,
+        date: appointmentData.date,
+        time: appointmentData.time,
+        location: appointmentData.location,
+        notes: appointmentData.notes,
+        reminderEnabled: appointmentData.reminderEnabled,
+        updatedAt: new Date()
+      })
+      .where(eq(appointments.id, id))
+      .returning();
+    
+    return updatedAppointment;
+  },
+
   async deleteAppointment(id: number) {
     await db.delete(appointments).where(eq(appointments.id, id));
     return { success: true };
