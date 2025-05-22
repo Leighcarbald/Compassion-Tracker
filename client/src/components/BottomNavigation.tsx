@@ -28,16 +28,16 @@ import {
 
 interface BottomNavigationProps {
   activeTab: TabType;
-  onChangeTab: (tab: TabType) => void;
+  setActiveTab: (tab: TabType) => void;
   onAddEvent?: () => void; // Making this optional since we no longer have the + button
 }
 
-export default function BottomNavigation({ activeTab, onChangeTab, onAddEvent }: BottomNavigationProps) {
+export default function BottomNavigation({ activeTab, setActiveTab, onAddEvent }: BottomNavigationProps) {
   const [location, setLocation] = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleTabChange = (tab: TabType, path: string) => {
-    onChangeTab(tab);
+    setActiveTab(tab);
     setLocation(path);
     setIsMenuOpen(false);
   };
