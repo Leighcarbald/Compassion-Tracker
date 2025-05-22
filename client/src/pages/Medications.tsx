@@ -591,13 +591,14 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                   {/* Action buttons */}
                   <div className="flex justify-between mt-2">
                     <div className="flex gap-2 flex-wrap">
-                      {/* Log Dose Button - Available for all medications */}
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-orange-500 px-2 py-1 rounded-full border border-orange-500"
-                        onClick={() => {
-                          setSelectedMedication(med);
+                      {/* Record Taken Button - Only shown for "As Needed" medications */}
+                      {med.schedules && med.schedules.some((schedule: any) => schedule.asNeeded) && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-orange-500 px-2 py-1 rounded-full border border-orange-500"
+                          onClick={() => {
+                            setSelectedMedication(med);
                           setLogDoseMode(true);
                           setIsModalOpen(true);
                         }}
