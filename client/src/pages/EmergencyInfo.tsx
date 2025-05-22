@@ -663,6 +663,109 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                                       }}
                                     />
                                   </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex items-center">
+                                      <label className="flex items-center text-base font-medium cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          className="h-4 w-4 mr-2"
+                                          defaultChecked={data?.emergencyInfo?.dnrOrder || false}
+                                          onChange={(e) => {
+                                            setFormData(prev => ({
+                                              ...prev,
+                                              dnrOrder: e.target.checked
+                                            }));
+                                          }}
+                                        />
+                                        DNR Order
+                                      </label>
+                                    </div>
+                                    
+                                    <div className="flex items-center">
+                                      <label className="flex items-center text-base font-medium cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          className="h-4 w-4 mr-2"
+                                          defaultChecked={data?.emergencyInfo?.advanceDirectives || false}
+                                          onChange={(e) => {
+                                            setFormData(prev => ({
+                                              ...prev,
+                                              advanceDirectives: e.target.checked
+                                            }));
+                                          }}
+                                        />
+                                        Advance Directives
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Insurance Information Section */}
+                              <div className="border-b border-gray-200 pb-3">
+                                <h4 className="text-lg font-semibold mb-3">Insurance Information</h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-base font-medium mb-1">Insurance Provider</label>
+                                    <Input
+                                      placeholder="Enter insurance provider"
+                                      defaultValue={data?.emergencyInfo?.insuranceProvider || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          insuranceProvider: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-base font-medium mb-1">Policy Number</label>
+                                    <Input
+                                      placeholder="Enter policy number"
+                                      defaultValue={data?.emergencyInfo?.insurancePolicyNumber || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          insurancePolicyNumber: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-base font-medium mb-1">Group Number</label>
+                                    <Input
+                                      placeholder="Enter group number"
+                                      defaultValue={data?.emergencyInfo?.insuranceGroupNumber || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          insuranceGroupNumber: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-base font-medium mb-1">Insurance Phone</label>
+                                    <Input
+                                      placeholder="Enter insurance phone number"
+                                      defaultValue={data?.emergencyInfo?.insurancePhone || ""}
+                                      className="text-base"
+                                      onChange={(e) => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          insurancePhone: e.target.value
+                                        }));
+                                      }}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                               
