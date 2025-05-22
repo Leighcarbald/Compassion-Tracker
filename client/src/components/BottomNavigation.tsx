@@ -134,7 +134,7 @@ export default function BottomNavigation({ activeTab }: BottomNavigationProps) {
           </DropdownMenuItem>
           
           {/* Last group: Emergency */}
-          <DropdownMenuItem onClick={() => handleTabChange("emergency", "/emergency")} className="cursor-pointer">
+          <DropdownMenuItem onClick={() => handleTabChange("emergency", "/emergency-info")} className="cursor-pointer">
             <ShieldAlert className="h-4 w-4 mr-2 text-red-500" />
             <span>Emergency Info</span>
           </DropdownMenuItem>
