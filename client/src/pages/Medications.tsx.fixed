@@ -1,435 +1,419 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { useCareRecipient } from "@/hooks/use-care-recipient";
-import { Link, useLocation } from "wouter";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { TabType } from "@/lib/types";
-import { Pill, Plus, Syringe, Capsule, Heart, Filter, Clock, Utensils, Home, Settings, Edit, Trash2, Check, Eye, Cross, ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import BottomNavigation from "@/components/BottomNavigation";
-import Header from "@/components/Header";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import AddMedicationModal from "@/components/AddMedicationModal";
 import AddCareEventModal from "@/components/AddCareEventModal";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import MedicationInventoryModal from "@/components/MedicationInventoryModal";
+import AddMedicationModal from "@/components/AddMedicationModal";
+import EditMedicationSchedulesModal from "@/components/EditMedicationSchedulesModal";
+import EditMedicationModal from "@/components/EditMedicationModal";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { format } from "date-fns";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { MedicationLog, CareRecipient, Medication, MedicationSchedule } from "@shared/schema";
+import { TabType } from "@/lib/types";
+import { formatTime, getTimeAgo } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useCareRecipient } from "@/hooks/use-care-recipient";
+import { 
+  Pill, 
+  Check, 
+  PillBottle, 
+  Tablets, 
+  Package2,
+  Plus,
+  Edit,
+  Save,
+  X,
+  Trash2
+} from "lucide-react";
 
-// Define types for the component
-interface MedInteraction {
-  severity: string;
-  description: string;
-  medications: string[];
-}
-
-interface Medication {
-  id: number;
-  name: string;
-  dosage: string;
-  instructions?: string;
-  icon?: string;
-  iconColor?: string;
+// Define a type that includes the schedules array
+interface MedicationWithSchedules extends Medication {
   schedules?: MedicationSchedule[];
-  currentQuantity?: number;
-  reorderThreshold?: number;
-  refillsRemaining?: number;
 }
-
-interface MedicationSchedule {
-  id: number;
-  medicationId: number;
-  time?: string;
-  frequency?: string;
-  asNeeded: boolean;
-  days?: string[];
-}
-
-interface MedicationLog {
-  id: number;
-  medicationId: number;
-  scheduleId?: number;
-  timestamp: string;
-  dose: string;
-}
-
-type MedicationFilter = "all" | "today" | "need-reorder" | "as-needed";
 
 interface MedicationsProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
 }
 
-// Helper function to render icons for medications
-function renderMedicationIcon(icon: string, color: string) {
-  switch (icon) {
-    case 'pill':
-      return <Pill className={`h-5 w-5 text-${color}-500`} />;
-    case 'capsule':
-      return <Capsule className={`h-5 w-5 text-${color}-500`} />;
-    case 'syringe':
-      return <Syringe className={`h-5 w-5 text-${color}-500`} />;
-    case 'heart':
-      return <Heart className={`h-5 w-5 text-${color}-500`} />;
-    default:
-      return <Pill className={`h-5 w-5 text-${color}-500`} />;
-  }
-}
-
 export default function Medications({ activeTab, setActiveTab }: MedicationsProps) {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const { activeCareRecipientId, setActiveCareRecipientId } = useCareRecipient();
-  const [filter, setFilter] = useState<MedicationFilter>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [logDoseMode, setLogDoseMode] = useState(false);
-  const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
-  const [selectedQuantity, setSelectedQuantity] = useState("");
-  const [selectedMedicationId, setSelectedMedicationId] = useState<number | null>(null);
-  const [showInteractions, setShowInteractions] = useState(false);
-  const [newLogData, setNewLogData] = useState({
-    medicationId: 0,
-    dose: "",
-    notes: "",
-    timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm")
-  });
+  const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
+  const [selectedMedication, setSelectedMedication] = useState<MedicationWithSchedules | null>(null);
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [isSchedulesModalOpen, setIsSchedulesModalOpen] = useState(false);
+  const [isEditMedicationModalOpen, setIsEditMedicationModalOpen] = useState(false);
+  // Track taken medication doses by schedule
+  const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
+  // State for delete confirmation dialogs
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleteMedicationConfirmOpen, setIsDeleteMedicationConfirmOpen] = useState(false);
+  const [logToDelete, setLogToDelete] = useState<MedicationLog | null>(null);
+  const [medicationToDelete, setMedicationToDelete] = useState<MedicationWithSchedules | null>(null);
+  const { toast } = useToast();
   
-  // Fetch medications
-  const { data: medications, isLoading: isLoadingMedications } = useQuery<Medication[]>({
-    queryKey: ['/api/medications', activeCareRecipientId, filter],
-    queryFn: async () => {
-      if (!activeCareRecipientId) return [];
-      
-      const res = await fetch(`/api/medications?careRecipientId=${activeCareRecipientId}&filter=${filter}`);
-      if (!res.ok) throw new Error('Failed to fetch medications');
-      return res.json();
-    },
+  // Use the global care recipient context
+  const { activeCareRecipientId, careRecipients, isLoading: isLoadingRecipients } = useCareRecipient();
+
+  // Fetch medications with their schedules
+  const { data: medications, isLoading: isLoadingMedications } = useQuery<MedicationWithSchedules[]>({
+    queryKey: ['/api/medications', activeCareRecipientId, 'all'],
     enabled: !!activeCareRecipientId,
   });
-  
-  // Fetch medication logs
-  const { data: medicationLogs, isLoading: isLoadingLogs } = useQuery<MedicationLog[]>({
+
+  // Fetch medication logs (history)
+  const { data: medicationLogs } = useQuery<MedicationLog[]>({
     queryKey: ['/api/medication-logs', activeCareRecipientId],
-    queryFn: async () => {
-      if (!activeCareRecipientId) return [];
-      
-      const res = await fetch(`/api/medication-logs?careRecipientId=${activeCareRecipientId}`);
-      if (!res.ok) throw new Error('Failed to fetch medication logs');
-      return res.json();
-    },
     enabled: !!activeCareRecipientId,
   });
   
-  // Fetch medication interactions
-  const { data: interactions } = useQuery<{ success: boolean; interactions: MedInteraction[] }>({
-    queryKey: ['/api/medications/interactions', medications],
-    queryFn: async () => {
-      if (!medications || medications.length < 2) {
-        return { success: true, interactions: [] };
-      }
+  // Update the taken medication doses map whenever logs change
+  React.useEffect(() => {
+    if (medicationLogs && medicationLogs.length > 0) {
+      // Check which medication doses were taken today
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      const medicationNames = medications.map(med => med.name);
+      // Create a map of medication+schedule combinations that have been taken today
+      const takenDosesMap = new Map<string, boolean>();
       
-      console.log("API Request: POST /api/medications/interactions", { medicationNames });
-      console.log("Request body:", JSON.stringify({ medicationNames }));
+      medicationLogs
+        .filter(log => new Date(log.takenAt) >= startOfToday)
+        .forEach(log => {
+          // If the log has a scheduleId, use that to create a unique key
+          if (log.scheduleId) {
+            takenDosesMap.set(`${log.medicationId}-${log.scheduleId}`, true);
+          } else {
+            // For logs without scheduleId (taken manually), only mark the medication as taken with key '0'
+            // We no longer auto-mark all scheduled times as taken when a manual log exists
+            takenDosesMap.set(`${log.medicationId}-0`, true);
+          }
+        });
       
-      const res = await fetch('/api/medications/interactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ medicationNames }),
-      });
-      
-      console.log("API Response:", res.status + " " + res.statusText);
-      
-      if (!res.ok) {
-        throw new Error('Failed to check interactions');
-      }
-      
-      return res.json();
-    },
-    enabled: !!medications && medications.length >= 2,
-  });
-  
-  // Medication Inventory Update Mutation
-  const updateInventoryMutation = useMutation({
-    mutationFn: async (data: { medicationId: number; quantity: number }) => {
-      const response = await apiRequest("PATCH", `/api/medications/${data.medicationId}/inventory`, {
-        currentQuantity: data.quantity
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Inventory updated",
-        description: "The medication inventory has been updated successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/medications', activeCareRecipientId] });
-      setSelectedMedicationId(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error updating inventory",
-        description: error.message,
-        variant: "destructive",
-      });
+      setTakenMedicationDoses(takenDosesMap);
     }
-  });
-  
-  // Create Medication Log Mutation
-  const createLogMutation = useMutation({
-    mutationFn: async (logData: any) => {
-      const response = await apiRequest("POST", "/api/medication-logs", logData);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Dose logged",
-        description: "The medication dose has been logged successfully.",
-      });
-      setIsModalOpen(false);
-      setLogDoseMode(false);
-      setNewLogData({
-        medicationId: 0,
-        dose: "",
-        notes: "",
-        timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm")
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs', activeCareRecipientId] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error logging dose",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Delete Medication Mutation
-  const deleteMedicationMutation = useMutation({
-    mutationFn: async (medicationId: number) => {
-      const response = await apiRequest("DELETE", `/api/medications/${medicationId}`);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Medication deleted",
-        description: "The medication has been deleted successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/medications', activeCareRecipientId] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error deleting medication",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Function to check if a dose is taken for a schedule
-  const isDoseTaken = (medicationId: number, scheduleId: number) => {
-    if (!medicationLogs) return false;
-    
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
-    
-    return medicationLogs.some(log => 
-      log.medicationId === medicationId && 
-      log.scheduleId === scheduleId &&
-      log.timestamp.startsWith(todayStr)
-    );
+  }, [medicationLogs, medications]);
+
+  // Handle modal open/close
+  const handleAddEvent = () => {
+    setIsModalOpen(true);
   };
-  
-  // Handle marking a dose as taken
-  const handleMarkDoseAsTaken = (medicationId: number, scheduleId: number) => {
-    // If already taken, do nothing
-    if (isDoseTaken(medicationId, scheduleId)) {
-      return;
-    }
-    
-    // Find the medication and schedule
-    const medication = medications?.find(m => m.id === medicationId);
-    const schedule = medication?.schedules?.find(s => s.id === scheduleId);
-    
-    if (!medication || !schedule) {
-      toast({
-        title: "Error",
-        description: "Could not find the medication or schedule",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Create log entry
-    const logData = {
-      medicationId,
-      scheduleId,
-      dose: medication.dosage,
-      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-      careRecipientId: activeCareRecipientId
-    };
-    
-    createLogMutation.mutate(logData);
-  };
-  
+
+  // We're now using global context for care recipient
+  const { setActiveCareRecipientId } = useCareRecipient();
+
   // Handle updating inventory
   const handleInventoryUpdate = (medicationId: number) => {
-    setSelectedMedicationId(medicationId);
-    const medication = medications?.find(m => m.id === medicationId);
+    const medication = medications?.find(med => med.id === medicationId) || null;
     if (medication) {
-      setSelectedQuantity(medication.currentQuantity?.toString() || "0");
+      setSelectedMedication(medication);
+      setIsInventoryModalOpen(true);
     }
   };
-  
-  // Handle saving inventory update
-  const handleSaveInventory = () => {
-    if (selectedMedicationId && selectedQuantity) {
-      updateInventoryMutation.mutate({
-        medicationId: selectedMedicationId,
-        quantity: parseInt(selectedQuantity)
+
+  // Handle marking a medication dose as taken
+  const markAsTakenMutation = useMutation({
+    mutationFn: async ({ medicationId, scheduleId }: { medicationId: number, scheduleId?: number }) => {
+      if (!activeCareRecipientId) return null;
+      
+      const response = await apiRequest(
+        "POST", 
+        `/api/medication-logs`,
+        {
+          medicationId,
+          scheduleId,
+          careRecipientId: parseInt(activeCareRecipientId),
+          taken: true,
+          takenAt: new Date(),
+          notes: scheduleId ? `Taken at scheduled time` : "Taken manually"
+        }
+      );
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Medication Taken",
+        description: "Successfully logged the medication as taken"
+      });
+      
+      // We no longer need to update the local state here because we've already 
+      // updated it in the handleMarkDoseAsTaken function before making the API call.
+      // This prevents the issue where checked boxes disappear after navigation.
+      
+      // Just refresh the data without modifying local state
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to log medication: ${error.message}`,
+        variant: "destructive"
       });
     }
-  };
-  
-  // Handle edit medication
-  const handleEditMedication = (medication: Medication) => {
-    // Navigate to edit medication page
-    setLocation(`/edit-medication/${medication.id}`);
-  };
-  
-  // Handle edit schedules
-  const handleEditSchedules = (medicationId: number) => {
-    // Navigate to edit schedules page
-    setLocation(`/medication-schedules/${medicationId}`);
-  };
-  
-  // Handle delete medication
-  const handleDeleteMedication = (medication: Medication) => {
-    if (window.confirm(`Are you sure you want to delete ${medication.name}?`)) {
-      deleteMedicationMutation.mutate(medication.id);
-    }
-  };
-  
-  // Format time from ISO string
-  const formatTime = (timeString: string) => {
-    try {
-      const date = new Date(timeString);
-      return format(date, 'h:mm a');
-    } catch (error) {
-      return timeString;
-    }
-  };
-  
-  // Format date from ISO string
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return format(date, 'MMM d, yyyy');
-    } catch (error) {
-      return dateString;
-    }
-  };
-  
-  return (
-    <div className="flex flex-col h-full">
-      <Header
-        isLoading={false}
-      />
+  });
 
+  // Add unmark medication mutation
+  const unmarkAsTakenMutation = useMutation({
+    mutationFn: async ({ medicationId, scheduleId }: { medicationId: number, scheduleId?: number }) => {
+      if (!activeCareRecipientId) return null;
+      
+      // Find today's log for this medication+schedule to delete
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      console.log('Trying to unmark medication:', { medicationId, scheduleId });
+      console.log('Available logs:', medicationLogs);
+      
+      // The previous method was looking for exact scheduleId match, but for logs where 
+      // scheduleId is null this doesn't work correctly. Let's improve the logic:
+      // Since we no longer mark all schedules as taken when a manual dose is logged,
+      // we need to look specifically for a log with the exact matching scheduleId
+      const todayLog = medicationLogs?.find(log => {
+        // Match by medication ID
+        if (log.medicationId !== medicationId) return false;
+        
+        // Exact match for schedule ID (if we're looking for scheduleId=5, we want a log with scheduleId=5)
+        if (scheduleId) {
+          if (log.scheduleId !== scheduleId) return false;
+        } else {
+          // If we're looking for scheduleId=0 (manual log), match logs with null scheduleId
+          if (log.scheduleId !== null) return false;
+        }
+        
+        // Match by date (only today's logs)
+        const logDate = new Date(log.takenAt);
+        const isFromToday = logDate >= startOfToday;
+        return isFromToday;
+      });
+      
+      console.log('Found log to delete:', todayLog);
+      
+      if (!todayLog) {
+        console.warn("No log found for today to delete");
+        // Instead of throwing an error, we'll manually remove the dose from our local state
+        // This ensures the UI updates even if we can't find the log
+        return { success: true, message: 'Medication unmarked (no log found)' };
+      }
+      
+      // Delete the log
+      const response = await apiRequest(
+        "DELETE",
+        `/api/medication-logs/${todayLog.id}`
+      );
+      
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: "Medication Unmarked",
+        description: "Successfully unmarked the medication dose"
+      });
+      
+      // We no longer need to update the local state here because we've already 
+      // updated it in the handleMarkDoseAsTaken function before making the API call.
+      // This prevents the issue where unchecked boxes re-appear after navigation.
+      
+      // Just refresh the data without modifying local state
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to unmark medication: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Check if a specific medication dose has been taken
+  const isDoseTaken = (medicationId: number, scheduleId: number | null) => {
+    const key = `${medicationId}-${scheduleId || 0}`;
+    return takenMedicationDoses.has(key);
+  };
+
+  // Handle marking a medication dose as taken
+  const handleMarkDoseAsTaken = (medicationId: number, scheduleId?: number) => {
+    const key = `${medicationId}-${scheduleId || 0}`;
+    
+    // If the dose is already taken, unmark it
+    if (takenMedicationDoses.has(key)) {
+      // Update local state immediately to reflect the change
+      const updatedMap = new Map(takenMedicationDoses);
+      updatedMap.delete(key);
+      setTakenMedicationDoses(updatedMap);
+      
+      // Then make the API call
+      unmarkAsTakenMutation.mutate({ medicationId, scheduleId });
+    } else {
+      // Otherwise, mark it as taken - update local state first
+      const updatedMap = new Map(takenMedicationDoses);
+      updatedMap.set(key, true);
+      setTakenMedicationDoses(updatedMap);
+      
+      // Then make the API call
+      markAsTakenMutation.mutate({ medicationId, scheduleId });
+    }
+  };
+
+  // Function to edit a medication via modal
+  const handleEditMedication = (medication: MedicationWithSchedules) => {
+    setSelectedMedication(medication);
+    setIsEditMedicationModalOpen(true);
+  };
+  
+  // Handle editing schedules
+  const handleEditSchedules = (medicationId: number) => {
+    const medication = medications?.find(med => med.id === medicationId) || null;
+    if (medication) {
+      setSelectedMedication(medication);
+      setIsSchedulesModalOpen(true);
+    }
+  };
+  
+  // Handle deleting a medication log
+  const deleteMedicationLogMutation = useMutation({
+    mutationFn: async (logId: number) => {
+      const response = await apiRequest(
+        "DELETE",
+        `/api/medication-logs/${logId}`
+      );
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Log Deleted",
+        description: "Successfully deleted the medication log entry"
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
+      
+      setIsDeleteConfirmOpen(false);
+      setLogToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete log: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle confirmation to delete log
+  const handleDeleteLog = (log: MedicationLog) => {
+    setLogToDelete(log);
+    setIsDeleteConfirmOpen(true);
+  };
+  
+  // Handle confirmed deletion
+  const confirmDeleteLog = () => {
+    if (logToDelete) {
+      deleteMedicationLogMutation.mutate(logToDelete.id);
+    }
+  };
+  
+  // Delete medication mutation
+  const deleteMedicationMutation = useMutation({
+    mutationFn: async (medicationId: number) => {
+      const response = await apiRequest(
+        "DELETE",
+        `/api/medications/${medicationId}`
+      );
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Medication Deleted",
+        description: "Successfully deleted the medication"
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/medications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/medication-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/care-stats/today'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/upcoming-events'] });
+      
+      setIsDeleteMedicationConfirmOpen(false);
+      setMedicationToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete medication: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle delete medication click
+  const handleDeleteMedication = (medication: MedicationWithSchedules) => {
+    setMedicationToDelete(medication);
+    setIsDeleteMedicationConfirmOpen(true);
+  };
+  
+  // Handle confirm delete medication
+  const confirmDeleteMedication = () => {
+    if (medicationToDelete) {
+      deleteMedicationMutation.mutate(medicationToDelete.id);
+    }
+  };
+
+  // Render medication icon based on the type
+  const renderMedicationIcon = (type: string, color: string) => {
+    const iconProps = { className: `text-${color}-500`, size: 20 };
+    
+    switch (type) {
+      case "pills":
+        return <PillBottle {...iconProps} />;
+      case "tablets":
+        return <Tablets {...iconProps} />;
+      case "capsules":
+        return <Package2 {...iconProps} />;
+      default:
+        return <Pill {...iconProps} />;
+    }
+  };
+
+  return (
+    <TooltipProvider>
+      <PageHeader title="Medications" icon={<Pill />} />
+      
       <main className="flex-1 overflow-auto pb-16">
         <section className="p-4">
-          <PageHeader 
-            title="Medications" 
-            icon={<Pill className="h-6 w-6 text-primary" />}
-          />
-          
-          {/* Filter and Add buttons - Top Bar */}
-          <div className="flex justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Medications</h2>
             <div className="flex gap-2">
-              <Button
-                variant={filter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("all")}
-              >
-                All
-              </Button>
-              <Button
-                variant={filter === "today" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("today")}
-              >
-                Today
-              </Button>
-              <Button
-                variant={filter === "need-reorder" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("need-reorder")}
-              >
-                Reorder
-              </Button>
-              <Button
-                variant={filter === "as-needed" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilter("as-needed")}
-              >
-                As Needed
-              </Button>
-            </div>
-            <div>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  setLogDoseMode(false);
-                  setIsModalOpen(true);
-                }}
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-primary" 
+                onClick={() => setIsAddMedicationModalOpen(true)}
               >
                 Add Medication <Plus className="ml-1 h-4 w-4" />
               </Button>
+              {/* "Record Taken" button removed */}
             </div>
           </div>
+
+          {/* Filter section removed as medical history shows this information */}
 
           {/* Medication List */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-6">
@@ -439,342 +423,270 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
               <div className="p-8 text-center text-gray-500">No medications found</div>
             ) : (
               medications.map((med) => (
-                <div key={med.id} className="p-3 border-b border-gray-100">
-                  <div className="flex items-start mb-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className={`w-10 h-10 rounded-full bg-${med.iconColor ? med.iconColor.replace('#', '') : 'gray'}-100 flex items-center justify-center mr-3 cursor-help`}>
-                          {renderMedicationIcon(med.icon || 'pill', med.iconColor ? med.iconColor.replace('#', '') : 'gray')}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>The color is for visual organization only and does not represent the actual medication color.</p>
-                      </TooltipContent>
-                    </Tooltip>
+                <div key={med.id} className="p-4 border-b border-gray-100">
+                  <div className="flex items-start">
+                    <div className={`w-12 h-12 rounded-full bg-${med.iconColor?.replace('#', '') || 'gray'}-100 flex items-center justify-center mr-3 flex-shrink-0`}>
+                      {renderMedicationIcon(med.icon || 'pills', med.iconColor?.replace('#', '') || 'gray')}
+                    </div>
                     <div className="flex-1">
-                      {/* Display mode for the medication */}
                       <div className="flex justify-between items-start">
                         <div>
-                          <div className="text-sm font-medium">{med.name}</div>
-                          <div className="text-xs text-gray-500">{med.dosage}</div>
+                          <div className="text-lg font-medium">{med.name}</div>
+                          <div className="text-sm text-gray-600">{med.dosage}</div>
                         </div>
-                        {med.currentQuantity !== undefined && med.currentQuantity !== null && med.currentQuantity <= (med.reorderThreshold || 5) ? (
-                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                            Reorder Soon
-                          </div>
-                        ) : (
-                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                            In Stock
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        {med.instructions || "Take as directed"}
+                        <div className="flex space-x-2">
+                          {med.currentQuantity !== undefined && med.currentQuantity <= (med.reorderThreshold || 5) ? (
+                            <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                              Low Inventory
+                            </div>
+                          ) : (
+                            <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">
+                              In Stock: {med.currentQuantity}
+                            </div>
+                          )}
+                          
+                          {med.refillsRemaining !== undefined && med.refillsRemaining > 0 && (
+                            <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                              Refills: {med.refillsRemaining}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
-                      {/* Schedules Section - Display medication schedules */}
-                      {med.schedules && Array.isArray(med.schedules) && med.schedules.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {med.schedules.map((schedule: MedicationSchedule) => (
-                            <Button
-                              key={schedule.id}
-                              size="sm"
-                              variant={isDoseTaken(med.id, schedule.id) ? "default" : "outline"}
-                              className={`text-xs py-0.5 px-2 h-auto rounded-full ${
-                                isDoseTaken(med.id, schedule.id)
-                                  ? "bg-green-600 text-white border-green-600"
-                                  : schedule.asNeeded 
-                                    ? "text-amber-600 border border-amber-600" 
-                                    : "text-primary border border-primary"
-                              }`}
-                              onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
-                            >
-                              {schedule.asNeeded 
-                                ? "As Needed" 
-                                : (schedule.time?.toString().slice(0, 5) || "Take")}
-                              {isDoseTaken(med.id, schedule.id) && (
-                                <Check className="ml-1 h-3 w-3" />
-                              )}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-2 text-xs text-gray-500 italic">
-                          No scheduled doses
+                      {/* Instructions */}
+                      {med.instructions && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Instructions:</span> {med.instructions}
                         </div>
                       )}
                       
-                      {/* Inventory Section */}
-                      <div className="mt-2 p-2 bg-gray-50 rounded-md text-xs">
-                        <div className="flex justify-between text-gray-600">
-                          <span>Quantity: {med.currentQuantity || 0}</span>
-                          <span>Refills: {med.refillsRemaining || 0}</span>
+                      {/* Display scheduled doses */}
+                      {med.schedules && Array.isArray(med.schedules) && med.schedules.length > 0 ? (
+                        <div className="mt-3">
+                          <div className="text-sm font-medium mb-1">Schedule:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {med.schedules.map(schedule => (
+                              <Tooltip key={schedule.id}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant={isDoseTaken(med.id, schedule.id) ? "default" : "outline"}
+                                    className={`text-xs py-0.5 px-2 h-auto min-w-[60px] ${
+                                      isDoseTaken(med.id, schedule.id)
+                                        ? "bg-green-600 text-white"
+                                        : "border border-primary"
+                                    }`}
+                                    onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
+                                  >
+                                    {schedule.asNeeded 
+                                      ? "As Needed" 
+                                      : (schedule.time ? formatTime(schedule.time) : "Unknown")}
+                                    {isDoseTaken(med.id, schedule.id) && (
+                                      <Check className="ml-1 h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>
+                                    {isDoseTaken(med.id, schedule.id)
+                                      ? "Click to unmark as taken"
+                                      : "Click to mark as taken"}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Action buttons */}
-                  <div className="flex justify-between mt-2">
-                    <div className="flex gap-2 flex-wrap">
-                      {/* Record Taken Button - Only shown for "As Needed" medications */}
-                      {med.schedules && med.schedules.some((schedule: any) => schedule.asNeeded) && (
+                      ) : (
+                        <div className="mt-2 text-sm text-gray-400 italic">No schedule set</div>
+                      )}
+                      
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {/* "Record Taken" button removed */}
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="text-xs font-medium text-orange-500 px-2 py-1 rounded-full border border-orange-500"
-                          onClick={() => {
-                            setSelectedMedication(med);
-                            setLogDoseMode(true);
-                            setIsModalOpen(true);
-                          }}
+                          className="text-xs font-medium text-blue-500 px-2 py-1 rounded-full border border-blue-500"
+                          onClick={() => handleInventoryUpdate(med.id)}
                         >
-                          Record Taken <Plus className="ml-1 h-4 w-4" />
+                          Update Inventory
                         </Button>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-blue-500 px-2 py-1 rounded-full border border-blue-500"
-                        onClick={() => handleInventoryUpdate(med.id)}
-                      >
-                        Update Inventory
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-green-500 px-2 py-1 rounded-full border border-green-500"
-                        onClick={() => handleEditMedication(med)}
-                      >
-                        <Edit className="mr-1 h-3 w-3" /> Edit
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-purple-500 px-2 py-1 rounded-full border border-purple-500"
-                        onClick={() => handleEditSchedules(med.id)}
-                      >
-                        Edit Schedules
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-red-500 px-2 py-1 rounded-full border border-red-500"
-                        onClick={() => handleDeleteMedication(med)}
-                      >
-                        <Trash2 className="mr-1 h-3 w-3" /> Delete
-                      </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-green-500 px-2 py-1 rounded-full border border-green-500"
+                          onClick={() => handleEditMedication(med)}
+                        >
+                          <Edit className="mr-1 h-3 w-3" /> Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-purple-500 px-2 py-1 rounded-full border border-purple-500"
+                          onClick={() => handleEditSchedules(med.id)}
+                        >
+                          Edit Schedules
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-red-500 px-2 py-1 rounded-full border border-red-500"
+                          onClick={() => handleDeleteMedication(med)}
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" /> Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))
             )}
           </div>
-
+          
           {/* Medication History */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-md font-medium">Medication History</h3>
-            </div>
-            <Card>
-              <CardContent className="p-0">
-                {isLoadingLogs ? (
-                  <div className="p-4 text-center text-gray-500">Loading history...</div>
-                ) : !medicationLogs || medicationLogs.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No medication history available</div>
-                ) : (
-                  <div>
-                    {medicationLogs.slice(0, 10).map((log) => {
-                      const medication = medications?.find(m => m.id === log.medicationId);
-                      return (
-                        <div key={log.id} className="py-2 px-4 border-b border-gray-100 flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
-                            <Pill className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-medium mb-3">Medication History</h3>
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-6">
+            {!medicationLogs || medicationLogs.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No medication history</div>
+            ) : (
+              <div>
+                {medicationLogs.slice(0, 10).map(log => {
+                  const medication = medications?.find(m => m.id === log.medicationId);
+                  
+                  return (
+                    <div 
+                      key={log.id} 
+                      className="p-3 border-b border-gray-100 flex justify-between items-center"
+                    >
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                          <Pill className="h-4 w-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium">
+                            {medication?.name || "Unknown medication"}
+                            <span className="ml-2 text-xs font-normal text-gray-500">
+                              {log.dose || medication?.dosage}
+                            </span>
                           </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between">
-                              <span className="font-medium text-sm">{medication?.name || "Unknown medication"}</span>
-                              <span className="text-xs text-gray-500">{formatTime(log.timestamp)}</span>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {log.dose} - {formatDate(log.timestamp)}
-                            </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(log.takenAt).toLocaleString()}
+                            <span className="ml-2 text-gray-400">
+                              ({getTimeAgo(new Date(log.takenAt))})
+                            </span>
                           </div>
                         </div>
-                      );
-                    })}
-                    {medicationLogs.length > 10 && (
-                      <div className="p-3 text-center">
-                        <Button variant="link" size="sm" className="text-primary">
-                          View all history
-                        </Button>
                       </div>
-                    )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 h-8 w-8 p-0"
+                        onClick={() => handleDeleteLog(log)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+                
+                {medicationLogs.length > 10 && (
+                  <div className="p-3 text-center">
+                    <Button variant="link" size="sm">
+                      View all {medicationLogs.length} entries
+                    </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Drug Interactions */}
-          {interactions?.interactions && interactions.interactions.length > 0 && (
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-md font-medium flex items-center">
-                  <span className="mr-2 text-red-500">⚠️</span> Potential Drug Interactions
-                </h3>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowInteractions(!showInteractions)}
-                >
-                  {showInteractions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
               </div>
-              
-              {showInteractions && (
-                <Card className="bg-red-50 border-red-200 mb-4">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-red-800 mb-3">
-                      The following potential drug interactions have been identified. Please consult with a healthcare provider.
-                    </p>
-                    <div className="space-y-3">
-                      {interactions.interactions.map((interaction, index) => (
-                        <div key={index} className="bg-white p-3 rounded-md border border-red-100">
-                          <div className="flex items-start">
-                            <div className={`px-2 py-1 text-xs font-bold rounded ${
-                              interaction.severity === 'high' ? 'bg-red-100 text-red-800' :
-                              interaction.severity === 'medium' ? 'bg-orange-100 text-orange-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            } mr-2 uppercase`}>
-                              {interaction.severity}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm">{interaction.description}</p>
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {interaction.medications.map(med => (
-                                  <span key={med} className="inline-block bg-red-50 px-2 py-0.5 text-xs rounded-full">
-                                    {med}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </section>
       </main>
       
       <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      {/* Inventory Update Dialog */}
-      {selectedMedicationId && (
-        <Dialog open={!!selectedMedicationId} onOpenChange={(open) => !open && setSelectedMedicationId(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Update Inventory</DialogTitle>
-              <DialogDescription>
-                Update the current quantity for this medication.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <Label htmlFor="quantity" className="block mb-2">Current Quantity</Label>
-              <Input
-                id="quantity"
-                type="number"
-                value={selectedQuantity}
-                onChange={(e) => setSelectedQuantity(e.target.value)}
-                className="mb-4"
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSelectedMedicationId(null)}>Cancel</Button>
-              <Button onClick={handleSaveInventory} disabled={updateInventoryMutation.isPending}>
-                {updateInventoryMutation.isPending ? "Saving..." : "Save"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-      
-      {/* Add Medication Modal */}
-      <AddMedicationModal
-        isOpen={isModalOpen && !logDoseMode}
-        onClose={() => setIsModalOpen(false)}
+      {/* Modals */}
+      <AddMedicationModal 
+        isOpen={isAddMedicationModalOpen} 
+        onClose={() => setIsAddMedicationModalOpen(false)} 
         careRecipientId={activeCareRecipientId}
       />
       
-      {/* Log Dose Modal */}
-      {logDoseMode && selectedMedication && (
-        <Dialog open={isModalOpen} onOpenChange={(open) => !open && setIsModalOpen(false)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Record Medication Dose</DialogTitle>
-              <DialogDescription>
-                Record a dose of {selectedMedication.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              <div>
-                <Label htmlFor="dose" className="block mb-2">Dose Taken</Label>
-                <Input
-                  id="dose"
-                  placeholder="e.g., 1 tablet, 5ml"
-                  defaultValue={selectedMedication.dosage}
-                  onChange={(e) => setNewLogData({
-                    ...newLogData,
-                    dose: e.target.value,
-                    medicationId: selectedMedication.id,
-                    careRecipientId: activeCareRecipientId || 0
-                  })}
-                  className="mb-4"
-                />
-              </div>
-              <div>
-                <Label htmlFor="timestamp" className="block mb-2">Date & Time</Label>
-                <Input
-                  id="timestamp"
-                  type="datetime-local"
-                  defaultValue={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                  onChange={(e) => setNewLogData({
-                    ...newLogData,
-                    timestamp: e.target.value,
-                    medicationId: selectedMedication.id,
-                    careRecipientId: activeCareRecipientId || 0
-                  })}
-                  className="mb-4"
-                />
-              </div>
-              <div>
-                <Label htmlFor="notes" className="block mb-2">Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional notes about this dose"
-                  onChange={(e) => setNewLogData({
-                    ...newLogData,
-                    notes: e.target.value,
-                    medicationId: selectedMedication.id,
-                    careRecipientId: activeCareRecipientId || 0
-                  })}
-                  className="mb-4"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button onClick={() => createLogMutation.mutate(newLogData)} disabled={createLogMutation.isPending}>
-                {createLogMutation.isPending ? "Saving..." : "Save Record"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+      <AddCareEventModal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedMedication(null);
+        }} 
+        careRecipientId={activeCareRecipientId}
+        defaultEventType="medication"
+        hideCategorySelector={false}
+        defaultMedicationId={selectedMedication?.id}
+      />
+      
+      {/* Inventory Management Modal */}
+      <MedicationInventoryModal
+        isOpen={isInventoryModalOpen}
+        onClose={() => setIsInventoryModalOpen(false)}
+        medication={selectedMedication}
+      />
+      
+      {/* Edit Schedules Modal */}
+      <EditMedicationSchedulesModal
+        isOpen={isSchedulesModalOpen}
+        onClose={() => setIsSchedulesModalOpen(false)}
+        medication={selectedMedication}
+      />
+      
+      {/* Edit Medication Modal */}
+      <EditMedicationModal
+        isOpen={isEditMedicationModalOpen}
+        onClose={() => setIsEditMedicationModalOpen(false)}
+        medication={selectedMedication}
+        careRecipientId={activeCareRecipientId}
+      />
+      
+      {/* Delete Log Confirmation Dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Medication Log</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this medication log entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteLog}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Delete Medication Confirmation Dialog */}
+      <AlertDialog open={isDeleteMedicationConfirmOpen} onOpenChange={setIsDeleteMedicationConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Medication</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {medicationToDelete?.name}? This will also delete all schedules and history for this medication. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteMedication}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </TooltipProvider>
   );
 }

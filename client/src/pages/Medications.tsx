@@ -35,7 +35,6 @@ import {
   Edit,
   Save,
   X,
-  AlertTriangle,
   Trash2
 } from "lucide-react";
 
@@ -58,7 +57,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [isEditMedicationModalOpen, setIsEditMedicationModalOpen] = useState(false);
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
-  // "Record Taken" feature removed
   // State for delete confirmation dialogs
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleteMedicationConfirmOpen, setIsDeleteMedicationConfirmOpen] = useState(false);
@@ -68,8 +66,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   
   // Use the global care recipient context
   const { activeCareRecipientId, careRecipients, isLoading: isLoadingRecipients } = useCareRecipient();
-  
-  // Medication interactions feature removed
 
   // Fetch medications with their schedules
   const { data: medications, isLoading: isLoadingMedications } = useQuery<MedicationWithSchedules[]>({
@@ -109,8 +105,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
       setTakenMedicationDoses(takenDosesMap);
     }
   }, [medicationLogs, medications]);
-  
-  // Medication interactions feature removed
 
   // Handle modal open/close
   const handleAddEvent = () => {
@@ -402,8 +396,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
     <TooltipProvider>
       <PageHeader title="Medications" icon={<Pill />} />
       
-      {/* Medication interactions section removed */}
-      
       <main className="flex-1 overflow-auto pb-16">
         <section className="p-4">
           <div className="flex items-center justify-between mb-4">
@@ -417,17 +409,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
               >
                 Add Medication <Plus className="ml-1 h-4 w-4" />
               </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="text-primary" 
-                onClick={() => {
-                  setLogDoseMode(true);
-                  setIsModalOpen(true);
-                }}
-              >
-                Record Taken <Plus className="ml-1 h-4 w-4" />
-              </Button>
+              {/* "Record Taken" button removed */}
             </div>
           </div>
 
@@ -441,172 +423,199 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
               <div className="p-8 text-center text-gray-500">No medications found</div>
             ) : (
               medications.map((med) => (
-                <div key={med.id} className="p-3 border-b border-gray-100">
-                  <div className="flex items-start mb-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className={`w-10 h-10 rounded-full bg-${med.iconColor ? med.iconColor.replace('#', '') : 'gray'}-100 flex items-center justify-center mr-3 cursor-help`}>
-                          {renderMedicationIcon(med.icon || 'pill', med.iconColor ? med.iconColor.replace('#', '') : 'gray')}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>The color is for visual organization only and does not represent the actual medication color.</p>
-                      </TooltipContent>
-                    </Tooltip>
+                <div key={med.id} className="p-4 border-b border-gray-100">
+                  <div className="flex items-start">
+                    <div className={`w-12 h-12 rounded-full bg-${med.iconColor?.replace('#', '') || 'gray'}-100 flex items-center justify-center mr-3 flex-shrink-0`}>
+                      {renderMedicationIcon(med.icon || 'pills', med.iconColor?.replace('#', '') || 'gray')}
+                    </div>
                     <div className="flex-1">
-                      {/* Display mode for the medication */}
                       <div className="flex justify-between items-start">
                         <div>
-                          <div className="text-sm font-medium">{med.name}</div>
-                          <div className="text-xs text-gray-500">{med.dosage}</div>
+                          <div className="text-lg font-medium">{med.name}</div>
+                          <div className="text-sm text-gray-600">{med.dosage}</div>
                         </div>
-                        {med.currentQuantity !== undefined && med.currentQuantity !== null && med.currentQuantity <= (med.reorderThreshold || 5) ? (
-                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                            Reorder Soon
-                          </div>
-                        ) : (
-                          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                            In Stock
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        {med.instructions || "Take as directed"}
+                        <div className="flex space-x-2">
+                          {med.currentQuantity !== undefined && med.currentQuantity <= (med.reorderThreshold || 5) ? (
+                            <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                              Low Inventory
+                            </div>
+                          ) : (
+                            <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">
+                              In Stock: {med.currentQuantity}
+                            </div>
+                          )}
+                          
+                          {med.refillsRemaining !== undefined && med.refillsRemaining > 0 && (
+                            <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                              Refills: {med.refillsRemaining}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
-                      {/* Schedules Section - Display medication schedules */}
-                      {med.schedules && Array.isArray(med.schedules) && med.schedules.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {med.schedules.map((schedule: MedicationSchedule) => (
-                            <Button
-                              key={schedule.id}
-                              size="sm"
-                              variant={isDoseTaken(med.id, schedule.id) ? "default" : "outline"}
-                              className={`text-xs py-0.5 px-2 h-auto rounded-full ${
-                                isDoseTaken(med.id, schedule.id)
-                                  ? "bg-green-600 text-white border-green-600"
-                                  : schedule.asNeeded 
-                                    ? "text-amber-600 border border-amber-600" 
-                                    : "text-primary border border-primary"
-                              }`}
-                              onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
-                            >
-                              {schedule.asNeeded 
-                                ? "As Needed" 
-                                : (schedule.time?.toString().slice(0, 5) || "Take")}
-                              {isDoseTaken(med.id, schedule.id) && (
-                                <Check className="ml-1 h-3 w-3" />
-                              )}
-                            </Button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-2 text-xs text-gray-500 italic">
-                          No scheduled doses
+                      {/* Instructions */}
+                      {med.instructions && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Instructions:</span> {med.instructions}
                         </div>
                       )}
                       
-                      {/* Inventory Section */}
-                      <div className="mt-2 p-2 bg-gray-50 rounded-md text-xs">
-                        <div className="flex justify-between text-gray-600">
-                          <span>Quantity: {med.currentQuantity || 0}</span>
-                          <span>Refills: {med.refillsRemaining || 0}</span>
+                      {/* Display scheduled doses */}
+                      {med.schedules && Array.isArray(med.schedules) && med.schedules.length > 0 ? (
+                        <div className="mt-3">
+                          <div className="text-sm font-medium mb-1">Schedule:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {med.schedules.map(schedule => (
+                              <Tooltip key={schedule.id}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant={isDoseTaken(med.id, schedule.id) ? "default" : "outline"}
+                                    className={`text-xs py-0.5 px-2 h-auto min-w-[60px] ${
+                                      isDoseTaken(med.id, schedule.id)
+                                        ? "bg-green-600 text-white"
+                                        : "border border-primary"
+                                    }`}
+                                    onClick={() => handleMarkDoseAsTaken(med.id, schedule.id)}
+                                  >
+                                    {schedule.asNeeded 
+                                      ? "As Needed" 
+                                      : (schedule.time ? formatTime(schedule.time) : "Unknown")}
+                                    {isDoseTaken(med.id, schedule.id) && (
+                                      <Check className="ml-1 h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>
+                                    {isDoseTaken(med.id, schedule.id)
+                                      ? "Click to unmark as taken"
+                                      : "Click to mark as taken"}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                          </div>
                         </div>
+                      ) : (
+                        <div className="mt-2 text-sm text-gray-400 italic">No schedule set</div>
+                      )}
+                      
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {/* "Record Taken" button removed */}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-blue-500 px-2 py-1 rounded-full border border-blue-500"
+                          onClick={() => handleInventoryUpdate(med.id)}
+                        >
+                          Update Inventory
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-green-500 px-2 py-1 rounded-full border border-green-500"
+                          onClick={() => handleEditMedication(med)}
+                        >
+                          <Edit className="mr-1 h-3 w-3" /> Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-purple-500 px-2 py-1 rounded-full border border-purple-500"
+                          onClick={() => handleEditSchedules(med.id)}
+                        >
+                          Edit Schedules
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs font-medium text-red-500 px-2 py-1 rounded-full border border-red-500"
+                          onClick={() => handleDeleteMedication(med)}
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" /> Delete
+                        </Button>
                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* Action buttons */}
-                  <div className="flex justify-between mt-2">
-                    <div className="flex gap-2 flex-wrap">
-                      {/* "Record Taken" button removed */}
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-blue-500 px-2 py-1 rounded-full border border-blue-500"
-                        onClick={() => handleInventoryUpdate(med.id)}
-                      >
-                        Update Inventory
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-green-500 px-2 py-1 rounded-full border border-green-500"
-                        onClick={() => handleEditMedication(med)}
-                      >
-                        <Edit className="mr-1 h-3 w-3" /> Edit
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-purple-500 px-2 py-1 rounded-full border border-purple-500"
-                        onClick={() => handleEditSchedules(med.id)}
-                      >
-                        Edit Schedules
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs font-medium text-red-500 px-2 py-1 rounded-full border border-red-500"
-                        onClick={() => handleDeleteMedication(med)}
-                      >
-                        <Trash2 className="mr-1 h-3 w-3" /> Delete
-                      </Button>
                     </div>
                   </div>
                 </div>
               ))
             )}
           </div>
-
+          
           {/* Medication History */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-md font-medium">Medication History</h3>
-              <Button variant="link" size="sm" className="text-primary">See All</Button>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-              {!medicationLogs || medicationLogs.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">No medication history</div>
-              ) : (
-                medicationLogs.slice(0, 5).map((log) => (
-                  <div key={log.id} className="p-3 border-b border-gray-100 text-sm">
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        {medications?.find(med => med.id === log.medicationId)?.name || `Med #${log.medicationId}`} - {log.notes}
+          <h3 className="text-lg font-medium mb-3">Medication History</h3>
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mb-6">
+            {!medicationLogs || medicationLogs.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No medication history</div>
+            ) : (
+              <div>
+                {medicationLogs.slice(0, 10).map(log => {
+                  const medication = medications?.find(m => m.id === log.medicationId);
+                  
+                  return (
+                    <div 
+                      key={log.id} 
+                      className="p-3 border-b border-gray-100 flex justify-between items-center"
+                    >
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                          <Pill className="h-4 w-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium">
+                            {medication?.name || "Unknown medication"}
+                            <span className="ml-2 text-xs font-normal text-gray-500">
+                              {log.dose || medication?.dosage}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(log.takenAt).toLocaleString()}
+                            <span className="ml-2 text-gray-400">
+                              ({getTimeAgo(new Date(log.takenAt))})
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-xs text-gray-500">{getTimeAgo(log.takenAt)}</div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 w-6 p-0 rounded-full hover:bg-red-50 hover:text-red-500"
-                          onClick={() => handleDeleteLog(log)}
-                          title="Delete log entry"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 h-8 w-8 p-0"
+                        onClick={() => handleDeleteLog(log)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
+                  );
+                })}
+                
+                {medicationLogs.length > 10 && (
+                  <div className="p-3 text-center">
+                    <Button variant="link" size="sm">
+                      View all {medicationLogs.length} entries
+                    </Button>
                   </div>
-                ))
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </main>
       
-      <BottomNavigation 
-        activeTab={activeTab} 
-        onChangeTab={setActiveTab} 
-        onAddEvent={handleAddEvent}
+      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      {/* Modals */}
+      <AddMedicationModal 
+        isOpen={isAddMedicationModalOpen} 
+        onClose={() => setIsAddMedicationModalOpen(false)} 
+        careRecipientId={activeCareRecipientId}
       />
-
+      
       <AddCareEventModal 
         isOpen={isModalOpen} 
         onClose={() => {
           setIsModalOpen(false);
-          setLogDoseMode(false);
           setSelectedMedication(null);
         }} 
         careRecipientId={activeCareRecipientId}
@@ -622,14 +631,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         medication={selectedMedication}
       />
       
-      {/* Add Medication Modal */}
-      <AddMedicationModal
-        isOpen={isAddMedicationModalOpen}
-        onClose={() => setIsAddMedicationModalOpen(false)}
-        careRecipientId={activeCareRecipientId}
-      />
-      
-      {/* Edit Medication Schedules Modal */}
+      {/* Edit Schedules Modal */}
       <EditMedicationSchedulesModal
         isOpen={isSchedulesModalOpen}
         onClose={() => setIsSchedulesModalOpen(false)}
@@ -641,6 +643,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         isOpen={isEditMedicationModalOpen}
         onClose={() => setIsEditMedicationModalOpen(false)}
         medication={selectedMedication}
+        careRecipientId={activeCareRecipientId}
       />
       
       {/* Delete Log Confirmation Dialog */}
