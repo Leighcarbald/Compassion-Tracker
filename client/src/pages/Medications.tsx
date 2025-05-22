@@ -603,7 +603,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         </section>
       </main>
       
-      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} />
       
       {/* Modals */}
       <AddMedicationModal 
