@@ -1622,7 +1622,13 @@ export const storage = {
       delete updateData.pin;
     }
     
-    // Update the record
+    // Check if there are any fields to update
+    if (Object.keys(updateData).length === 0) {
+      console.log('No fields to update for emergency info ID:', id);
+      return existingRecord; // Return existing record if no changes to make
+    }
+    
+    // Update the record if there are fields to update
     await db.update(emergencyInfo)
       .set(updateData)
       .where(eq(emergencyInfo.id, id));

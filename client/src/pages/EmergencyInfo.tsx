@@ -804,7 +804,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         </div>
       </main>
       
-      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} />
     </div>
   );
 }
