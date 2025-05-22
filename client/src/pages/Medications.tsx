@@ -599,12 +599,13 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                           className="text-xs font-medium text-orange-500 px-2 py-1 rounded-full border border-orange-500"
                           onClick={() => {
                             setSelectedMedication(med);
-                          setLogDoseMode(true);
-                          setIsModalOpen(true);
-                        }}
-                      >
-                        Log Dose
-                      </Button>
+                            setLogDoseMode(true);
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          Record Taken <Plus className="ml-1 h-4 w-4" />
+                        </Button>
+                      )}
                       <Button 
                         size="sm" 
                         variant="outline" 
