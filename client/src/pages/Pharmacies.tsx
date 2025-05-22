@@ -17,6 +17,7 @@ import type { Pharmacy } from "@shared/schema";
 import { format } from "date-fns";
 import { useCareRecipient } from "@/hooks/use-care-recipient";
 import { formatPhoneNumber, normalizePhoneNumber } from "@/lib/utils";
+import { Pencil } from "lucide-react";
 
 interface PharmaciesProps {
   activeTab: TabType;
@@ -28,6 +29,8 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
   const { activeCareRecipientId } = useCareRecipient();
   
   const [isAddPharmacyOpen, setIsAddPharmacyOpen] = useState(false);
+  const [isEditPharmacyOpen, setIsEditPharmacyOpen] = useState(false);
+  const [editingPharmacyId, setEditingPharmacyId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -53,6 +56,39 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+  
+  // Find a pharmacy by ID
+  const findPharmacyById = (id: number) => {
+    if (!pharmacies) return null;
+    return pharmacies.find((pharmacy: Pharmacy) => pharmacy.id === id);
+  };
+  
+  // Open edit pharmacy dialog
+  const openEditPharmacyDialog = (pharmacyId: number) => {
+    const pharmacy = findPharmacyById(pharmacyId);
+    if (!pharmacy) return;
+    
+    setFormData({
+      name: pharmacy.name,
+      address: pharmacy.address || "",
+      phoneNumber: pharmacy.phoneNumber,
+      notes: pharmacy.notes || "",
+    });
+    
+    setEditingPharmacyId(pharmacyId);
+    setIsEditPharmacyOpen(true);
+  };
+  
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      address: "",
+      phoneNumber: "",
+      notes: ""
+    });
+    setEditingPharmacyId(null);
   };
   
   // Handle add pharmacy

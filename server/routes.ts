@@ -895,6 +895,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.patch(`${apiPrefix}/pharmacies/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid ID format' });
+      }
+      
+      const updatedPharmacy = await storage.updatePharmacy(id, req.body);
+      res.json(updatedPharmacy);
+    } catch (error) {
+      console.error('Error updating pharmacy:', error);
+      res.status(500).json({ message: 'Error updating pharmacy' });
+    }
+  });
+  
   // Medication Pharmacies
   app.get(`${apiPrefix}/medication-pharmacies`, async (req, res) => {
     try {

@@ -1533,6 +1533,34 @@ export const storage = {
     const [newPharmacy] = await db.insert(pharmacies).values(validatedData).returning();
     return newPharmacy;
   },
+  
+  async updatePharmacy(id: number, pharmacyData: any) {
+    // First check if record exists
+    const existingPharmacy = await db.query.pharmacies.findFirst({
+      where: eq(pharmacies.id, id)
+    });
+    
+    if (!existingPharmacy) return null;
+    
+    // Remove id and careRecipientId from the update data if present
+    const { id: _, careRecipientId: __, ...updateData } = pharmacyData;
+    
+    // Check if there are any fields to update
+    if (Object.keys(updateData).length === 0) {
+      console.log('No fields to update for pharmacy ID:', id);
+      return existingPharmacy; // Return existing record if no changes to make
+    }
+    
+    // Update the record
+    await db.update(pharmacies)
+      .set(updateData)
+      .where(eq(pharmacies.id, id));
+    
+    // Return the updated record
+    return db.query.pharmacies.findFirst({
+      where: eq(pharmacies.id, id)
+    });
+  },
 
   // Medication-Pharmacy Relations
   async getMedicationPharmacies(medicationId: number) {
