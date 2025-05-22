@@ -67,7 +67,7 @@ function Router() {
         <Route path="/notes" component={renderNotes} />
         <Route path="/doctors" component={renderDoctors} />
         <Route path="/pharmacies" component={renderPharmacies} />
-        <Route path="/emergency" component={renderEmergencyInfo} />
+        <Route path="/emergency-info" component={renderEmergencyInfo} />
         <Route path="/blood-pressure" component={renderBloodPressure} />
         <Route path="/glucose-insulin" component={renderGlucoseInsulin} />
         <Route path="/bowel-movements" component={renderBowelMovements} />
