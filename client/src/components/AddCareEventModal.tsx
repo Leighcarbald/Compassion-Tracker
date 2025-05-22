@@ -44,6 +44,7 @@ interface AddCareEventModalProps {
   selectedDate?: Date;
   hideCategorySelector?: boolean;
   defaultMedicationId?: number;
+  editingAppointment?: any; // Appointment data when editing
 }
 
 const eventSchema = z.object({
@@ -66,7 +67,8 @@ export default function AddCareEventModal({
   defaultEventType = "meal",
   selectedDate,
   hideCategorySelector = false,
-  defaultMedicationId
+  defaultMedicationId,
+  editingAppointment
 }: AddCareEventModalProps) {
   const [eventType, setEventType] = useState<EventType>(defaultEventType);
 
@@ -101,26 +103,43 @@ export default function AddCareEventModal({
   // When the modal is opened or closed, reset the form
   useEffect(() => {
     if (isOpen) {
-      // Reset form when modal opens
-      form.reset({
-        type: defaultEventType || "meal",
-        name: "",
-        date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
-        time: format(new Date(), "HH:mm"),
-        wakeUpTime: "",
-        notes: "",
-        reminder: false,
-        careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
-        medicationId: defaultMedicationId,
-        mealType: defaultEventType === "meal" ? "breakfast" : undefined
-      });
-      
-      // Set initial event type
-      setEventType(defaultEventType || "meal");
+      if (editingAppointment) {
+        // Populate form with existing appointment data when editing
+        form.reset({
+          type: "appointment",
+          name: editingAppointment.title || "",
+          date: editingAppointment.date || (selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")),
+          time: editingAppointment.time || format(new Date(), "HH:mm"),
+          wakeUpTime: "",
+          notes: editingAppointment.notes || "",
+          reminder: false,
+          careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
+          medicationId: undefined,
+          mealType: undefined
+        });
+        setEventType("appointment");
+      } else {
+        // Reset form when modal opens for new event
+        form.reset({
+          type: defaultEventType || "meal",
+          name: "",
+          date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+          time: format(new Date(), "HH:mm"),
+          wakeUpTime: "",
+          notes: "",
+          reminder: false,
+          careRecipientId: careRecipientId ? parseInt(careRecipientId) : 0,
+          medicationId: defaultMedicationId,
+          mealType: defaultEventType === "meal" ? "breakfast" : undefined
+        });
+        
+        // Set initial event type
+        setEventType(defaultEventType || "meal");
+      }
       
       console.log("Form reset on modal open with values:", form.getValues());
     }
-  }, [isOpen, form, selectedDate, defaultEventType, careRecipientId, defaultMedicationId]);
+  }, [isOpen, form, selectedDate, defaultEventType, careRecipientId, defaultMedicationId, editingAppointment]);
   
   // When medication is selected, update the name field
   useEffect(() => {

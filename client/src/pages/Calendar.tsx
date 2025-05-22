@@ -253,7 +253,13 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
 
   // Handle modal open/close
   const handleAddEvent = () => {
+    setEditingAppointment(null); // Clear any editing state
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingAppointment(null);
   };
   
   // When the selected date changes, we may need to fetch appointments for a new month
@@ -433,8 +439,9 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
-                                      // TODO: Add edit functionality
-                                      console.log('Edit appointment:', appointment.id);
+                                      setEditingAppointment(appointment);
+                                      setModalEventType("appointment");
+                                      setIsModalOpen(true);
                                     }}
                                     className="h-8 w-8 p-0"
                                   >
@@ -867,10 +874,11 @@ export default function Calendar({ activeTab: navTab, setActiveTab: setNavTab }:
       {isModalOpen && (
         <AddCareEventModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleCloseModal}
           careRecipientId={activeCareRecipient}
           selectedDate={selectedDate}
           defaultEventType={modalEventType === "appointment" ? "appointment" : undefined}
+          editingAppointment={editingAppointment}
         />
       )}
     </>
