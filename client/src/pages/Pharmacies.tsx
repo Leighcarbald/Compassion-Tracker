@@ -60,8 +60,9 @@ export default function Pharmacies({ activeTab, setActiveTab }: PharmaciesProps)
   
   // Find a pharmacy by ID
   const findPharmacyById = (id: number) => {
-    if (!pharmacies) return null;
-    return pharmacies.find((pharmacy: Pharmacy) => pharmacy.id === id);
+    if (!pharmacies || !Array.isArray(pharmacies)) return null;
+    // Ensure we handle both array and object structures
+    return pharmacies.find((pharmacy: any) => pharmacy.id === id);
   };
   
   // Open edit pharmacy dialog
