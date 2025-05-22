@@ -279,8 +279,21 @@ export default function CareRecipientTabs({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Care Recipient</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove {recipientToDelete?.name}? This action cannot be undone and will delete all associated data including medications, appointments, and health records.
+            <AlertDialogDescription className="space-y-2">
+              <p className="font-bold text-red-600">Warning: This is a permanent action that cannot be undone.</p>
+              <p>Are you sure you want to remove {recipientToDelete?.name}?</p>
+              <div className="bg-amber-50 p-3 border border-amber-200 rounded-md mt-2">
+                <p className="font-semibold mb-1">The following data will be permanently deleted:</p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  <li>All medications and medication logs</li>
+                  <li>Doctor and pharmacy information</li>
+                  <li>Appointments and schedules</li>
+                  <li>Emergency information</li>
+                  <li>Health records (blood pressure, glucose, insulin, etc.)</li>
+                  <li>Sleep records, meal tracking, and notes</li>
+                  <li>All other data associated with this care recipient</li>
+                </ul>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
