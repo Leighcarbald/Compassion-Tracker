@@ -58,7 +58,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
   const [isEditMedicationModalOpen, setIsEditMedicationModalOpen] = useState(false);
   // Track taken medication doses by schedule
   const [takenMedicationDoses, setTakenMedicationDoses] = useState<Map<string, boolean>>(new Map());
-  const [logDoseMode, setLogDoseMode] = useState(false);
+  // "Record Taken" feature removed
   // State for delete confirmation dialogs
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleteMedicationConfirmOpen, setIsDeleteMedicationConfirmOpen] = useState(false);
@@ -114,7 +114,6 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
 
   // Handle modal open/close
   const handleAddEvent = () => {
-    setLogDoseMode(false); // Regular event, not log dose
     setIsModalOpen(true);
   };
 
@@ -520,21 +519,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
                   {/* Action buttons */}
                   <div className="flex justify-between mt-2">
                     <div className="flex gap-2 flex-wrap">
-                      {/* Record Taken Button - Only shown for "As Needed" medications */}
-                      {med.schedules && med.schedules.some((schedule: any) => schedule.asNeeded) && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-xs font-medium text-orange-500 px-2 py-1 rounded-full border border-orange-500"
-                          onClick={() => {
-                            setSelectedMedication(med);
-                            setLogDoseMode(true);
-                            setIsModalOpen(true);
-                          }}
-                        >
-                          Record Taken
-                        </Button>
-                      )}
+                      {/* "Record Taken" button removed */}
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -626,7 +611,7 @@ export default function Medications({ activeTab, setActiveTab }: MedicationsProp
         }} 
         careRecipientId={activeCareRecipientId}
         defaultEventType="medication"
-        hideCategorySelector={logDoseMode}
+        hideCategorySelector={false}
         defaultMedicationId={selectedMedication?.id}
       />
       
