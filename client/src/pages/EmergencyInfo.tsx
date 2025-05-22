@@ -302,6 +302,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         />
         
         <div className="px-2 py-4">
+          {console.log("Render conditions:", { activeCareRecipientId, isLoading, error, needsCreation, dataStatus: data?.status })}
           {!activeCareRecipientId ? (
             <Card className="mb-4">
               <CardHeader className="pb-2">
