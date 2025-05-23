@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/care-recipients`, async (req, res) => {
+  app.post(`${apiPrefix}/care-recipients`, isAuthenticated, async (req, res) => {
     try {
       // Verify the request has the required fields
       if (!req.body || !req.body.name) {
@@ -61,7 +61,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Name cannot be empty' });
       }
       
-      const newRecipient = await storage.createCareRecipient(req.body);
+      // Associate the care recipient with the authenticated user
+      const recipientData = {
+        ...req.body,
+        userId: req.user!.id // Use the authenticated user's ID
+      };
+      
+      const newRecipient = await storage.createCareRecipient(recipientData);
       res.status(201).json(newRecipient);
     } catch (error) {
       console.error('Error creating care recipient:', error);

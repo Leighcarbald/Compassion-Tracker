@@ -181,41 +181,7 @@ export const storage = {
       // Parse and validate the data
       const validatedData = insertCareRecipientSchema.parse(recipientData);
       
-      // Check if a user exists for the foreign key reference
-      // If no user is specified, look for a default user
-      if (!validatedData.createdBy) {
-        // Try to find the default admin user first
-        const defaultUser = await db.query.users.findFirst({
-          where: eq(users.username, 'default_admin')
-        });
-        
-        // If no default user exists, get any user or create one
-        if (!defaultUser) {
-          const anyUser = await db.query.users.findFirst();
-          
-          if (!anyUser) {
-            // No users exist, create a default one
-            const [newUser] = await db.insert(users).values({
-              username: 'default_admin',
-              password: '$2b$10$K.8SV73w7FjKLCvuHX1gUehhwTTxlQAp.J4B9UHaIHGcTY5FJcX/m', // hashed 'admin123'
-              email: 'admin@example.com',
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }).returning();
-            
-            // Use this user for the care recipient
-            validatedData.createdBy = newUser.id;
-          } else {
-            // Use any existing user
-            validatedData.createdBy = anyUser.id;
-          }
-        } else {
-          // Use the found default user
-          validatedData.createdBy = defaultUser.id;
-        }
-      }
-      
-      // Now create the care recipient with a valid user reference
+      // Create the care recipient with the provided user reference
       const [newRecipient] = await db.insert(careRecipients).values(validatedData).returning();
       return newRecipient;
     } catch (error) {
