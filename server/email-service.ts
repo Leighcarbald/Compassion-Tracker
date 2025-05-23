@@ -34,22 +34,18 @@ export async function sendPasswordResetEmail(
   resetToken: string
 ): Promise<boolean> {
   try {
-    // Create transporter for Google Workspace
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_FROM, // Your Google Workspace email
-        pass: process.env.EMAIL_APP_PASSWORD, // App-specific password
-      },
-    });
+    if (!process.env.SENDGRID_API_KEY) {
+      throw new Error("SENDGRID_API_KEY environment variable must be set");
+    }
+
+    const mailService = new MailService();
+    mailService.setApiKey(process.env.SENDGRID_API_KEY);
 
     const resetUrl = `${process.env.APP_URL || 'http://localhost:5000'}/reset-password?token=${resetToken}`;
 
-    const mailOptions = {
-      from: process.env.EMAIL_FROM,
+    const emailParams = {
       to: userEmail,
+      from: process.env.EMAIL_FROM || 'noreply@compassiontracker.org',
       subject: 'Compassion Tracker - Password Reset Request',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -76,7 +72,7 @@ export async function sendPasswordResetEmail(
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await mailService.send(emailParams);
     return true;
   } catch (error) {
     console.error('Error sending password reset email:', error);
