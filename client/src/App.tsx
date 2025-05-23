@@ -66,6 +66,7 @@ function Router() {
     <div className="app-container">
       <Switch>
         <Route path="/auth" component={AuthPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/">
           <ProtectedRoute>
             {renderHome()}
