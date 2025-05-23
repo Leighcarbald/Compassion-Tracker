@@ -109,18 +109,51 @@ export default function AuthPage() {
         <Card className="shadow-xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
-              {isLogin ? "Sign In" : "Create Account"}
+              {showForgotPassword ? "Reset Password" : isLogin ? "Sign In" : "Create Account"}
             </CardTitle>
             <CardDescription className="text-center">
-              {isLogin 
-                ? "Access your care management dashboard" 
-                : "Start managing your family's care today"
+              {showForgotPassword 
+                ? "Enter your username to receive a password reset email"
+                : isLogin 
+                  ? "Access your care management dashboard" 
+                  : "Start managing your family's care today"
               }
             </CardDescription>
           </CardHeader>
           
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {showForgotPassword ? (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    value={formData.username}
+                    onChange={(e) => handleInputChange("username", e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <Button type="submit" className="w-full">
+                  Send Reset Email
+                </Button>
+                
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setShowForgotPassword(false)}
+                    className="text-sm"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Back to Login
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
 
               
               <div className="space-y-2">
@@ -208,19 +241,22 @@ export default function AuthPage() {
                 </div>
               )}
             </form>
+            )}
             
-            <div className="mt-6 text-center">
-              <Button
-                variant="link"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm"
-              >
-                {isLogin 
-                  ? "Don't have an account? Sign up" 
-                  : "Already have an account? Sign in"
-                }
-              </Button>
-            </div>
+            {!showForgotPassword && (
+              <div className="mt-6 text-center">
+                <Button
+                  variant="link"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm"
+                >
+                  {isLogin 
+                    ? "Don't have an account? Sign up" 
+                    : "Already have an account? Sign in"
+                  }
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
