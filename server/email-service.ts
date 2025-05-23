@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { MailService } from '@sendgrid/mail';
 import { randomBytes } from 'crypto';
 
 // Store password reset tokens in memory (in production, use Redis or database)
