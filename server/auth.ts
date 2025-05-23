@@ -182,9 +182,6 @@ export function setupAuth(app: Express) {
   // Forgot password endpoint
   app.post("/api/forgot-password", async (req, res) => {
     try {
-      console.log("EMAIL_FROM:", process.env.EMAIL_FROM ? "✅ Exists" : "❌ Missing");
-      console.log("EMAIL_APP_PASSWORD:", process.env.EMAIL_APP_PASSWORD ? "✅ Exists" : "❌ Missing");
-      
       const { username } = req.body;
 
       if (!username) {

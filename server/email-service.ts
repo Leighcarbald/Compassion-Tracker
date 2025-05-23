@@ -33,10 +33,6 @@ export async function sendPasswordResetEmail(
   resetToken: string
 ): Promise<boolean> {
   try {
-    // Debug email credentials
-    console.log("EMAIL_FROM:", process.env.EMAIL_FROM ? "✅ Exists" : "❌ Missing");
-    console.log("EMAIL_APP_PASSWORD:", process.env.EMAIL_APP_PASSWORD ? "✅ Exists" : "❌ Missing");
-    
     // Create SMTP transporter
     const transporter = nodemailer.createTransport({
       service: 'gmail',
