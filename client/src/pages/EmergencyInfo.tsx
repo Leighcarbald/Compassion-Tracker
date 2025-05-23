@@ -335,18 +335,48 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                   No emergency information has been created yet. Emergency information 
                   contains critical details that may be needed in case of an emergency.
                 </p>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="w-full" 
-                  onClick={handleCreateEmergencyInfo}
-                  disabled={createEmergencyInfoMutation.isPending}
-                >
-                  <Plus className="h-4 w-4 mr-2" /> 
-                  {createEmergencyInfoMutation.isPending 
-                    ? "Creating..." 
-                    : "Create Emergency Information"}
-                </Button>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Create a 6-digit PIN to protect this information
+                    </label>
+                    <Input
+                      type="password"
+                      placeholder="Enter 6-digit PIN"
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                      maxLength={6}
+                      className="text-center text-lg tracking-widest"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Confirm PIN
+                    </label>
+                    <Input
+                      type="password"
+                      placeholder="Confirm 6-digit PIN"
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value)}
+                      maxLength={6}
+                      className="text-center text-lg tracking-widest"
+                    />
+                  </div>
+                  
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="w-full" 
+                    onClick={handleCreateEmergencyInfo}
+                    disabled={createEmergencyInfoMutation.isPending || !newPin || !confirmPin}
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> 
+                    {createEmergencyInfoMutation.isPending 
+                      ? "Creating..." 
+                      : "Create Emergency Information & Set PIN"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : data && data.status === "success" ? (
