@@ -15,8 +15,7 @@ export default function AuthPage() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    confirmPassword: "",
-    name: ""
+    confirmPassword: ""
   });
   
   const { toast } = useToast();
@@ -58,7 +57,7 @@ export default function AuthPage() {
       registerMutation.mutate({
         username: formData.username,
         password: formData.password,
-        name: formData.name
+        name: formData.username // Use username as the display name
       });
     }
   };
@@ -85,19 +84,7 @@ export default function AuthPage() {
           
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    required={!isLogin}
-                  />
-                </div>
-              )}
+
               
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
