@@ -156,7 +156,13 @@ export const storage = {
   },
 
   // Care Recipients
-  async getCareRecipients() {
+  async getCareRecipients(userId?: number) {
+    if (userId) {
+      return db.query.careRecipients.findMany({
+        where: eq(careRecipients.userId, userId),
+        orderBy: desc(careRecipients.createdAt)
+      });
+    }
     return db.query.careRecipients.findMany({
       orderBy: desc(careRecipients.createdAt)
     });
