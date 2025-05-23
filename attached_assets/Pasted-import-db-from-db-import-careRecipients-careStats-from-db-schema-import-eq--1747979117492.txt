@@ -1,0 +1,82 @@
+import { db } from "../db";
+import { careRecipients, careStats } from "../db/schema";
+import { eq, and } from "drizzle-orm";
+
+// Get all care recipients
+export async function getCareRecipients() {
+  return db.select().from(careRecipients);
+}
+
+// Create a new care recipient
+export async function createCareRecipient(data: { name: string }) {
+  const [newRecipient] = await db
+    .insert(careRecipients)
+    .values({ name: data.name })
+    .returning();
+  return newRecipient;
+}
+
+// Delete a care recipient
+export async function deleteCareRecipient(id: number) {
+  const result = await db
+    .delete(careRecipients)
+    .where(eq(careRecipients.id, id))
+    .returning();
+  return result[0];
+}
+
+// Update a care recipient's name
+export async function updateCareRecipient(id: number, data: { name: string }) {
+  const [updatedRecipient] = await db
+    .update(careRecipients)
+    .set({ name: data.name })
+    .where(eq(careRecipients.id, id))
+    .returning();
+  return updatedRecipient;
+}
+
+// Get today's stats for a care recipient
+export async function getTodayStats(careRecipientId: number) {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const startOfDay = now.toISOString();
+
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+  const endOfDayISO = endOfDay.toISOString();
+
+  const stats = await db
+    .select()
+    .from(careStats)
+    .where(
+      and(
+        eq(careStats.careRecipientId, careRecipientId),
+        and(
+          careStats.dateTime.gte(startOfDay),
+          careStats.dateTime.lte(endOfDayISO)
+        )
+      )
+    );
+
+  return stats;
+}
+
+// Optional: Midnight reset scheduler (dummy example)
+export function scheduleMidnightReset() {
+  const now = new Date();
+  const nextMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+    0,
+    0,
+    0,
+    0
+  );
+  const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+  setTimeout(() => {
+    console.log("Midnight reset triggered (not implemented)");
+    scheduleMidnightReset(); // Re-schedule
+  }, msUntilMidnight);
+}
