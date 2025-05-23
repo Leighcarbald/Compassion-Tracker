@@ -35,7 +35,9 @@ export async function sendPasswordResetEmail(
   try {
     // Create transporter for Google Workspace
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_FROM, // Your Google Workspace email
         pass: process.env.EMAIL_APP_PASSWORD, // App-specific password
