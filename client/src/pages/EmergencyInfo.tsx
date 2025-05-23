@@ -83,6 +83,16 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         title: "Emergency information created",
         description: "The emergency information has been created successfully.",
       });
+      
+      // Automatically unlock the newly created emergency info
+      if (data.emergencyInfo?.id) {
+        unlockPin(data.emergencyInfo.id);
+      }
+      
+      // Clear the PIN inputs
+      setNewPin("");
+      setConfirmPin("");
+      
       queryClient.invalidateQueries({ queryKey: ["/api/emergency-info", activeCareRecipientId] });
     },
     onError: (error: Error) => {
