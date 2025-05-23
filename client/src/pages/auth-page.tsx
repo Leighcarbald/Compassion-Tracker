@@ -70,57 +70,8 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        
-        {/* Hero Section */}
-        <div className="hidden lg:block space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <ShieldAlert className="h-10 w-10 text-blue-600" />
-              <h1 className="text-4xl font-bold text-gray-900">Compassion Tracker</h1>
-            </div>
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Your comprehensive family caregiving companion. Manage medications, track health metrics, 
-              schedule appointments, and keep all important care information organized in one secure place.
-            </p>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <User className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Multi-User Support</h3>
-                <p className="text-gray-600">Manage care for multiple family members with color-coded organization</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-3">
-              <div className="bg-green-100 p-2 rounded-lg">
-                <ShieldAlert className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Secure & Private</h3>
-                <p className="text-gray-600">PIN-protected emergency information and encrypted data storage</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-3">
-              <div className="bg-purple-100 p-2 rounded-lg">
-                <Mail className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Smart Reminders</h3>
-                <p className="text-gray-600">Never miss a medication with intelligent scheduling and alerts</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Auth Form */}
-        <Card className="w-full max-w-md mx-auto shadow-xl">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
               {isLogin ? "Sign In" : "Create Account"}
