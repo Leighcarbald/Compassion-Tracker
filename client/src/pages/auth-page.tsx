@@ -37,6 +37,16 @@ export default function AuthPage() {
         password: formData.password
       });
     } else {
+      // Validate password strength on frontend
+      if (formData.password.length < 6) {
+        toast({
+          title: "Password too short",
+          description: "Password must be at least 6 characters long",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       if (formData.password !== formData.confirmPassword) {
         toast({
           title: "Passwords don't match",
@@ -174,6 +184,11 @@ export default function AuthPage() {
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   required
                 />
+                {!isLogin && (
+                  <p className="text-xs text-gray-500">
+                    Must be at least 6 characters long
+                  </p>
+                )}
               </div>
               
               {!isLogin && (

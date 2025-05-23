@@ -48,8 +48,11 @@ export function setupAuth(app: Express) {
 
   // Password strength validation
   function validatePasswordStrength(password: string): { valid: boolean; message?: string } {
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       return { valid: false, message: "Password must be at least 6 characters long" };
+    }
+    if (password.length > 128) {
+      return { valid: false, message: "Password must be less than 128 characters" };
     }
     return { valid: true };
   }
