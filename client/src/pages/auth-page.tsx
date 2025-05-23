@@ -15,7 +15,8 @@ export default function AuthPage() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    email: ""
   });
   
   const { toast } = useToast();
@@ -57,7 +58,8 @@ export default function AuthPage() {
       registerMutation.mutate({
         username: formData.username,
         password: formData.password,
-        name: formData.username // Use username as the display name
+        name: formData.username, // Use username as the display name
+        email: formData.email
       });
     }
   };
@@ -97,6 +99,21 @@ export default function AuthPage() {
                   required
                 />
               </div>
+
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-gray-600">Required for password recovery</p>
+                </div>
+              )}
               
 
               
