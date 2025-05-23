@@ -369,13 +369,25 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                     size="sm" 
                     className="w-full" 
                     onClick={handleCreateEmergencyInfo}
-                    disabled={createEmergencyInfoMutation.isPending || !newPin || !confirmPin}
+                    disabled={createEmergencyInfoMutation.isPending || !newPin || !confirmPin || newPin !== confirmPin || newPin.length !== 6}
                   >
                     <Plus className="h-4 w-4 mr-2" /> 
                     {createEmergencyInfoMutation.isPending 
                       ? "Creating..." 
                       : "Create Emergency Information & Set PIN"}
                   </Button>
+                  
+                  {newPin && confirmPin && newPin !== confirmPin && (
+                    <p className="text-sm text-red-600 text-center">
+                      PINs do not match
+                    </p>
+                  )}
+                  
+                  {newPin && newPin.length > 0 && newPin.length !== 6 && (
+                    <p className="text-sm text-red-600 text-center">
+                      PIN must be exactly 6 digits
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
