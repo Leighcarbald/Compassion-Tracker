@@ -4,69 +4,58 @@ A comprehensive caregiver support application designed to streamline health mana
 
 ## Features
 
-- **Medication Tracking**: Schedule, track, and manage medications with inventory alerts
-- **Health Monitoring**: Track vital signs, glucose levels, blood pressure, and more
-- **Care Recipient Management**: Manage multiple care recipients with color coordination
-- **Emergency Information**: Securely store critical medical information with PIN protection
-- **Appointment Calendar**: Keep track of doctor appointments and medical events
-- **Doctor & Pharmacy Management**: Store contact information and specialties
+- **Multi-recipient Care Management**: Track multiple family members with color-coded organization
+- **Medication Management**: Complete medication tracking with scheduling, inventory management, and reorder alerts
+- **Health Monitoring**: Track blood pressure, glucose/insulin, bowel movements, meals, and sleep patterns
+- **Appointment Scheduling**: Manage doctor appointments with reminders
+- **Emergency Information**: Secure PIN-protected emergency contact and medical information
+- **Care Notes**: Document daily observations and important care notes
+- **Doctor & Pharmacy Management**: Store healthcare provider information and associate medications with pharmacies
 
-## Technologies
+## Tech Stack
 
 - **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
-- **Backend**: Express.js, Node.js
+- **Backend**: Node.js, Express, TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
-- **API**: RxNorm for medication information and drug interaction checking
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- PostgreSQL database
-
-### Installation
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/compassion-tracker.git
-   cd compassion-tracker
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Set up environment variables:
-   Create a `.env` file in the root directory with the following variables:
-   ```
-   DATABASE_URL=postgresql://username:password@localhost:5432/compassion_tracker
-   NODE_ENV=development
-   SESSION_SECRET=your_session_secret_here
-   ```
-
-4. Initialize the database:
-   ```
-   npm run db:push
-   npm run db:seed
-   ```
-
-5. Start the development server:
-   ```
-   npm run dev
-   ```
-
-6. Open your browser and navigate to `http://localhost:5000`
+- **Authentication**: Passport.js with session management
+- **Email**: Nodemailer for password recovery
 
 ## Deployment
 
-This application can be deployed on platforms like Render or Heroku. Make sure to set the following environment variables:
+### Environment Variables Required
 
-- `DATABASE_URL` - Your PostgreSQL connection string
-- `NODE_ENV` - Set to "production"
-- `SESSION_SECRET` - A strong random string for session security
+Set these in your Render environment:
+
+```
+NODE_ENV=production
+SESSION_SECRET=your-secure-session-secret
+DATABASE_URL=your-postgresql-url
+EMAIL_FROM=your-email@example.com
+EMAIL_APP_PASSWORD=your-app-password
+```
+
+### Deploy to Render
+
+1. Connect your GitHub repository to Render
+2. Set the environment variables above
+3. Render will automatically build and deploy using the included `render.yaml` configuration
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+## Database Setup
+
+The application will automatically create database tables on first run in production. For development:
+
+```bash
+npm run db:push
+npm run db:seed
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Private - Family Caregiving Application

@@ -133,7 +133,7 @@ app.use((req, res, next) => {
             } else {
               throw new Error('SQL schema file not found');
             }
-          } catch (sqlError) {
+          } catch (sqlError: any) {
             // If SQL approach fails, try ORM-based approach as fallback
             log(`SQL initialization failed, trying ORM approach: ${sqlError.message}`, 'setup');
             
@@ -149,14 +149,14 @@ app.use((req, res, next) => {
           }
           
           log('Database initialized successfully', 'setup');
-        } catch (execError) {
+        } catch (execError: any) {
           log(`Error initializing database: ${execError.message}`, 'error');
           // Continue startup process even if initialization fails
         }
       } else {
         log('Database tables already exist', 'setup');
       }
-    } catch (error) {
+    } catch (error: any) {
       log(`Database check failed: ${error.message}`, 'error');
       // Continue startup process even if check fails
     }
