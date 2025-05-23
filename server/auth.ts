@@ -179,6 +179,73 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 
+  // Forgot password endpoint
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { username } = req.body;
+
+      if (!username) {
+        return res.status(400).json({ error: "Username is required" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user || !user.email) {
+        // Don't reveal if user exists for security
+        return res.status(200).json({ message: "If the username exists, a password reset email has been sent" });
+      }
+
+      const resetToken = generateResetToken();
+      storeResetToken(resetToken, user.id);
+
+      const emailSent = await sendPasswordResetEmail(user.email, user.username, resetToken);
+      
+      if (emailSent) {
+        res.status(200).json({ message: "Password reset email sent successfully" });
+      } else {
+        res.status(500).json({ error: "Failed to send password reset email" });
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Reset password endpoint
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ error: "Token and new password are required" });
+      }
+
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(newPassword);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ error: passwordValidation.message });
+      }
+
+      const userId = validateResetToken(token);
+      if (!userId) {
+        return res.status(400).json({ error: "Invalid or expired reset token" });
+      }
+
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user's password
+      await storage.updateUserPassword(userId, hashedPassword);
+      
+      // Remove the used token
+      removeResetToken(token);
+
+      res.status(200).json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Export the middleware for use in other routes
   return { isAuthenticated };
 }

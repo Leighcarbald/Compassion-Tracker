@@ -155,6 +155,14 @@ export const storage = {
     });
   },
 
+  async updateUserPassword(userId: number, hashedPassword: string) {
+    const result = await db.update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  },
+
   // Care Recipients
   async getCareRecipients(userId?: number) {
     if (userId) {

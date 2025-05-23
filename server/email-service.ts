@@ -34,7 +34,7 @@ export async function sendPasswordResetEmail(
 ): Promise<boolean> {
   try {
     // Create transporter for Google Workspace
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_FROM, // Your Google Workspace email
