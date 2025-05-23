@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { MailService } from '@sendgrid/mail';
+import sgMail from '@sendgrid/mail';
 import { randomBytes } from 'crypto';
 
 // Store password reset tokens in memory (in production, use Redis or database)
@@ -38,8 +38,7 @@ export async function sendPasswordResetEmail(
       throw new Error("SENDGRID_API_KEY environment variable must be set");
     }
 
-    const mailService = new MailService();
-    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     const resetUrl = `${process.env.APP_URL || 'http://localhost:5000'}/reset-password?token=${resetToken}`;
 
@@ -72,7 +71,7 @@ export async function sendPasswordResetEmail(
       `,
     };
 
-    await mailService.send(emailParams);
+    await sgMail.send(emailParams);
     return true;
   } catch (error) {
     console.error('Error sending password reset email:', error);
