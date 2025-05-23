@@ -28,10 +28,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const apiPrefix = '/api';
 
   // Care Recipients
-  app.get(`${apiPrefix}/care-recipients`, async (req, res) => {
+  app.get(`${apiPrefix}/care-recipients`, isAuthenticated, async (req, res) => {
     try {
-      // Check database connection before attempting query
-      const careRecipients = await storage.getCareRecipients();
+      // Only get care recipients for the authenticated user
+      const careRecipients = await storage.getCareRecipients(req.user!.id);
       res.json(careRecipients);
     } catch (error) {
       console.error('Error fetching care recipients:', error);
