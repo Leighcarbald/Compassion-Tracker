@@ -302,7 +302,6 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
         />
         
         <div className="px-2 py-4">
-          {console.log("Render conditions:", { activeCareRecipientId, isLoading, error, needsCreation, dataStatus: data?.status })}
           {!activeCareRecipientId ? (
             <Card className="mb-4">
               <CardHeader className="pb-2">
@@ -350,7 +349,7 @@ export default function EmergencyInfo({ activeTab, setActiveTab }: EmergencyInfo
                 </Button>
               </CardContent>
             </Card>
-          ) : data?.status === "success" ? (
+          ) : data && data.status === "success" ? (
             <div className="w-full">
               <div className="mb-4">
                 <h2 className="text-xl font-semibold flex items-center">
