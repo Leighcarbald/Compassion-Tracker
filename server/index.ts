@@ -8,6 +8,9 @@ import rateLimit from 'express-rate-limit';
 
 // Generate a random session secret if one isn't provided in environment
 if (!process.env.SESSION_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('SESSION_SECRET environment variable is required in production');
+  }
   process.env.SESSION_SECRET = crypto.randomBytes(32).toString('hex');
   log('Generated random SESSION_SECRET for development use', 'security');
   log('For production, set a persistent SESSION_SECRET in your environment variables', 'security');
