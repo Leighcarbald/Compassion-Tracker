@@ -6,6 +6,13 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { 
+  generateResetToken, 
+  storeResetToken, 
+  validateResetToken, 
+  removeResetToken, 
+  sendPasswordResetEmail 
+} from "./email-service";
 
 declare global {
   namespace Express {

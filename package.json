@@ -49,6 +49,7 @@
     "@simplewebauthn/server": "^13.1.1",
     "@tanstack/react-query": "^5.60.5",
     "@types/cookie-parser": "^1.4.8",
+    "@types/nodemailer": "^6.4.17",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

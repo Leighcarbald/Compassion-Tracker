@@ -8,10 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { ShieldAlert, User, Mail, Lock } from "lucide-react";
+import { ShieldAlert, User, Mail, Lock, ArrowLeft } from "lucide-react";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -66,6 +67,40 @@ export default function AuthPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.username) {
+      toast({
+        title: "Username required",
+        description: "Please enter your username to reset your password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await apiRequest("POST", "/api/forgot-password", {
+        username: formData.username
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Password reset email sent!",
+          description: "Check your email for password reset instructions",
+        });
+        setShowForgotPassword(false);
+        setFormData(prev => ({ ...prev, username: "" }));
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send password reset email. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -159,6 +194,19 @@ export default function AuthPage() {
                   isLogin ? "Sign In" : "Create Account"
                 )}
               </Button>
+
+              {isLogin && (
+                <div className="text-center mt-2">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-blue-600"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    Forgot your password?
+                  </Button>
+                </div>
+              )}
             </form>
             
             <div className="mt-6 text-center">
