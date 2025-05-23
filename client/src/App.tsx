@@ -10,6 +10,7 @@ import Notes from "@/pages/Notes";
 import Doctors from "@/pages/Doctors";
 import Pharmacies from "@/pages/Pharmacies";
 import EmergencyInfo from "@/pages/EmergencyInfo";
+import DeviceConnections from "@/pages/DeviceConnections";
 import BloodPressure from "@/pages/BloodPressure";
 import GlucoseInsulin from "@/pages/GlucoseInsulin";
 import BowelMovements from "@/pages/BowelMovements";
@@ -125,6 +126,11 @@ function Router() {
         <Route path="/sleep">
           <ProtectedRoute>
             {renderSleep()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/devices">
+          <ProtectedRoute>
+            <DeviceConnections />
           </ProtectedRoute>
         </Route>
 
