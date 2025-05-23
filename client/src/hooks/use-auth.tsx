@@ -1,149 +1,81 @@
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useContext } from "react";
 import {
   useQuery,
   useMutation,
-  UseQueryResult,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { InsertUser, User } from "@shared/schema";
-import { apiRequest, queryClient } from "../lib/queryClient";
+import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import {
-  browserSupportsWebAuthn,
-  startAuthentication,
-  startRegistration,
-} from "@simplewebauthn/browser";
-
-// Types
-type LoginData = {
-  username: string;
-  password: string;
-};
-
-type RegisterData = {
-  username: string;
-  password: string;
-  name: string;
-  email: string;
-};
-
-// WebAuthn related types
-type WebAuthnCredential = {
-  id: number;
-  created: string;
-};
-
-type BiometricStatusResponse = {
-  enabled: boolean;
-  credentials: WebAuthnCredential[];
-};
-
-type BiometricAuthStatus = {
-  available: boolean;
-  registered: boolean;
-  credentials: WebAuthnCredential[];
-};
-
-type WebAuthnLoginData = {
-  username: string;
-};
 
 type AuthContextType = {
-  user: User | null;
+  user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<User, Error, LoginData>;
+  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<User, Error, RegisterData>;
-  biometricStatus: UseQueryResult<BiometricAuthStatus>;
-  registerBiometricMutation: UseMutationResult<any, Error, void>;
-  loginWithBiometricMutation: UseMutationResult<any, Error, WebAuthnLoginData>;
-  biometricUsername: string;
-  setBiometricUsername: (username: string) => void;
+  registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
 };
 
-// Context
+type LoginData = Pick<InsertUser, "username" | "password">;
+type RegisterData = Pick<InsertUser, "username" | "password" | "name" | "email">;
+
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-// Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const [biometricUsername, setBiometricUsername] = useState<string>("");
-
-  // Query to get the current user
+  
   const {
     data: user,
     error,
     isLoading,
-  } = useQuery<User | null>({
+  } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
-    queryFn: async () => {
-      try {
-        const res = await apiRequest("GET", "/api/user");
-        return await res.json();
-      } catch (error) {
-        // Return null instead of throwing on 401 to handle unauthenticated state gracefully
-        if (error instanceof Response && error.status === 401) {
-          return null;
-        }
-        throw error;
-      }
-    },
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
-  // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Login failed");
-      }
       return await res.json();
     },
-    onSuccess: (user: User) => {
+    onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Login successful",
-        description: `Welcome back, ${user.name || user.username}!`,
+        title: "Welcome back!",
+        description: "Successfully signed in to your account.",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid username or password",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
       const res = await apiRequest("POST", "/api/register", credentials);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Registration failed");
-      }
       return await res.json();
     },
-    onSuccess: (user: User) => {
+    onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
-        title: "Registration successful",
-        description: `Welcome, ${user.name || user.username}!`,
+        title: "Account created!",
+        description: "Welcome to Compassion Tracker. Your account has been created successfully.",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Registration failed",
-        description: error.message || "Failed to create account",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/logout");
@@ -151,8 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
       toast({
-        title: "Logged out",
-        description: "You have been successfully logged out",
+        title: "Signed out",
+        description: "You have been successfully signed out.",
       });
     },
     onError: (error: Error) => {
@@ -164,137 +96,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Check if biometrics are available and registered
-  const biometricStatus = useQuery<BiometricAuthStatus>({
-    queryKey: ["/api/webauthn/status"],
-    queryFn: async () => {
-      // First check if the browser supports WebAuthn
-      const available = await browserSupportsWebAuthn();
-      
-      // If WebAuthn is supported and we're logged in, check if credentials are registered
-      if (available && user) {
-        try {
-          const res = await apiRequest("GET", "/api/webauthn/status");
-          if (!res.ok) {
-            throw new Error("Failed to check WebAuthn status");
-          }
-          
-          const data: BiometricStatusResponse = await res.json();
-          return { 
-            available, 
-            registered: data.enabled, 
-            credentials: data.credentials || []
-          };
-        } catch (error) {
-          console.error("Error checking WebAuthn status:", error);
-          return { available, registered: false, credentials: [] };
-        }
-      }
-      
-      return { available, registered: false, credentials: [] };
-    },
-    // Only run if we have a user
-    enabled: !!user,
-  });
-
-  // Register biometric credentials
-  const registerBiometricMutation = useMutation({
-    mutationFn: async () => {
-      // 1. Get registration options from the server
-      const regOptionsResponse = await apiRequest("GET", "/api/webauthn/register/start");
-      if (!regOptionsResponse.ok) {
-        const errorData = await regOptionsResponse.json();
-        throw new Error(errorData.message || "Failed to start registration");
-      }
-      
-      const regOptionsData = await regOptionsResponse.json();
-
-      // 2. Use the browser API to create the credentials
-      const credential = await startRegistration(regOptionsData);
-
-      // 3. Send the credential back to the server for verification
-      const verificationResponse = await apiRequest("POST", "/api/webauthn/register/finish", credential);
-      if (!verificationResponse.ok) {
-        const errorData = await verificationResponse.json();
-        throw new Error(errorData.message || "Failed to verify registration");
-      }
-      
-      return await verificationResponse.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Biometric registration successful",
-        description: "You can now sign in using your fingerprint or Face ID",
-      });
-      // Refresh biometric status
-      queryClient.invalidateQueries({ queryKey: ["/api/webauthn/status"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Biometric registration failed",
-        description: error.message || "Failed to register biometric credentials",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Login with biometric credentials
-  const loginWithBiometricMutation = useMutation({
-    mutationFn: async ({ username }: WebAuthnLoginData) => {
-      // 1. Get authentication options from the server
-      const authOptionsResponse = await apiRequest("GET", `/api/webauthn/login/start?username=${encodeURIComponent(username)}`);
-      if (!authOptionsResponse.ok) {
-        const errorData = await authOptionsResponse.json();
-        throw new Error(errorData.message || "Failed to start authentication");
-      }
-      
-      const authOptionsData = await authOptionsResponse.json();
-
-      // 2. Use the browser API to get the assertion
-      const assertion = await startAuthentication(authOptionsData);
-
-      // 3. Send the assertion back to the server for verification
-      const verificationResponse = await apiRequest("POST", "/api/webauthn/login/finish", assertion);
-      if (!verificationResponse.ok) {
-        const errorData = await verificationResponse.json();
-        throw new Error(errorData.message || "Authentication failed");
-      }
-      
-      const data = await verificationResponse.json();
-      return data;
-    },
-    onSuccess: (data) => {
-      // Update the user data in the cache
-      queryClient.setQueryData(["/api/user"], data.user);
-      
-      toast({
-        title: "Biometric login successful",
-        description: `Welcome back, ${data.user.name || data.user.username}!`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Biometric login failed",
-        description: error.message || "Authentication failed",
-        variant: "destructive",
-      });
-    },
-  });
-
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user: user ?? null,
         isLoading,
-        error: error as Error | null,
+        error,
         loginMutation,
         logoutMutation,
         registerMutation,
-        biometricStatus,
-        registerBiometricMutation,
-        loginWithBiometricMutation,
-        biometricUsername,
-        setBiometricUsername,
       }}
     >
       {children}
@@ -302,7 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

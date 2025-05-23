@@ -13,10 +13,13 @@ import EmergencyInfo from "@/pages/EmergencyInfo";
 import BloodPressure from "@/pages/BloodPressure";
 import GlucoseInsulin from "@/pages/GlucoseInsulin";
 import BowelMovements from "@/pages/BowelMovements";
+import AuthPage from "@/pages/auth-page";
 import { useState, lazy, Suspense } from "react";
 import { TabType } from "./lib/types";
 import { PinAuthProvider } from "@/hooks/use-pin-auth";
 import { CareRecipientProvider } from "@/hooks/use-care-recipient";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 import { Loader2 } from "lucide-react";
 
 // Lazily load the Meals and Sleep components since they may not be implemented yet
@@ -61,18 +64,67 @@ function Router() {
   return (
     <div className="app-container">
       <Switch>
-        <Route path="/" component={renderHome} />
-        <Route path="/medications" component={renderMedications} />
-        <Route path="/calendar" component={renderCalendar} />
-        <Route path="/notes" component={renderNotes} />
-        <Route path="/doctors" component={renderDoctors} />
-        <Route path="/pharmacies" component={renderPharmacies} />
-        <Route path="/emergency-info" component={renderEmergencyInfo} />
-        <Route path="/blood-pressure" component={renderBloodPressure} />
-        <Route path="/glucose-insulin" component={renderGlucoseInsulin} />
-        <Route path="/bowel-movements" component={renderBowelMovements} />
-        <Route path="/meals" component={renderMeals} />
-        <Route path="/sleep" component={renderSleep} />
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/">
+          <ProtectedRoute>
+            {renderHome()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/medications">
+          <ProtectedRoute>
+            {renderMedications()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/calendar">
+          <ProtectedRoute>
+            {renderCalendar()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/notes">
+          <ProtectedRoute>
+            {renderNotes()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/doctors">
+          <ProtectedRoute>
+            {renderDoctors()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/pharmacies">
+          <ProtectedRoute>
+            {renderPharmacies()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/emergency-info">
+          <ProtectedRoute>
+            {renderEmergencyInfo()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/blood-pressure">
+          <ProtectedRoute>
+            {renderBloodPressure()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/glucose-insulin">
+          <ProtectedRoute>
+            {renderGlucoseInsulin()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/bowel-movements">
+          <ProtectedRoute>
+            {renderBowelMovements()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/meals">
+          <ProtectedRoute>
+            {renderMeals()}
+          </ProtectedRoute>
+        </Route>
+        <Route path="/sleep">
+          <ProtectedRoute>
+            {renderSleep()}
+          </ProtectedRoute>
+        </Route>
 
         <Route component={NotFound} />
       </Switch>
@@ -84,11 +136,13 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <PinAuthProvider>
-        <CareRecipientProvider>
-          <Router />
-        </CareRecipientProvider>
-      </PinAuthProvider>
+      <AuthProvider>
+        <PinAuthProvider>
+          <CareRecipientProvider>
+            <Router />
+          </CareRecipientProvider>
+        </PinAuthProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -137,6 +137,24 @@ export const storage = {
     return newUser;
   },
 
+  async getUser(id: number) {
+    return db.query.users.findFirst({
+      where: eq(users.id, id)
+    });
+  },
+
+  async getUserByUsername(username: string) {
+    return db.query.users.findFirst({
+      where: eq(users.username, username)
+    });
+  },
+
+  async getUserByEmail(email: string) {
+    return db.query.users.findFirst({
+      where: eq(users.email, email)
+    });
+  },
+
   // Care Recipients
   async getCareRecipients() {
     return db.query.careRecipients.findMany({
