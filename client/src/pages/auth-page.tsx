@@ -123,11 +123,11 @@ export default function AuthPage() {
         <Card className="w-full max-w-md mx-auto shadow-xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
-              {isLogin ? "Welcome Back" : "Create Account"}
+              {isLogin ? "Sign In" : "Create Account"}
             </CardTitle>
             <CardDescription className="text-center">
               {isLogin 
-                ? "Sign in to access your care management dashboard" 
+                ? "Access your care management dashboard" 
                 : "Start managing your family's care today"
               }
             </CardDescription>
