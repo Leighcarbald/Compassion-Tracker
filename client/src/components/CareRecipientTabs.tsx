@@ -134,14 +134,11 @@ export default function CareRecipientTabs({
   // Add recipient mutation
   const addRecipientMutation = useMutation({
     mutationFn: async (name: string) => {
-      // First get any existing recipient to copy the userId from
-      const existingRecipient = careRecipients.length > 0 ? careRecipients[0] : null;
-      
-      const data = insertCareRecipientSchema.parse({ 
-        name, 
-        status: 'active',
-        userId: existingRecipient ? existingRecipient.userId : 1  // Use existing userId if available
-      });
+      // Send just the name - the backend will automatically associate with the authenticated user
+      const data = { 
+        name: name.trim(), 
+        status: 'active'
+      };
       const res = await apiRequest("POST", "/api/care-recipients", data);
       return await res.json();
     },
